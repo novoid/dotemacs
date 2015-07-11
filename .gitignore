@@ -1,0 +1,7 @@
+elpa
+tramp
+*~
+session.[0-9]+
+session.*
+.#*
+*.odt

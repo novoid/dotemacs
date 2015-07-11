@@ -1,0 +1,1978 @@
+#+SETUPFILE: /home/matt/src/org-html-themes/setup/theme-readtheorg.setup
+
+* Startup
+This file is my [[http://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html][Emacs Init file]].  It's a mess, and has been for years.  However, I've recently converted it from an old-fashioned code file to a much-cooler "[[http://sachachua.com/blog/2012/06/literate-programming-emacs-configuration-file/][Lieterate Programming]]" file -- written in [[http://orgmode.org/][Org-Mode]], and evaluated piece by piece.  
+
+The standard way to do this is to use the amazing [[http://orgmode.org/worg/org-contrib/babel/][Org Babel]] library, and once I've gotten things properly in order that's probably what I will do.  [[http://pages.sachachua.com/.emacs.d/Sacha.html#unnumbered-2][Sacha Chua shows how that's done]] in her own, excellent dotemacs repository.  But I stumbled on [[http://endlessparentheses.com/init-org-Without-org-mode.html][Artur Malabarba's example]] and it's great for me, so I've stolen it.  The fantastic part is that, on startup, Emacs echoes the current heading to the *Messages* buffer. This means that when my Init file breaks -- which happens all the time! -- I can just look at the messages and see what block I got to; the error is always there.  
+
+This is the content of my ~.emacs~. All it does is find the emacs-lisp source blocks in my ~emacs-init.org~ file and evaluate them one by one.  
+
+#+BEGIN_SRC emacs-lisp :tangle no
+
+;; this fantastic trick from endless parentheses
+;; sends a message to *Messages* every time we get
+;; to a new header
+(defvar endless/init.org-message-depth 5
+  "What depth of init.org headers to message at startup.")
+
+(with-temp-buffer
+  (insert-file "~/.emacs.d/emacs-init.org")
+  (goto-char (point-min))
+  ;;(search-forward "\n* init.el")
+  (while (not (eobp))
+    (forward-line 1)
+    (cond
+     ;; Report Headers
+     ((looking-at
+       (format "\\*\\{1,%s\\} +.*$" 
+               endless/init.org-message-depth))
+      (message "%s" (match-string 0)))
+     ;; Evaluate Code Blocks
+     ((looking-at "^#\\+BEGIN_SRC +emacs-lisp *$")
+      (let ((l (match-end 0)))
+        (search-forward "\n#+END_SRC")
+        (eval-region l (match-beginning 0))))
+     ;; Finish on the next level-1 header
+     )))
+
+#+END_SRC
+
+** First things
+These are some early settings that avoid unwanted UI elements -- the tool bar and the startup message.  It also initializes the package system for later.  
+
+#+BEGIN_SRC emacs-lisp
+(if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
+(if (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
+
+;; No splash screen please ... jeez
+(setq inhibit-startup-message t)
+
+;; package issues
+(setq package-enable-at-startup t)
+(require 'seq)
+
+#+END_SRC
+* Load Paths
+#+BEGIN_SRC emacs-lisp
+(setq site-lisp-dir
+      (expand-file-name "site-lisp" user-emacs-directory))
+(add-to-list 'load-path site-lisp-dir)
+
+#+END_SRC
+* Official Packages
+** Initialize the Package system
+#+BEGIN_SRC emacs-lisp
+;;; elpa interface
+;; This was installed by package-install.el.
+;; This provides support for the package system and
+;; interfacing with ELPA, the package archive.
+;; Move this code earlier if you want to reference
+;; packages in your .emacs.
+(setq package-archives ())
+(add-to-list 'package-archives '("marmalade" . "http://marmalade-repo.org/packages/"))
+(add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/"))
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+(add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+;; basic initialization, (require) non-ELPA packages, etc.
+(package-initialize)
+
+
+#+END_SRC
+** Require the packages
+#+BEGIN_SRC emacs-lisp
+;; (require) your ELPA packages, configure them as normal
+(require 'yasnippet )
+(require 'ac-js2 )
+
+(require 'autopair )
+(require 'diminish )
+(require 'expand-region)
+(require 'flymake )
+(require 'flymake-css )
+(require 'flymake-easy )
+(require 'flymake-json )
+(require 'flymake-php )
+(require 'flymake-sass )
+(require 'highlight-symbol )
+(require 'htmlize )
+(require 'jquery-doc )
+(require 'js2-mode )
+(require 'js-doc )
+(require 'json-mode )
+(require 'markdown-mode )
+(require 'mc-extras )
+(require 'mc-extras )
+(require 'php-eldoc )
+(require 'php-extras )
+(require 'paredit )
+(require 'php-mode )
+(require 'sass-mode )
+(require 'simple-httpd )
+(require 'skewer-mode )
+(require 'smex )
+(require 'undo-tree)
+(require 'web-beautify )
+(require 'web-mode )
+
+#+END_SRC
+* Site-local Packages
+** From site-lisp
+#+BEGIN_SRC emacs-lisp
+;; staret with some saner/better defaults
+(require 'better-defaults)
+(add-to-list 'load-path "~/src/zeitgeist-dataproviders/emacs/")
+(require 'zeitgeist)
+
+#+END_SRC
+** From ~src~ dir
+* User Experience
+** Backup and AUtosave
+#+BEGIN_SRC emacs-lisp
+;;; backup and autosave
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setq make-backup-files t)       ; enable backup file
+;;;; put packups in ~/.backup
+(setq backup-directory-alist
+      (cons (cons "\\.*$" (expand-file-name "~/.backup"))
+            backup-directory-alist))
+
+(setq version-control t)     ; enable versions of backup
+(setq kept-new-versions 5)   ; how many keep new verisons
+(setq kept-old-versions 5)   ; how many keep old versions
+(setq delete-old-versions t) ; delete old version without asking
+(setq vc-make-backup-files t) ; still make a backup for version-controled files
+
+;;;;; Autosave in .backup dir
+(setq auto-save-file-name-transforms
+      '(("\\([^/]*/\\)*\\([^/]*\\)\\'" "~/.backup/\\2" t)))
+
+;; make emacs remember where it is in the file you just closed
+(require 'saveplace)
+(setq-default save-place t)
+(setq server-visit-hook (quote (save-place-find-file-hook)))
+(setq save-place-file (expand-file-name ".places" user-emacs-directory))
+
+
+;; learn some more key bindings with guide-key
+;; guide-key
+(require 'guide-key)
+(setq guide-key/guide-key-sequence '("C-x r" "C-x 4" "C-x v" "C-x 8" "C-x +"))
+(guide-key-mode 1)
+(setq guide-key/recursive-key-sequence-flag t)
+(setq guide-key/popup-window-position 'bottom)
+;; some specific settings for org-mode
+(defun guide-key/my-hook-function-for-org-mode ()
+  (guide-key/add-local-guide-key-sequence "C-c")
+  (guide-key/add-local-guide-key-sequence "C-c C-x")
+  (guide-key/add-local-highlight-command-regexp "org-"))
+(add-hook 'org-mode-hook 'guide-key/my-hook-function-for-org-mode)
+
+
+#+END_SRC
+** Tramp, other advanced stuff
+#+BEGIN_SRC emacs-lisp
+;;;; sml-modeline-scrollbar...
+;; I think this is for smooth scrolling
+(if (require 'sml-modeline nil 'noerror)    ;; use sml-modeline if available
+    (progn
+      (sml-modeline-mode 1)                   ;; show buffer pos in the mode line
+      (scroll-bar-mode -1))                   ;; turn off the scrollbar
+  (scroll-bar-mode 1)                       ;; otherwise, show a scrollbar...
+  (set-scroll-bar-mode 'right))             ;; ... on the right
+
+;; more scrolling stuff
+(setq
+ scroll-margin 0
+ scroll-conservatively 100000
+ scroll-preserve-screen-position 1)
+
+
+;;;; flyspell
+(add-hook 'wl-mail-setup-hook
+          (lambda()
+            (flyspell-mode 1)))
+
+;; abbrevs
+;; improved autocorrect, with a decent keybinding
+(define-key ctl-x-map "\C-i" 'endless/ispell-word-then-abbrev)
+
+(defun endless/ispell-word-then-abbrev (p)
+  "Call `ispell-word'. Then create an abbrev for the correction made.
+With prefix P, create local abbrev. Otherwise it will be global."
+  (interactive "P")
+  (let ((bef (downcase (or (thing-at-point 'word) ""))) aft)
+    (call-interactively 'ispell-word)
+    (setq aft (downcase (or (thing-at-point 'word) "")))
+    (unless (string= aft bef)
+      (message "\"%s\" now expands to \"%s\" %sally"
+               bef aft (if p "glob" "loc" ))
+      (define-abbrev
+        (if p global-abbrev-table local-abbrev-table)
+        bef aft)))) 
+
+
+;;;; iswitchb-mode
+;; I want to be able to conmute between a split and a single window (sort of "C-x 1" for the one on focus)
+(iswitchb-mode 1)
+(defun my-iswitchb-select()
+  "Jump to buffer without having to hit 'RET' key or C-j. The binding to C-2 is more ergonomic"
+  (interactive)
+  (if (window-minibuffer-p (selected-window))
+      (iswitchb-select-buffer-text)))
+
+(define-key global-map (kbd "C-2") 'my-iswitchb-select)
+
+
+(defun my-iswitchb-close()
+  "Open iswitchb or, if in minibuffer go to next match. Handy way to cycle through the ring."
+  (interactive)
+  (if (window-minibuffer-p (selected-window))
+      (keyboard-escape-quit)))
+;;;; tramp mode
+ (require 'tramp)
+
+#+END_SRC
+* Function Definitions
+#+BEGIN_SRC emacs-lisp
+;; here's a quick macro to select and copy a buffer
+;; F6 copy whole buffer
+(defun mwp-copy-whole-buffer ()
+  "Copy the whole buffer into the kill ring"
+  (interactive)
+  (mark-whole-buffer)
+  (copy-region-as-kill(region-beginning) (region-end))
+  )
+(global-set-key (quote [f6]) 'mwp-copy-whole-buffer)
+
+
+;; better C-a behaviour everywhere (http://emacsredux.com/blog/2013/05/22/smarter-navigation-to-the-beginning-of-a-line/)
+(defun smarter-move-beginning-of-line (arg)
+  "Move point back to indentation of beginning of line.
+
+Move point to the first non-whitespace character on this line.
+If point is already there, move to the beginning of the line.
+Effectively toggle between the first non-whitespace character and
+the beginning of the line.
+
+If ARG is not nil or 1, move forward ARG - 1 lines first.  If
+point reaches the beginning or end of the buffer, stop there."
+  (interactive "^p")
+  (setq arg (or arg 1))
+
+  ;; Move lines first
+  (when (/= arg 1)
+    (let ((line-move-visual nil))
+      (forward-line (1- arg))))
+
+  (let ((orig-point (point)))
+    (back-to-indentation)
+    (when (= orig-point (point))
+      (move-beginning-of-line 1))))
+
+;; remap C-a to `smarter-move-beginning-of-line'
+(global-set-key [remap move-beginning-of-line]
+                'smarter-move-beginning-of-line)
+
+
+;; prodigy looks really ocol,
+;; https://github.com/rejeep/prodigy.el
+;; but I am not using it at the moment ,so commented out
+;; (require 'prodigy)
+;; (global-set-key (kbd "C-x M-m") 'prodigy)
+
+;; Font lock dash.el
+;; dash.el is amazing, maybe to oadvanced for me
+(eval-after-load "dash" '(dash-enable-font-lock))
+
+#+END_SRC
+* Keybindings
+* Unused
+#+BEGIN_SRC emacs-lisp
+;; This is how Magnar manages his packages.  I'm not there yet.  soon I hope.  
+;; Setup packages
+;; (require 'setup-package)
+;; Install extensions if they're missing
+;; (defun init--install-packages ()
+;;   (packages-install
+;;    '(magit
+;;      paredit
+;;      move-text
+;;      gist
+;;      htmlize
+;;      visual-regexp
+;;      flycheck
+;;      flx
+;;      flx-ido
+;;      css-eldoc
+;;      yasnippet
+;;      smartparens
+;;      ido-vertical-mode
+;;      ido-at-point
+;;      simple-httpd
+;;      guide-key
+;;      nodejs-repl
+;;      restclient
+;;      highlight-escape-sequences
+;;      whitespace-cleanup-mode
+;;      elisp-slime-nav
+;;      git-commit-mode
+;;      gitconfig-mode
+;;      gitignore-mode
+;;      clojure-mode
+;;      groovy-mode
+;;      prodigy
+;;      cider
+;;      cider-tracing)))
+
+;; (condition-case nil
+;;     (init--install-packages)
+;;   (error
+;;    (package-refresh-contents)
+;;    (init--install-packages)))
+
+;; this is the main structure of magnar's .emacs; it's a little complex for me
+;; Setup extensions
+;; (eval-after-load 'ido '(require 'setup-ido))
+;; (eval-after-load 'org '(require 'setup-org))
+;; (eval-after-load 'dired '(require 'setup-dired))
+;; (eval-after-load 'magit '(require 'setup-magit))
+;; (eval-after-load 'grep '(require 'setup-rgrep))
+;; (eval-after-load 'shell '(require 'setup-shell))
+;; (require 'setup-hippie)
+;; (require 'setup-yasnippet)
+;; (require 'setup-perspective)
+;; (require 'setup-ffip)
+;; (require 'setup-html-mode)
+;; (require 'setup-paredit)
+
+;; ;; Elisp go-to-definition with M-. and back again with M-,
+;; (autoload 'elisp-slime-nav-mode "elisp-slime-nav")
+;; (add-hook 'emacs-lisp-mode-hook (lambda () (elisp-slime-nav-mode t) (eldoc-mode 1)))
+
+;; ;; Run at full power please
+;; (put 'downcase-region 'disabled nil)
+;; (put 'upcase-region 'disabled nil)
+;; (put 'narrow-to-region 'disabled nil)
+(put 'upcase-region 'disabled nil)
+
+;; ;; Conclude init by setting up specifics for the current user
+;; (when (file-exists-p user-settings-dir)
+;;   (mapc 'load (directory-files user-settings-dir nil "^[^#].*el$")))
+
+;; setup autopair
+;; (autopair-global-mode) ;; enable autopair in all buffers
+
+;; ;; add opened files to gnome recent-files list
+;; (defun fd-add-file-to-recent ()
+;;   (when buffer-file-name
+;;     (start-process "addtorecent" nil "addtorecent"
+;;                    (concat "file://" buffer-file-name)
+;;                    "text/plain"
+;;                    "Emacs"
+;;                    "emacsclient %F")))
+
+;; (add-hook 'find-file-hook 'fd-add-file-to-recent)
+;;; Speedbar and Imenu
+;; This adds support for speedbar and Imenu.  Right now I'm not actually using either though.
+;; (add-hook 'org-mode-hook
+;;                     (lambda () (imenu-add-to-menubar "Imenu")))
+;; (require 'speedbar)
+;; (speedbar-add-supported-extension ".org")
+
+;;;; changing languages for e.g. spellcheck.  I don't use this much right now
+;; (let ((langs '("canadian" "francais")))
+;;   (setq lang-ring (make-ring (length langs)))
+;;   (dolist (elem langs) (ring-insert lang-ring elem)))
+
+;; (defun cycle-ispell-languages ()
+;;   (interactive)
+;;   (let ((lang (ring-ref lang-ring -1)))
+;;     (ring-insert lang-ring lang)
+;;     (ispell-change-dictionary lang)))
+
+;; (global-set-key [f6] 'cycle-ispell-languages)
+;;; Worg and Wanderlust
+;; also some org-wl interaction
+;; stolen from worg: http://orgmode.org/worg/org-hacks.html
+
+;; (defun dmj/wl-send-html-message ()
+;;   "Send message as html message.
+;; Convert body of message to html using
+;;   `org-export-region-as-html'."
+;;   (require 'org)
+;;   (save-excursion
+;;     (let (beg end html text)
+;;       (goto-char (point-min))
+;;       (re-search-forward "^--text follows this line--$")
+;;       ;; move to beginning of next line
+;;       (beginning-of-line 2)
+;;       (setq beg (point))
+;;       (if (not (re-search-forward "^--\\[\\[" nil t))
+;;           (setq end (point-max))
+;;         ;; line up
+;;         (end-of-line 0)
+;;         (setq end (point)))
+;;       ;; grab body
+;;       (setq text (buffer-substring-no-properties beg end))
+;;       ;; convert to html
+;;       (with-temp-buffer
+;;         (org-mode)
+;;         (insert text)
+;;         ;; handle signature
+;;         (when (re-search-backward "^-- \n" nil t)
+;;           ;; preserve link breaks in signature
+;;           (insert "\n#+BEGIN_VERSE\n")
+;;           (goto-char (point-max))
+;;           (insert "\n#+END_VERSE\n")
+;;           ;; grab html
+;;           (setq html (org-export-region-as-html
+;;                       (point-min) (point-max) t 'string))))
+;;       (delete-region beg end)
+;;       (insert
+;;        (concat
+;;         "--" "<<alternative>>-{\n"
+;;         "--" "[[text/plain]]\n" text
+;;         "--" "[[text/html]]\n"  html
+;;         "--" "}-<<alternative>>\n")))))
+
+;; (defun dmj/wl-send-html-message-toggle ()
+;;   "Toggle sending of html message."
+;;   (interactive)
+;;   (setq dmj/wl-send-html-message-toggled-p
+;;         (if dmj/wl-send-html-message-toggled-p
+;;             nil "HTML"))
+;;   (message "Sending html message toggled %s"
+;;            (if dmj/wl-send-html-message-toggled-p
+;;                "on" "off")))
+
+;; (defun dmj/wl-send-html-message-draft-init ()
+;;   "Create buffer local settings for maybe sending html message."
+;;   (unless (boundp 'dmj/wl-send-html-message-toggled-p)
+;;     (setq dmj/wl-send-html-message-toggled-p nil))
+;;   (make-variable-buffer-local 'dmj/wl-send-html-message-toggled-p)
+;;   (add-to-list 'global-mode-string
+;;                '(:eval (if (eq major-mode 'wl-draft-mode)
+;;                            dmj/wl-send-html-message-toggled-p))))
+
+;; (defun dmj/wl-send-html-message-maybe ()
+;;   "Maybe send this message as html message.
+
+;; If buffer local variable `dmj/wl-send-html-message-toggled-p' is
+;; non-nil, add `dmj/wl-send-html-message' to
+;; `mime-edit-translate-hook'."
+;;   (if dmj/wl-send-html-message-toggled-p
+;;       (add-hook 'mime-edit-translate-hook 'dmj/wl-send-html-message)
+;;     (remove-hook 'mime-edit-translate-hook 'dmj/wl-send-html-message)))
+
+;; (add-hook 'wl-draft-reedit-hook 'dmj/wl-send-html-message-draft-init)
+;; (add-hook 'wl-mail-setup-hook 'dmj/wl-send-html-message-draft-init)
+;; (add-hook 'wl-draft-send-hook 'dmj/wl-send-html-message-maybe) 
+
+;; (defun dmj/org-export-region-as-html-attachment (beg end arg)
+;;   "Export region between BEG and END as html attachment.
+;; If BEG and END are not set, use current subtree.  Region or
+;; subtree is exported to html without header and footer, prefixed
+;; with a mime entity string and pushed to clipboard and killring.
+;; When called with prefix, mime entity is not marked as
+;; attachment."
+;;   (interactive "r\nP")
+;;   (save-excursion
+;;     (let* ((beg (if (region-active-p) (region-beginning)
+;;                   (progn
+;;                     (org-back-to-heading)
+;;                     (point))))
+;;            (end (if (region-active-p) (region-end)
+;;                   (progn
+;;                     (org-end-of-subtree)
+;;                     (point))))
+;;            (html (concat "--[[text/html"
+;;                          (if arg "" "\nContent-Disposition: attachment")
+;;                          "]]\n"
+;;                          (org-export-region-as-html beg end t 'string))))
+;;       (when (fboundp 'x-set-selection)
+;;         (ignore-errors (x-set-selection 'PRIMARY html))
+;;         (ignore-errors (x-set-selection 'CLIPBOARD html)))
+;;       (message "html export done, pushed to kill ring and clipboard"))))
+
+;; temp fix for heckboxes in orgh-html export
+;; disabling cause it messes up my export
+;; (defun org-html-checkbox (checkbox)
+;;   "Format CHECKBOX into HTML."
+;;   (case checkbox (on "<input type=\"checkbox\" checked />")
+;; 	(off "<input type=\"checkbox\" />")
+;; 	(trans "<code>[-]</code>")
+;; 	(t "")))
+
+;; (defun org-html-format-list-item (contents type checkbox info
+;; 					   &optional term-counter-id
+;; 					   headline)
+;;   "Format a list item into HTML."
+;;   (let ((checkbox (concat (org-html-checkbox checkbox) (and checkbox " ")))
+;; 	(br (org-html-close-tag "br" nil info)))
+;;     (concat
+;;      (case type
+;;        (ordered
+;; 	(let* ((counter term-counter-id)
+;; 	       (extra (if counter (format " value=\"%s\"" counter) "")))
+;; 	  (concat
+;; 	   (format "<li%s>" extra)
+;; 	   (when headline (concat headline br)))))
+;;        (unordered
+;; 	(let* ((id term-counter-id)
+;; 	       (extra (if id (format " id=\"%s\"" id) ""))
+;; 	       (chkclass (if checkbox (format " class=\"checkbox\"") "")))
+;; 	  (concat
+;; 	   (format "<li%s%s>" extra chkclass)
+;; 	   (when headline (concat headline br)))))
+;;        (descriptive
+;; 	(let* ((term term-counter-id))
+;; 	  (setq term (or term "(no term)"))
+;; 	  ;; Check-boxes in descriptive lists are associated to tag.
+;; 	  (concat (format "<dt> %s </dt>"
+;; 			  (concat checkbox term))
+;; 		  "<dd>"))))
+;;      (unless (eq type 'descriptive) checkbox)
+;;      contents
+;;      (case type
+;;        (ordered "</li>")
+;;        (unordered "</li>")
+;;        (descriptive "</dd>")))))
+
+
+
+#+END_SRC
+* First Half
+The first part of this file is a little miscellaneous. They are things I'velearned to setearly on, but don't always fully understand.
+** More Load Paths
+#+BEGIN_SRC emacs-lisp
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; some universal customizations
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Set path to dependencies
+  (setq site-lisp-dir
+        (expand-file-name "site-lisp" user-emacs-directory))
+  (setq src-dir
+        (expand-file-name "src" "/home/matt/"))
+  (setq org-dir
+        (expand-file-name "org-mode" src-dir))
+  (setq org-lisp
+        (expand-file-name "lisp" org-dir))
+  (setq org-contrib
+        (expand-file-name "contrib/lisp" org-dir))
+
+  ;; Set up load path
+  (add-to-list 'load-path site-lisp-dir)
+  (add-to-list 'load-path src-dir)
+
+  ;; new load paths
+  (setq load-path (cons org-lisp load-path))
+  (setq load-path (cons org-contrib load-path))
+  (setq load-path (cons "~/.emacs.d/org2blog/" load-path))
+  ;; get current docs
+  (setq Info-default-directory-list (cons (expand-file-name "docs" org-dir) Info-default-directory-list))
+
+
+  ;; Keep emacs Custom-settings in separate file
+  (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+  (load custom-file)
+
+
+  (setq defuns-dir (expand-file-name "defuns" user-emacs-directory))
+  (dolist (file (directory-files defuns-dir t "\\w+"))
+    (when (file-regular-p file)
+      (load file)))
+  (require 'tagedit)
+  (require 'simplezen)
+  (require 'browse-kill-ring)
+  (require 'expand-region)
+  (require 'multiple-cursors)
+  (require 'delsel)
+  (require 'jump-char)
+  ;;(require 'eproject)
+  ;; (require 'wgrep)
+  ;; (require 'smart-forward)
+  ;; (require 'change-inner)
+  ;; (require 'multifiles)
+  ;; Smart M-x is smart
+  ;; (require 'smex)
+  ;; (smex-initialize)
+
+#+END_SRC
+
+** Rest of the first hapf
+#+BEGIN_SRC emacs-lisp
+
+
+;; Visual regexp
+;; (require 'visual-regexp)
+;; (define-key global-map (kbd "M-&") 'vr/query-replace)
+;; (define-key global-map (kbd "M-/") 'vr/replace)
+
+;; here's a better method
+;; in .bashrc alias orgupdate='cd /home/scot/.emacs.d/vendor/org-mode; git pull && make && make doc'
+
+#+END_SRC
+** Paredit
+
+#+BEGIN_SRC emacs-lisp
+
+;; paredit stuff.  belongs in setup-paredit, oh well
+(autoload 'enable-paredit-mode "paredit" "Turn on pseudo-structural editing of Lisp code." t)
+(add-hook 'emacs-lisp-mode-hook       #'enable-paredit-mode)
+(add-hook 'eval-expression-minibuffer-setup-hook #'enable-paredit-mode)
+(add-hook 'ielm-mode-hook             #'enable-paredit-mode)
+(add-hook 'lisp-mode-hook             #'enable-paredit-mode)
+(add-hook 'lisp-interaction-mode-hook #'enable-paredit-mode)
+(add-hook 'scheme-mode-hook           #'enable-paredit-mode)
+;; ;; Setup key bindings
+;; (require 'key-bindings)
+
+#+END_SRC
+** Server
+#+BEGIN_SRC emacs-lisp
+
+;; ;; Emacs server
+(require 'server)
+(unless (server-running-p)
+  (server-start))
+#+END_SRC
+
+* Second Half
+
+** Magnars Keybindings
+#+BEGIN_SRC emacs-lisp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; some stuff form magnars,
+;; https://github.com/magnars/.emacs.d/blob/master/key-bindings.el
+;; this should be moved to own file keybindings.el
+(require 'misc)
+(global-set-key (kbd "s-.") 'copy-from-above-command)
+
+;; find function!  a must
+(global-set-key (kbd "C-h C-f") 'find-function)
+
+;; Smart M-x
+(global-set-key (kbd "M-x") 'smex)
+(global-set-key (kbd "M-X") 'smex-major-mode-commands)
+;; (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command) ;
+;; Use C-x C-m to do M-x per Steve Yegge's advice
+(global-set-key (kbd "C-x C-m") 'smex)
+
+
+;; M-i for back-to-indentation
+(global-set-key (kbd "M-i") 'back-to-indentation)
+
+;; Turn on the menu bar for exploring new modes
+(global-set-key (kbd "C-<f10>") 'menu-bar-mode)
+
+;; transposing
+;; Transpose stuff with M-t
+(global-unset-key (kbd "M-t")) ;; which used to be transpose-words
+(global-set-key (kbd "M-t l") 'transpose-lines)
+(global-set-key (kbd "M-t w") 'transpose-words)
+(global-set-key (kbd "M-t s") 'transpose-sexps)
+(global-set-key (kbd "M-t p") 'transpose-params)
+
+;; Killing text
+(global-set-key (kbd "C-S-k") 'kill-and-retry-line)
+(global-set-key (kbd "C-w") 'kill-region-or-backward-word)
+(global-set-key (kbd "C-c C-w") 'kill-to-beginning-of-line)
+
+;; Use M-w for copy-line if no active region
+(global-set-key (kbd "M-w") 'save-region-or-current-line)
+(global-set-key (kbd "s-w") 'save-region-or-current-line)
+(global-set-key (kbd "M-W") (λ (save-region-or-current-line 1)))
+
+;; Make shell more convenient, and suspend-frame less
+(global-set-key (kbd "C-z") 'shell)
+(global-set-key (kbd "C-x M-z") 'suspend-frame)
+
+
+
+;; Zap to char
+(global-set-key (kbd "M-z") 'zap-up-to-char)
+(global-set-key (kbd "s-z") (lambda (char) (interactive "cZap up to char backwards: ") (zap-up-to-char -1 char)))
+
+(global-set-key (kbd "M-Z") (lambda (char) (interactive "cZap to char: ") (zap-to-char 1 char)))
+(global-set-key (kbd "s-Z") (lambda (char) (interactive "cZap to char backwards: ") (zap-to-char -1 char)))
+
+
+
+
+;; Jump to a definition in the current file. (This is awesome)
+(global-set-key (kbd "C-x C-i") 'ido-imenu)
+
+;; Perform general cleanup.
+(global-set-key (kbd "C-c n") 'cleanup-buffer)
+(global-set-key (kbd "C-c C-n") 'cleanup-buffer)
+(global-set-key (kbd "C-c C-<return>") 'delete-blank-lines)
+
+;; zen
+(define-key html-mode-map (kbd "C-c C-z") 'simplezen-expand)
+(define-key html-mode-map (kbd "TAB") 'simplezen-expand-or-indent-for-tab)
+(define-key web-mode-map (kbd "C-c C-z") 'simplezen-expand)
+
+#+END_SRC
+
+** Programming
+#+BEGIN_SRC emacs-lisp
+
+
+;;;; add eldoc for python
+(add-hook 'python-mode-hook
+          '(lambda () (eldoc-mode 1)) t)
+;;;;; indent yanked code
+(dolist (command '(yank yank-pop))
+  (eval `(defadvice ,command (after indent-region activate)
+           (and (not current-prefix-arg)
+                (member major-mode '(emacs-lisp-mode lisp-mode
+                                                     clojure-mode    scheme-mode
+                                                     haskell-mode    ruby-mode
+                                                     rspec-mode      python-mode
+                                                     c-mode          c++-mode
+                                                     objc-mode       latex-mode
+                                                     plain-tex-mode))
+                (let ((mark-even-if-inactive transient-mark-mode))
+                  (indent-region (region-beginning) (region-end) nil))))))
+
+;;;; Find a Function Definition
+;; A simple lambda function to search and find the definition of a function or variable.  Only works In Elisp.  Bound to C-c f.
+(global-set-key (kbd "C-c f")
+               (lambda ()
+                 (interactive)
+                 (require 'finder)
+                 (let ((thing (intern (thing-at-point 'symbol))))
+                   (if (functionp thing)
+                       (find-function thing)
+                      (find-variable thing)))))
+
+
+#+END_SRC
+
+** More UI and Misc
+#+BEGIN_SRC emacs-lisp
+
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;; visual line mode
+;; enable visual line mode for text modes
+(add-hook 'text-mode-hook 'turn-on-visual-line-mode)
+
+;;;; auto-complete
+(require 'auto-complete-config)
+(add-to-list 'ac-dictionary-directories "~/.emacs.d//ac-dict")
+(ac-config-default)
+                                        ; Use dictionaries by default
+(setq-default ac-sources (add-to-list 'ac-sources 'ac-source-dictionary))
+(global-auto-complete-mode t)
+                                        ; Start auto-completion after 2 characters of a word
+(setq ac-auto-start 2)
+                                        ; case sensitivity is important when finding matches
+(setq ac-ignore-case nil)
+
+;;;; abbrev-mode
+(setq default-abbrev-mode t)
+(setq abbrev-file-name "~/.emacs.d/abbrev_defs")
+(read-abbrev-file "~/.emacs.d/abbrev_defs")       ;; reads the abbreviations file on startup
+(setq save-abbrevs t)              ;; save abbrevs when files are saved
+;; you will be asked before the abbreviations are saved
+(setq save-abbrevs 'silently)              ;; now I won't be asked
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;;; word counts
+;; word counts
+(defun wc (&optional start end)
+  "Prints number of lines, words and characters in region or whole buffer."
+  (interactive)
+  (let ((n 0)
+        (start (if mark-active (region-beginning) (point-min)))
+        (end (if mark-active (region-end) (point-max))))
+    (save-excursion
+      (goto-char start)
+      (while (< (point) end) (if (forward-word 1) (setq n (1+ n)))))
+    (message "%3d %3d %3d" (count-lines start end) n (- end start))))
+
+;; unfilling paras
+;;; switching window configurations
+(defun toggle-windows-split()
+  "Switch back and forth between one window and whatever split of windows we might have in the frame. The idea is to maximize the current buffer, while being able to go back to the previous split of windows in the frame simply by calling this command again."
+  (interactive)
+  (if (not(window-minibuffer-p (selected-window)))
+      (progn
+        (if (< 1 (count-windows))
+            (progn
+              (window-configuration-to-register ?u)
+              (delete-other-windows))
+          (jump-to-register ?u))))
+  (my-iswitchb-close))
+
+;; Then, the convenient key binding:
+(define-key global-map (kbd "C-`") 'toggle-windows-split)
+(define-key global-map (kbd "C-~") 'toggle-windows-split)
+(define-key global-map (kbd "C-|") 'toggle-windows-split) ; same key, on a spanish keyword mapping since I commute a lot between both
+
+(defun back-window ()
+  (interactive)
+  (other-window -1))
+(define-key global-map (kbd "C-x O") 'back-window)
+
+;;;; unfill paragraph
+;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
+(defun unfill-paragraph ()
+  "Takes a multi-line paragraph and makes it into a single line of text."
+  (interactive)
+  (let ((fill-column (point-max)))
+    (fill-paragraph nil)))
+
+;;;
+;; hippie expand
+(global-set-key [remap dabbrev-expand] 'hippie-expand)
+
+;; anzu -- pretty text replacement
+(require 'anzu)
+(global-anzu-mode)
+(global-set-key (kbd "M-%") 'anzu-query-replace)
+(global-set-key (kbd "C-M-%") 'anzu-query-replace-regexp)
+(require 'appearance )
+
+#+END_SRC
+
+* Second Half
+#+BEGIN_SRC emacs-lisp
+
+;;; web programming tweaks
+(load-library "webstuff")
+;;; session management with desktop
+(require 'desktop)
+(setq desktop-dirname "/home/matt/.emacs.d/desktop-sessions/")
+(desktop-save-mode 1)
+
+;; this was messed up somehow
+(setq print-length 1000)
+(setq print-length 2000)
+#+END_SRC
+* Organize my life
+** Loading, hooks, minor modes
+#+BEGIN_SRC emacs-lisp
+(require 'org)
+;;;; Org-mode hooks
+(add-hook 'org-mode-hook
+  (lambda()
+    (flyspell-mode 1)))
+(add-to-list 'auto-mode-alist '("\\.org" . org-mode))
+
+;; still need to load org2blog
+(require 'org2blog)
+(require 'org2blog-autoloads)
+;; this should turhn auto-fill off?
+(add-hook 'org-mode-hook 'turn-off-auto-fill)
+;;org-mouse.el -- an extra
+(require 'org-mouse)
+;;;; allow firefox integration via org=protocl
+(require 'org-protocol)
+(require 'org-mime)
+(setq org-mime-library 'semi)
+(add-hook 'message-mode-hook
+          (lambda ()
+            (local-set-key "\C-c\M-o" 'org-mime-htmlize)))
+
+(add-hook 'org-mode-hook
+          (lambda ()
+            (local-set-key "\C-c\M-o" 'org-mime-org-buffer-htmlize)))
+(add-hook 'org-mime-html-hook
+          (lambda ()
+            (org-mime-change-element-style
+             "pre" (format "color: %s; background-color: %s; padding: 0.5em;"
+                           "#E6E1DC" "#232323"))))
+(add-hook 'org-mime-html-hook
+          (lambda ()
+            (org-mime-change-element-style
+
+              "blockquote" "border-left: 2px solid gray; padding-left: 4px;")))    
+(require 'ox-odt)
+(setq org-odt-styles-dir "/home/matt/src/org-mode/etc/styles/")
+(setq org-odt-styles-dir "/home/matt/.emacs.d/Templates/")
+
+;;; Org HTML5 export Formats
+(require 'ox-deck)
+(require 'ox-s5)
+;;;; markdown export
+(require 'ox-md nil t)
+
+#+END_SRC
+
+** Keybindings
+#+BEGIN_SRC emacs-lisp
+;;; Basic org-mode stuff
+(global-set-key "\C-cl" 'org-store-link)
+(global-set-key "\C-ca" 'org-agenda)
+;;; timesaving keybindings
+(global-set-key "\C-c\M-0" (lambda () (interactive)(write-abbrev-file "~/.emacs.d/abbrev_defs")))
+
+#+END_SRC
+** Workflow, agenda, refiling, tasks
+#+BEGIN_SRC emacs-lisp
+;;;; add some workflow states
+(setq org-todo-keywords
+       '((sequence "ACTION(a)" "WAITING(w)" "BLOCKED(b)" "|" "DONE(d)" "WON'T DO(o)")
+         (sequence "PROJECT(p)" "SOMEDAY(s)" "MAYBE(m)" "|" "COMPLETE(c)")))
+
+
+;;;; Capture Templates
+(define-key global-map "\C-cc" 'org-capture)
+(setq org-capture-templates 
+      '(
+        ("t" "Todo Items" )
+        ("p" "Password" entry (file "~/GTD/Keep-it-safe.org.gpg") "* %^{Description} \n SITE: %^{URL} \n USER:%^{USER} \n PASS:%^{PASS}\n%? \n")
+        ("tt" "Teaching Todo with Sechedule & Tags set" entry (file+olp "~/Dropbox/GTD/gtd.org" "Tasks" "Teaching") "* ACTION %^{Description}  %^G:teaching:\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%?")
+        ("tx" "Other Todo entries" entry (file+headline "~/Dropbox/GTD/gtd.org" "Tasks") "* ACTION %^{Description}  %^G\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%? \n %i \n %l") 
+        ("th" "History" entry (file+olp "~/Dropbox/GTD/gtd.org" "Tasks" "History Dept") "* ACTION %^{Description}  %^G\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%?") 
+        ("b" "Bookmarks" entry (file+olp "~/Dropbox/GTD/Reference.org" "Links" ) "*  %:description  %^G\nSOURCE: %u, %c\n\n  %i") 
+
+        ("j" "Journal" entry (file+datetree "~/Dropbox/GTD/Reference.org") "* %?
+Entered on %U
+  %i
+  %a") 
+        ("a" "Appointments" entry (file+headline "~/Dropbox/GTD/diary.org" "Appointments") "* Appointment: %^{Desciption} %^G\nSCHEULED:%t")
+))
+
+;;; REFILING
+;; Use IDO for target completion
+;; (setq org-completion-use-ido t)
+;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
+(setq org-refile-targets (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5) ("/home/matt/org/.org2blog.el" :maxlevel . 1) ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
+
+;; Targets start with the file name - allows creating level 1 tasks
+(setq org-refile-use-outline-path (quote file))
+
+;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
+(setq org-outline-path-complete-in-steps t)
+
+;; Allow refile to create parent tasks with confirmation
+(setq org-refile-allow-creating-parent-nodes (quote confirm))
+
+;; stuff from http://www.jboecker.de/2010/04/14/general-reference-filing-with-org-mode.html#sec-1 
+;; for org-mode remember integration
+
+;;; Agenda Commands
+;; customized agenda commiands
+(setq org-agenda-custom-commands
+      '(("g" . "GTD contexts")
+        ("ge" "email" tags-todo "email/+ACTION")
+        ("gc" "Computer" tags-todo "computer/+ACTION")
+        ("go" "Office" tags-todo "office/+ACTION")
+        ("gp" "Phone" tags-todo "phone/+ACTION")
+        ("gh" "Home" tags-todo "home/+ACTION")
+        ("gr" "Errands" tags-todo "errand/+ACTION")
+        ("G" "GTD Block Agenda"
+         ((tags-todo "phone/+ACTION")
+          (tags-todo "office/+ACTION")
+          (tags-todo "email/+ACTION")
+          (tags-todo "computer/+ACTION")
+          (tags-todo "home/+ACTION")
+          (tags-todo "errand/+ACTION")
+          (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
+         nil                      ;; i.e., no local settings
+         ("~/next-actions.html")) ;; exports block to this file with C-c a e
+        ("T" "Teaching Block Agenda"
+         ((tags-todo "phone+teaching/+ACTION")
+          (tags-todo "office+teaching/+ACTION")
+          (tags-todo "email+teaching/+ACTION")
+          (tags-todo "computer+teaching/+ACTION")
+          (tags-todo "home+teaching/+ACTION")
+          (tags-todo "errand+teaching/+ACTION")
+          (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
+         nil                      ;; i.e., no local settings
+         ("~/next-actions.html")) ;; exports block to this file with C-c a e
+        ("H" "GTD Block Agenda"
+         ((tags-todo "+history+phone/+ACTION|BLOCKED")
+          (tags-todo "+history+office/+ACTION|BLOCKED")
+          (tags-todo "+history+email/+ACTION|BLOCKED")
+          (tags-todo "+history+computer/+ACTION|BLOCKED")
+          (tags-todo "+history+home/+ACTION+|BLOCKED")
+          (tags-todo "+history+errand/+ACTION|BLOCKED")
+          (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
+         nil                      ;; i.e., no local settings
+         ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
+        ("W" "WAITING block Agenda"
+         ((tags-todo "phone/+WAITING")
+          (tags-todo "email/+WAITING")
+          (tags-todo "computer/+WAITING")
+          (tags-todo "office/+WAITING")
+          (tags-todo "home/+WAITING")
+          (tags-todo "errand/+WAITING"))
+         nil                      ;; i.e., no local settings
+         ("~/next-actions.html")) ;; exports block to this file with C-c a e
+       ;; ..other commands here
+        ("t" agenda "Teaching Agenda"
+         (( org-agenda-filter-preset '("+teaching") )  ) )
+         ("p" "Projects" todo "PROJECT")
+         ))
+
+;;; agenda diary stuff
+(setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
+(setq org-agenda-include-diary t)
+
+
+;;; still more agenda
+(defadvice org-agenda-add-entry-to-org-agenda-diary-file
+    (after add-to-google-calendar)
+  "Add a new Google calendar entry that mirrors the diary entry just created by
+org-mode."
+  (let ((type (ad-get-arg 0))
+	(text (ad-get-arg 1))
+	(d1 (ad-get-arg 2))
+	(year1 (nth 2 d1))
+	(month1 (car d1))
+	(day1 (nth 1 d1))
+	(d2 (ad-get-arg 3))
+	entry dates)
+    (if (or (not (eq type 'block)) (not d2))
+	(setq dates (format "%d-%02d-%02d" year1 month1 day1))
+      (let ((year2 (nth 2 d2)) (month2 (car d2)) (day2 (nth 1 d2)) (repeats (-
+									     (calendar-absolute-from-gregorian d1)
+
+									     (calendar-absolute-from-gregorian d2))))
+	(if (> repeats 0)
+	    (setq dates (format "%d-%02d-%02d every day for %d days" year1
+				month1 day1 (abs repeats)))
+	  (setq dates (format "%d-%02d-%02d every day for %d days" year1 month1
+			      day1 (abs repeats))))
+	))
+    (setq entry (format "/usr/bin/google calendar add --cal org \"%s on %s\"" text dates))
+    (message entry)
+    (if (not (string= "MYLAPTOPCOMPUTER" mail-host-address))
+	(shell-command entry)
+      (let ((offline "~/tmp/org2google-offline-entries"))
+	(find-file offline)
+	(goto-char (point-max))
+	(insert (concat entry "\n"))
+	(save-buffer)
+	(kill-buffer (current-buffer))
+	(message "Plain text written to %s" offline)))))
+(ad-activate 'org-agenda-add-entry-to-org-agenda-diary-file)
+
+#+END_SRC
+
+** Working with Macros
+#+BEGIN_SRC emacs-lisp
+;;; macros
+;;;; mwp/org-insert-example
+(fset 'mwp/org-insert-example
+   [?# ?+ ?B ?E ?G ?I ?N ?_ ?E ?X ?A ?M ?P ?L ?E return return ?# ?+ ?E ?N ?D ?_ ?E ?X ?A ?M ?P ?L ?E up])
+
+(global-set-key (kbd "C-c M-2") 'mwp/org-insert-example)
+;;;; mwp/org-insert-quote
+(fset 'mwp/org-insert-quote
+   [?# ?+ ?B ?E ?G ?I ?N ?_ ?Q ?U ?O ?T ?E return return ?# ?+ ?E ?N ?D ?_ ?Q ?U ?O ?T ?E up])
+
+(global-set-key (kbd "C-c M-1") 'mwp/org-insert-quote)
+
+;;;; mwp/org-insert-iframe
+(fset 'mwp/org-insert-iframe
+   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([35 43 98 101 103 105 110 95 104 116 109 108 return 60 105 102 114 97 109 101 32 119 105 100 116 104 61 34 56 48 48 112 120 right 32 104 101 105 103 104 116 61 34 52 53 48 112 120 right 32 115 114 99 61 34 right 62 60 47 105 102 114 97 109 101 62 return 35 61 backspace 43 101 110 100 95 104 116 109 108 return up left left left left left left left left left left left left] 0 "%d")) arg)))
+
+;; (global-set-key (kbd "C-c M-0") 'mwp/org-insert-iframe)
+;;;; save a macro
+;; keyboard macro function
+(defun save-macro (name)                  
+  "save a macro. Take a name as argument
+     and save the last defined macro under 
+     this name at the end of your .emacs"
+  (interactive "SName of the macro :")  ; ask for the name of the macro    
+  (kmacro-name-last-macro name)         ; use this name for the macro    
+  (find-file "/home/matt/.emacs.d/organize-my-life.el")                   ; open ~/.emacs or other user init file 
+  (goto-char (point-max))               ; go to the end of the .emacs
+  (newline)                             ; insert a newline
+  (insert-kbd-macro name)               ; copy the macro 
+  (newline)                             ; insert a newline
+  (switch-to-buffer nil))               ; return to the initial buffer
+
+;; Keyboard macro to insert quotes. not bound yet to anything
+(fset 'insert_quote
+
+      (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([35 43 66 69 71 73 78 95 81 85 79 84 69 return return 35 43 69 78 68 95 81 85 79 84 69 up] 0 "%d")) arg)))
+
+(fset 'mwp/org-insert-js
+   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([35 43 66 69 71 73 78 95 83 82 67 32 108 97 110 103 117 97 103 101 61 106 97 118 97 115 99 114 105 112 116 return return 35 43 69 78 68 95 83 82 67 up] 0 "%d")) arg)))
+
+(fset 'mwp/org-insert-html
+   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([35 43 66 69 71 73 78 95 83 82 67 32 104 116 109 108 13 13 35 43 69 78 68 95 83 82 67 up] 0 "%d")) arg)))
+
+;;; fix html export xml declaration so OOo can read it
+(setq org-export-html-xml-declaration
+      '(("html" . "")
+        ("php" . "<?php echo \"<?xml version=\\\"1.0\\\" encoding=\\\"%s\\\" ?>\";
+?>")))
+
+#+END_SRC
+
+** Exporting and Publishing
+*** General
+Some general options and fixes
+#+BEGIN_SRC emacs-lisp
+;;;; export options for org-mode
+(setq org-export-with-section-numbers nil
+      org-export-with-toc nil
+      org-export-preserve-breaks nil
+      org-export-email-info nil
+)
+;;;; Timestamps in Exports
+;; removing annoying brackets from timestamp on html export
+(add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
+(defun matt-org-export-filter-timestamp-function (timestamp backend info)
+  "removes relevant brackets from a timestamp"
+  (when (org-export-derived-backend-p backend 'html) 
+    ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
+    ;; (replace-regexp-in-string "[][]" "" timestamp)
+    (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp)
+    ;; (replace-regexp-in-string "&lt;" "" timestamp)
+))
+
+;; removing annoying brackets from timestamp on html export
+(add-to-list 'org-export-filter-paragraph-functions 'matt-org-export-filter-paragraph-function)
+(defun matt-org-export-filter-paragraph-function (paragraph backend info)
+  "removes comments from export"
+  (when (org-export-derived-backend-p backend 'html) 
+    ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
+    (replace-regexp-in-string "^#\+.*$" "" paragraph)
+    ;; (replace-regexp-in-string "&lt;" "" paragraph)
+))
+
+
+#+END_SRC
+*** Creating and Publishing Presentations with Org-reveal
+For several years, I've been using Org-mode to compose slides for my lectures.  This method is great, because I get to work in plain-text and focus on the content of my lectures rather than animations; but it's meant that when I want to share my presentations with others, there's a certain amount of work involved as I move from a local copy on my computer to a web-based version. (This has largely been an issue because I sometimes /compose/ my lectures sitting in a café with lousy Internet, and I sometimes /give/ my lectures in a horrible classroom at U of T with terrible Internet reception.)  I've now largely solved this problem, though there is hopefully an improvement coming down the pipe which will make it even easier.  
+
+Org-mode has the capacity to export to a number of slide-like formats, including the [[http://orgmode.org/worg/exporters/beamer/beamer-dual-format.html][LaTeX-based Beamer format]], which also makes good PDF presentations, a couple of Emacs-based presentation tools, and a number of HTML5 formats.  Since I teach about the web all the time, the HTML5 formats have always been the most appealing to me.  
+**** Org-Reveal Setup
+I have used and still very much like [[https://github.com/imakewebthings/deck.js/wiki][deck.js]] ([[https://github.com/cybercode/org-slides][exporter here]]), but have recently switched to [[https://github.com/yjwen/org-reveal][org-reveal]], which I really like a lot.  It's not part of the official org distribution, so installation and setup are a little more involved, but not difficult.  I just cloned the org-reveal and reveal.js repositories:
+#+BEGIN_SRC sh :tangle no
+cd ~/src
+git clone https://github.com/hakimel/reveal.js.git
+git clone https://github.com/yjwen/org-reveal.git
+#+END_SRC
+
+and put this in my ~emacs-init.el~:
+#+BEGIN_SRC emacs-lisp
+;; org-reveal
+(add-to-list 'load-path "~/src/org-reveal")
+(require 'ox-reveal)
+;; set local root
+(setq org-reveal-root "file:///home/matt/src/reveal.js")
+#+END_SRC
+
+That's all that's needed to get export working! I find it's really fast to prepare lectures.
+**** Publishing
+That's great for /giving/ lectures, and is all I really need at 9:55 when I'm trying to type my lecture and walk to class at the same time. But after lecture I want to put my slides somewhere my students can see them.  Even if I wanted to, it would be impossible for me to post to Blackboard, which turns these files into garbage.  What I want to do is publish them to the web; but I need to make sure that all the JS and CSS links are pointing to the web-based libraries and not my local copies, which of course no one but me can see.  To do this I had to make one small change to ~org-reveal.el~, which I have submitted as a [[https://github.com/yjwen/org-reveal/pull/125/files][pull request]].  This creates a new variable, ~org-reveal-extra-css~, which I can refer to in my own functions.  
+
+Then I use org-mode's fantastic built-in [[http://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html][Publishing functions]] to push my slides to a public website.  Publishing allows you to perform an export on many files, and customize the output in powerful ways that are mostly beyond me, actually.  Still, I have a setup that I like a lot. 
+
+First, my ~org-publish-project-alist~, which defines the publishing targets.  Note especially the top part, which defines "meta-projects": for instance, I can publish all the slides and source files for all my classes with one command, ~M-x org-publish-projects [RET] courses~.  
+
+#+BEGIN_SRC emacs-lisp
+(setq org-publish-project-alist
+      '(
+        ("courses"
+         :components ("dh" "rlg231"))
+        ("rlg231"
+         :components ("rlg231-lecture-slides" "rlg231-lecture-source"))
+        ("dh"
+         :components ("digital-history-lecture-slides" "digital-history-lecture-source"))
+
+ 	("rlg231-lecture-slides"
+	 :base-directory "~/RLG231/Lectures/"
+	 :base-extension "org"
+	 :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/RLG231/Lectures/Slides"
+	 :recursive t
+	 :publishing-function mwp-org-reveal-publish-to-html
+	 :preparation-function nil 
+         :completion-function nil
+	 :headline-levels 4             ; Just the default for this project.
+         :exclude "LectureOutlines.org"
+	 :exclude-tags note noexport
+	 :auto-preamble t)
+        
+ 	("rlg231-lecture-source"
+	 :base-directory "~/RLG231/Lectures/"
+	 :base-extension "org"
+	 :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/RLG231/Lectures/Source"
+	 :recursive t
+	 :publishing-function org-org-publish-to-org
+	 :preparation-function nil
+         :completion-function nil
+	 :headline-levels 4             ; Just the default for this project.
+         :exclude "LecturePlans.org"
+         ;; :exclude "LectureOutlines.org"
+	 :exclude-tags note noexport
+	 :auto-preamble t)
+
+        ("digital-history-lecture-source"
+	 :base-directory "~/DH/Lectures"
+	 :base-extension "org"
+	 :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/DigitalHistory/Lectures/Source"
+	 :recursive t
+	 :publishing-function org-org-publish-to-org
+	 :preparation-function 
+         :completion-function 
+	 :headline-levels 4             ; Just the default for this project.
+         ;; :exclude "LecturePlans.org"
+         :exclude "LectureOutlines.org"
+	 :exclude-tags note noexport
+	 :auto-preamble t)
+
+        ("digital-history-lecture-slides"
+	 :base-directory "~/DH/Lectures"
+	 :base-extension "org"
+	 :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/DigitalHistory/Lectures/Slides"
+	 :recursive t
+	 :publishing-function mwp-org-reveal-publish-to-html
+	 :preparation-function 
+         :completion-function 
+	 :headline-levels 4             ; Just the default for this project.
+         ;; :exclude "LecturePlans.org"
+         :exclude "LectureOutlines.org"
+	 :exclude-tags note noexport
+	 :auto-preamble t)
+
+        ;; ("newone-lecture-slides"
+	;;  :base-directory "~/NewOne/Lectures/"
+	;;  :base-extension "org"
+	;;  :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Lectures"
+	;;  :recursive t
+	;;  :publishing-function org-deck-publish-to-html
+	;;  :headline-levels 4             ; Just the default for this project.
+	;;  :exclude-tags note noexport
+	;;  :auto-preamble t)
+
+ 	;; ("newone-lecture-notes"
+	;;  :base-directory "~/NewOne/Lectures/"
+	;;  :base-extension "org"
+	;;  :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Lectures-with-notes"
+	;;  :recursive t
+	;;  :publishing-function org-html-publish-to-html
+	;;  :headline-levels 4             ; Just the default for this project.
+	;;  :exclude-tags noexport
+	;;  :auto-preamble t)
+	
+	;;  ("newone-images"
+        ;;        :base-directory "~/NewOne/Images/"
+        ;;        :base-extension "jpg\\|gif\\|png"
+        ;;        :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Images"
+        ;;        :publishing-function org-publish-attachment)
+
+	;;  ("newone" :components ("newone-lecture-slides" "newone-lecture-notes" "newone-images") )
+
+        ;;  ("presentations"
+        ;;   :base-directory "~/Dropbox/Work/Talks/"
+        ;;   :base-extension "org"
+        ;;   :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/Presentations"
+        ;;   :headline-levels 4 ; just the default for this project
+        ;;   :exclude-tags noexport
+        ;;   :auto-preamble t
+        ;;   :publishing-function mwp-org-deck-publish-to-html
+        ;;   ;; :completion-function mwp-update-published-paths
+        ;;   )
+        
+      ))
+
+#+END_SRC
+
+Notice the publishing function, which is set to ~mwp-org-deck-publish-to-html~. This is a simple function that resets the base url and ~extra-css~ values to web-based ones before publication, so that the presentations work when online. Notice I've also reset the ~deck.js~ base url, in case I ever decide to change back to deck.  
+
+#+BEGIN_SRC emacs-lisp
+
+(defun mwp-org-reveal-publish-to-html (plist filename pub-dir)
+  "Publish an org file to reveal.js HTML Presentation.
+FILENAME is the filename of the Org file to be published.  PLIST
+is the property list for the given project.  PUB-DIR is the
+publishing directory. Returns output file name."
+  (let ((org-deck-base-url "http://sandbox.hackinghistory.ca/Tools/deck.js/")
+        (org-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js/")
+        (org-reveal-extra-css "http://sandbox.hackinghistory.ca/Tools/reveal.js/css/local.css"))
+    
+    (org-publish-org-to 'reveal filename ".html" plist pub-dir))
+  )
+#+END_SRC
+
+And that's it, magic!
+**** Still to do
+I like this a lot, but there are a couple of pieces I'd still like to implement.
+- Fix all local file URL's :: I'd like to write a function to take a final pass through all the links and change ~file:///~ links to *HTML relative links*. That will take some work htough
+- Export as standalone :: There is work underway to allow presentations to be generated as stand-alone files that can be, e.g, sent by email.  I like this idea a lot.  [[https://github.com/yjwen/org-reveal/issues/121][See this Github issue]].
+- Standardize notes, fragments :: Every time I switch from one presentation framework to another, I have to learn a whole different syntax for things like fragments (bits of content that don't appear on the slide immediately, but are instead stepped through) and speaker notes (that don't appear on the slide that your viewers see, but are only visible to you in some kind of preview mode).  It would be great if the various slide modes could work towards a common syntax for these things.  If I have time, energy, and skills, I would like to help develop this a little.
+**** See my slides
+If you want to see some examples of the end product, [[http://sandbox.hackinghistory.ca/DigitalHistory/Lectures/][here is a link to my Digital History lecture archive]] (still being built!). Many of my course materials are also [[https://github.com/titaniumbones?tab=repositories][online at Github]].  
+*** Modifying Reveal
+This never actually worked, but here it is in case it's somehow doing something at hteo moment...
+#+BEGIN_SRC emacs-lisp :tangle no
+(defun org-reveal-scripts (info)
+  "Return the necessary scripts for initializing reveal.js using
+custom variable `org-reveal-root'."
+  (let* ((root-path (file-name-as-directory (plist-get info :reveal-root))))
+    (concat
+     ;; reveal.js/lib/js/head.min.js
+     ;; reveal.js/js/reveal.js
+     (format "
+<script src=\"%slib/js/head.min.js\"></script>
+<script src=\"%sjs/reveal.js\"></script>
+"
+             root-path root-path)
+     ;; plugin headings
+     "
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+"
+     (format "
+controls: %s,
+progress: %s,
+history: %s,
+center: %s,
+slideNumber: %s,
+rollingLinks: %s,
+keyboard: %s,
+overview: %s,
+"
+             (if (plist-get info :reveal-control) "true" "false")
+             (if (plist-get info :reveal-progress) "true" "false")
+             (if (plist-get info :reveal-history) "true" "false")
+             (if (plist-get info :reveal-center) "true" "false")
+             (if (plist-get info :reveal-slide-number) "true" "false")
+             (if (plist-get info :reveal-rolling-links) "true" "false")
+             (if (plist-get info :reveal-keyboard) "true" "false")
+             (if (plist-get info :reveal-overview) "true" "false"))
+
+     ;; slide width
+     (let ((width (plist-get info :reveal-width)))
+       (if (> width 0) (format "width: %d,\n" width) ""))
+
+     ;; slide height
+     (let ((height (plist-get info :reveal-height)))
+       (if (> height 0) (format "height: %d,\n" height) ""))
+
+     ;; slide margin
+     (let ((margin (string-to-number (plist-get info :reveal-margin))))
+       (if (>= margin 0) (format "margin: %.2f,\n" margin) ""))
+
+     ;; slide minimum scaling factor
+     (let ((min-scale (string-to-number (plist-get info :reveal-min-scale))))
+       (if (> min-scale 0) (format "minScale: %.2f,\n" min-scale) ""))
+
+     ;; slide maximux scaling factor
+     (let ((max-scale (string-to-number (plist-get info :reveal-max-scale))))
+       (if (> max-scale 0) (format "maxScale: %.2f,\n" max-scale) ""))
+
+     ;; thems and transitions
+     (format "
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || '%s', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: '%s',\n"
+             (plist-get info :reveal-trans)
+             (plist-get info :reveal-speed))
+
+     ;; multiplexing - depends on defvar 'client-multiplex'
+     (when (plist-get info :reveal-multiplex-id)
+       (format
+        "multiplex: {
+    secret: %s, // null if client
+    id: '%s', // id, obtained from socket.io server
+    url: '%s' // Location of socket.io server
+},\n"
+        (if (eq client-multiplex nil)
+            (format "'%s'" (plist-get info :reveal-multiplex-secret))
+          (format "null"))
+        (plist-get info :reveal-multiplex-id)
+        (plist-get info :reveal-multiplex-url)))
+
+     ;; optional JS library heading
+     "
+// Optional libraries used to extend on reveal.js
+dependencies: [
+"
+     ;; JS libraries
+     (let* ((builtins
+             '(classList (format " { src: '%slib/js/classList.js', condition: function() { return !document.body.classList; } }" root-path)
+                         markdown (format " { src: '%splugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: '%splugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } }" root-path root-path)
+                         highlight (format " { src: '%splugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }" root-path)
+                         zoom (format " { src: '%splugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } }" root-path)
+                         notes (format " { src: '%splugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }" root-path)
+                         search (format " { src: '%splugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }" root-path)
+                         remotes (format " { src: '%splugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }" root-path)
+                         multiplex (format " { src: '%s', async: true },\n%s"
+                                           (plist-get info :reveal-multiplex-socketio-url)
+                                        ; following ensures that either client.js or master.js is included depending on defva client-multiplex value state
+                                           (if (not client-multiplex)
+                                               (progn
+                                                 (if (plist-get info :reveal-multiplex-secret)
+                                                     (setq client-multiplex t))
+                                                 (format " { src: '%splugin/multiplex/master.js', async: true }" root-path))
+
+                                             (format " { src: '%splugin/multiplex/client.js', async: true }" root-path)))))
+            (builtin-codes
+             (mapcar
+              (lambda (p)
+                (eval (plist-get builtins p)))
+              (let ((buffer-plugins (plist-get info :reveal-plugins)))
+                (cond
+                 ((string= buffer-plugins "") ())
+                 (buffer-plugins (car (read-from-string buffer-plugins)))
+                 (t org-reveal-plugins)))))
+            (extra-codes (plist-get info :reveal-extra-js))
+            (total-codes
+             (if (string= "" extra-codes) builtin-codes
+               (append (list extra-codes) builtin-codes))))
+       (mapconcat 'identity total-codes ",\n"))
+     "
+]
+});
+</script>\n")))
+
+#+END_SRC
+*** Org2Blog
+
+#+BEGIN_SRC emacs-lisp
+;;; Org2blog
+
+(setq org2blog/wp-blog-alist
+      '(("hh"
+	 :url "http://2014.hackinghistory.ca/xmlrpc.php"
+	 :username "matt"
+	 :default-title "Title"
+	 :default-categories (nil)
+	 :tags-as-categories nil)
+        ("rel"
+	 :url "http://relsci.hackinghistory.ca/xmlrpc.php"
+	 :username "matt"
+	 :default-title "Title"
+	 :default-categories (nil)
+	 :tags-as-categories nil)
+        ("dig"
+	 :url "http://digital.hackinghistory.ca/xmlrpc.php"
+	 :username "matt"
+	 :default-title "Title"
+	 :default-categories (nil)
+	 :tags-as-categories nil)
+         ("matt"
+	 :url "http://matt.hackinghistory.ca/xmlrpc.php"
+	 :username "matt"
+	 :default-title ""
+	 :default-categories (nil)
+	 :tags-as-categories nil)
+        ))
+
+
+(defun o2bnew ()
+  (interactive)
+  (org2blog/wp-new-entry))
+(defun o2blin ()
+  (interactive)
+  (org2blog/wp-login))
+
+
+;;; Org2blog
+;; starting org2blog a little more easily
+;; example of binding keys only when html-mode is active
+
+;;;; O2B kebybindings
+(defun matt-org-mode-keys ()
+  "Modify keymaps used by `org-mode'."
+  (local-set-key (kbd "C-c <f1>") 'org2blog/wp-mode)
+  (local-set-key "\C-c\C-r" 'org-decrypt-entry)
+  ;; insert a NOTES drawer with C-c C-x n
+;;  (local-set-key (kbd "C-c C-x n") (org-insert-drawer "NOTE"))
+
+  ;; (local-set-key (kbd "C-c C-p") nil) ; remove a key
+
+  )
+
+;; add to org-mode-hook
+(add-hook 'org-mode-hook 'matt-org-mode-keys)
+
+#+END_SRC
+*** Temporary exporting
+#+BEGIN_SRC emacs-lisp
+;; export html to tmp dir
+(defun mwp-org-html-to-tmp
+    (&optional async subtreep visible-only body-only ext-plist)
+  "Export current buffer to a HTML file.
+
+If narrowing is active in the current buffer, only export its
+narrowed part.
+
+If a region is active, export that region.
+
+A non-nil optional argument ASYNC means the process should happen
+asynchronously.  The resulting file should be accessible through
+the `org-export-stack' interface.
+
+When optional argument SUBTREEP is non-nil, export the sub-tree
+at point, extracting information from the headline properties
+first.
+
+When optional argument VISIBLE-ONLY is non-nil, don't export
+contents of hidden elements.
+
+When optional argument BODY-ONLY is non-nil, only write code
+between \"<body>\" and \"</body>\" tags.
+
+
+EXT-PLIST, when provided, is a property list with external
+parameters overriding Org default settings, but still inferior to
+file-local settings.
+
+Return output file's name."
+  (interactive)
+  (let* ((extension (concat "." (or (plist-get ext-plist :html-extension)
+				    org-html-extension
+				    "html")))
+	 (file (org-export-output-file-name extension subtreep "/home/matt/tmp/"))
+         
+	 (org-export-coding-system org-html-coding-system))
+    (org-export-to-file 'html file
+      async subtreep visible-only body-only ext-plist)
+    (org-open-file file)))
+
+(org-defkey org-mode-map
+            (kbd "C-c 0") 'mwp-org-html-to-tmp)
+
+#+END_SRC
+
+*** Zotero!
+#+BEGIN_SRC emacs-lisp
+(require 'org-zotxt)
+;; zotxt
+(org-add-link-type "zotero"
+                   (lambda (rest)
+                     (zotxt-select-key (substring rest 15)))
+                   (lambda (path desc format)
+                     (if (string-match "^@\\(.*\\)$" desc)
+                         (cond ((eq format 'latex)
+                                (format "\\cite{%s}" (match-string 1 desc)))
+                               ((eq format 'md)
+                                desc)
+                               ((eq format 'html)
+                                (deferred:$
+                                  (zotxt-get-item-bibliography-deferred `(:key , (substring path 15)))
+                                  (deferred:nextc it
+                                    (lambda (item)
+                                      (plist-get item :citation-html)))
+                                  (deferred:sync! it)))
+                               ((eq format 'odt)
+                                (xml-escape-string (deferred:$
+                                                     (zotxt-get-item-deferred `(:key , (substring path 15)) :248bebf1-46ab-4067-9f93-ec3d2960d0cd)
+                                                     (deferred:nextc it
+                                                       (lambda (item)
+                                                         (plist-get item :248bebf1-46ab-4067-9f93-ec3d2960d0cd)))
+                                                     (deferred:sync! it))))
+                               (t nil)
+                               nil))))
+
+
+
+;; a helper function to parse html to org syntax:
+(require 'pcase)
+
+(defun org-zotxt-parse-htmlstring (html)
+  (with-temp-buffer
+    (insert html)
+    (libxml-parse-html-region (point-min) (point-max))))
+(defun org-zotxt-htmlstring2org (html)
+  (org-zotxt-htmltree2org (org-zotxt-parse-htmlstring html)))
+
+(defun org-zotxt-htmltree2org (html)
+  (pcase html
+    ((pred (stringp)) html)
+    (`(a ,attrs . ,children)
+     (format "[[%s][%s]]" (cdr (assq 'href attrs))
+             (org-zotxt-htmltree2org children)))
+    (`(i ,attrs . ,children)
+     (format "/%s/" (org-zotxt-htmltree2org children)))
+    (`(b ,attrs . ,children)
+     (format "*%s*" (org-zotxt-htmltree2org children)))
+    (`(p ,attrs . ,children)
+     (format "%s\n\n" (org-zotxt-htmltree2org children)))
+    (`(span ,attrs . ,children)
+     (pcase (cdr (assq 'style attrs))
+       ("font-style:italic;"
+        (format "/%s/" (org-zotxt-htmltree2org children)))
+       ("font-variant:small-caps;"
+        ;; no way?
+        (org-zotxt-htmltree2org children))
+       (_ (org-zotxt-htmltree2org children))))
+    ((or `(html ,attrs . ,children)
+         `(body ,attrs . ,children))
+     (org-zotxt-htmltree2org children))
+    ((pred (lambda (h) (and (listp h)
+                            (or (stringp (car h))
+                                (and (listp (car h))
+                                     (symbolp (car (car h))))))))
+     ;; list of strings or elements
+     (mapconcat #'org-zotxt-htmltree2org html ""))))
+
+#+END_SRC
+** Publishing
+#+BEGIN_SRC emacs-lisp
+;; publishing lectures
+;;(require 'org-publish)
+
+#+END_SRC
+** First part 
+#+BEGIN_SRC emacs-lisp
+
+;; ;;; Misc.  what is this stuff?
+ (setq org-use-speed-commands t)
+
+;;; Extract Links
+(defun my-org-extract-link ()
+  "Extract the link location at point and put it on the killring."
+  (interactive)
+  (when (org-in-regexp org-bracket-link-regexp 1)
+    (kill-new (org-link-unescape (org-match-string-no-properties 1)))))
+
+;;; changing timestamps    
+(defun update-org-days (n)
+  "Change all org-mode timestamps in the current buffer by N days."
+  (interactive "nChange days: ")
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "[[<]" nil t)
+      (when (org-at-timestamp-p t)
+        (org-timestamp-change n 'day)))))
+
+;; incude htmlize.el
+;;; babel
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+  '( (perl . t)         
+     (ruby . t)
+     (sh . t)
+     (python . t)
+     (emacs-lisp . t)   
+   ))
+
+
+
+;; yasnippet
+(add-hook 'org-mode-hook
+	  (lambda ()
+	    (org-set-local 'yas/trigger-key [tab])
+	    (define-key yas/keymap [tab] 'yas/next-field-or-maybe-expand)))
+
+(defun yas/org-very-safe-expand ()
+  (let ((yas/fallback-behavior 'return-nil)) (yas/expand)))
+
+(add-hook 'org-mode-hook
+	  (lambda ()
+	    (make-variable-buffer-local 'yas/trigger-key)
+	    (setq yas/trigger-key [tab])
+	    (add-to-list 'org-tab-first-hook 'yas/org-very-safe-expand)
+	    (define-key yas/keymap [tab] 'yas/next-field)))
+
+(require 'flymake-php)
+(add-hook 'php-mode-hook 'flymake-php-load)
+
+;; some expand-region stuff
+
+
+(defun er/mark-org-heading (level)
+  "Marks a heading 0 or more levels up from current subheading"
+  (interactive "n" )
+  (while (> level 0)
+    (org-up-element)
+    (setq level (- level 1))
+    )
+  (org-mark-subtree))
+
+(defun er/mark-org-parent ()
+  "Marks a heading 1 level up from current subheading"
+  (interactive  )
+  (org-up-element)
+  (org-mark-subtree))
+
+(defun er/mark-org-heading-2 ()
+  "Marks a heading 0 or more levels up from current subheading"
+  (interactive "n" )
+  (let (level 2)
+    (while (> level 0)
+      (org-up-element)
+      (setq level (- level 1))
+      ))
+  (org-mark-subtree))
+
+;; (defun er/matt-add-org-mode-expansions ()
+;;   "Adds org-specific expansions for buffers in org-mode"
+;;   (set (make-local-variable 'er/try-expand-list) (append
+;;                                                   er/try-expand-list
+;;                                                   '(org-mark-subtree
+;;                                                      er/mark-org-code-block
+;;                                                      er/mark-sentence
+;;                                                      er/mark-paragraph
+;;                                                      er/mark-org-heading-1
+;;                                                     er/mark-org-heading-2)
+;;                                                     )))
+
+;; (er/enable-mode-expansions 'org-mode 'er/matt-add-org-mode-expansions)
+
+
+
+(defun mwp-no-write ()
+  (interactive)
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at org-property-re)
+      (let ((myre (match-data) )
+            (beg (match-beginning 1))
+            (end (match-end 1)))
+        (message "actually running")
+        (print myre)
+        (print beg)
+        (print end)
+        (put-text-property beg end 'read-only t) ))))
+(defun mwp-write ( )
+  (interactive )
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at org-property-re)
+      (let ((myre (match-data) )
+            (beg (match-beginning 1))
+            (end (match-end 1))
+            (inhibit-read-only t))
+        (message "actually running")
+        (print myre)
+        (print beg)
+        (print end)
+        (remove-text-properties beg end '(read-only)) )))
+  )
+
+
+;; open things properly in org-mode
+(setcdr (assq 'system org-file-apps-defaults-gnu ) "xdg-open %s")
+
+#+END_SRC
+** Encryption
+#+BEGIN_SRC emacs-lisp
+;; encryption with easypg
+(require 'epa-file)
+(epa-file-enable)
+
+(require 'org-crypt)
+(org-crypt-use-before-save-magic)
+(setq org-tags-exclude-from-inheritance (quote ("crypt")))
+;; GPG key to use for encryption
+;; Either the Key ID or set to nil to use symmetric encryption.
+(setq org-crypt-key nil)
+#+END_SRC
+** Org Function defuns
+#+BEGIN_SRC emacs-lisp
+(defun mwp-change-dates ()
+  (interactive)
+  (progn
+    (save-excursion
+      (setq ts-regex "\\*\\*\\s-*<\\(\\([0-9]\\{4\\}\\)-\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)\\s-\\(Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\|Sun\\)\\)>")
+      ;; go to timestamp
+      (re-search-forward ts-regex)
+      (setq mwp-test-value (match-beginning 0))
+      (message (number-to-string  (match-beginning 0)))
+      (let ((base-date (match-string 1)) ;; this is the timestamp
+            (seven-days (seconds-to-time (* 7 24 60 60)))
+            (new-ts)
+            (week-num 0))
+        (message base-date)
+        (message "in let!")
+        (while (< week-num 12)
+          (message "in while!")
+          (let ((add-value (seconds-to-time (* week-num 50 24 60 60))))
+            (message "in second let")
+            (setq new-ts (format-time-string "** <%Y-%m-%d %a>"
+                                             (time-add (date-to-time base-date) add-value)))
+            (message new-ts)
+            (re-search-forward ts-regex)
+
+            (message (number-to-string  (match-beginning 0)))
+            (message (number-to-string  (match-end 0)))
+            ;; now we kill the old time stamp, and insert the new one
+            (set-mark (match-beginning 0))
+          
+            ;; (beginning-of-line)
+            (delete-region (match-beginning 0) (match-end 0))
+            (insert new-ts)
+            (setq week-num (1+ week-num))
+            (re-search-forward ts-regex)))
+        ))))
+
+(defun insert-ts+1w ()
+  "Insert a timestamp at point that is one week later than the
+last timestamp found in the buffer."
+  (interactive)
+  (let ((last-ts (car (last (org-element-map (org-element-parse-buffer) 'timestamp
+                              (lambda (timestamp)
+                                (org-element-property :raw-value timestamp)))))))
+    (insert last-ts)
+    (backward-char 2)
+    (org-timestamp-change +7 'day)
+    ))
+
+
+#+END_SRC
+** Helm and Org
+#+BEGIN_SRC emacs-lisp
+;; helm-bibtex
+(setq helm-bibtex-bibliography '("/home/matt/.emacs.d/bibliography.bibtex/bibliography.bibtex.bib"))
+(require 'helm)
+(require 'helm-config)
+
+;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
+;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
+;; cannot change `helm-command-prefix-key' once `helm-config' is loaded.
+(global-set-key (kbd "C-c h") 'helm-command-prefix)
+(global-unset-key (kbd "C-x c"))
+
+
+(when (executable-find "curl")
+  (setq helm-google-suggest-use-curl-p t))
+
+(setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
+      helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
+      helm-ff-search-library-in-sexp        t ; search for library in `require' and `declare-function' sexp.
+      helm-scroll-amount                    8 ; scroll 8 lines other window using M-<next>/M-<prior>
+      helm-ff-file-name-history-use-recentf t)
+
+(helm-mode 1)
+
+(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebind tab to do persistent action
+(define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ; make TAB works in terminal
+(define-key helm-map (kbd "C-z")  'helm-select-action) ; list actions using C-z
+
+(helm-autoresize-mode t)
+(setq helm-buffers-fuzzy-matching t
+      helm-recentf-fuzzy-match    t)
+(global-set-key (kbd "M-x") 'helm-M-x)
+(global-set-key (kbd "M-y") 'helm-show-kill-ring)
+(global-set-key (kbd "C-x C-f") 'helm-find-files)
+(global-set-key (kbd "C-x b") 'helm-mini)
+(when (executable-find "ack-grep")
+  (setq helm-grep-default-command "ack-grep -Hn --no-group --no-color %e %p %f"
+        helm-grep-default-recurse-command "ack-grep -H --no-group --no-color %e %p %f"))
+(global-set-key (kbd "C-c h c") 'helm-occur)
+
+;; this binding breaks "Capital C"!  not sure why?
+;; was missing 'kbd' sexp
+(define-key org-mode-map (kbd "C-c h o")  'helm-org-headlines)
+;; (global-set-key (kbd "C-c h o") 'helm-org-headlines)
+(global-set-key (kbd "C-h SPC") 'helm-all-mark-rings)
+(global-set-key (kbd "C-c h g") 'helm-google-suggest)
+(add-to-list 'helm-completing-read-handlers-alist '(zotxt-completing-read . helm-comp-read ))
+(require 'helm-bibtex)
+(defun helm-bibtex-format-pandoc-citation (keys)
+  (concat "[" (mapconcat (lambda (key) (concat "@" key)) keys "; ") "]"))
+
+;; inform helm-bibtex how to format the citation in org-mode
+;; (setf (cdr (assoc 'org-mode helm-bibtex-format-citation-functions))
+;;       'helm-bibtex-format-pandoc-citation)
+(setf (cdr (assoc 'org-mode helm-bibtex-format-citation-functions))
+      'helm-bibtex-format-citation-ebib)
+
+
+#+END_SRC
+
+** More of the mixed up stuff
+#+BEGIN_SRC emacs-lisp
+;; ibuffer
+(require 'ibuffer)
+
+(setq ibuffer-saved-filter-groups
+      (quote (("default"
+               ("dired" (mode . dired-mode))
+               ("java" (mode . java-mode))
+               ("org" (mode . org-mode))
+               ("elisp" (mode . elisp-mode))
+               ("xml" (mode . nxml-mode))))))    
+
+(setq ibuffer-show-empty-filter-groups nil)
+
+(add-hook 'ibuffer-mode-hook 
+          (lambda () 
+            (ibuffer-switch-to-saved-filter-groups "default")
+            (ibuffer-filter-by-filename "."))) ;; to show only dired and files buffers
+
+
+;; org-mobile
+(setq org-mobile-directory "~/Dropbox/MobileOrg")
+;; ace
+;; 
+;; enable a more powerful jump back function from ace jump mode
+;;
+(define-key global-map (kbd "C-c C-SPC") 'ace-jump-mode)
+(autoload
+  'ace-jump-mode-pop-mark
+  "ace-jump-mode"
+  "Ace jump back:-)"
+  t)
+(eval-after-load "ace-jump-mode"
+  '(ace-jump-mode-enable-mark-sync))
+(define-key global-map (kbd "C-x C-SPC") 'ace-jump-mode-pop-mark)
+
+;; which function mode
+(require 'which-func)
+(add-to-list 'which-func-modes 'org-mode)
+(which-func-mode 1)
+
+
+;; fix open links
+(setcdr (assq 'system org-file-apps-defaults-gnu ) '(call-process "xdg-open" nil 0 nil file))
+;; ox-reveal, change initialization options
+
+
+;; github (push  )
+
+(defun endless/visit-pull-request-url ()
+  "Visit the current branch's PR on Github."
+  (interactive)
+  (browse-url
+   (format "https://github.com/%s/compare/%s"
+           (replace-regexp-in-string
+            "\\`.+github\\.com:\\(.+\\)\\.git\\'" "\\1"
+            (magit-get "remote"
+                       (magit-get-current-remote)
+                       "url"))
+           (magit-get-current-branch))))
+
+(eval-after-load 'magit
+  '(define-key magit-mode-map "V"
+     #'endless/visit-pull-request-url))
+
+
+;; change default c-u values for C-c C-l
+(defun mwp-org-insert-link (&optional complete-file link-location default-description)
+  "insert a link at location, but insert a letave link by default, and absolute one only by necessity."
+  (interactive)
+    (cond
+   ((eq current-prefix-arg nil)
+    (let ((current-prefix-arg 4)) 
+      (call-interactively 'org-insert-link)))
+   (t
+    (let ((current-prefix-arg nil)) 
+      (call-interactively 'org-insert-link)))
+   (t (call-interactively 'org-insert-link))
+   ))
+
+#+END_SRC
+** 
+** load orig library
+
+#+BEGIN_SRC emacs-lisp
+;;; organizing my life
+;; (load-library "organize-my-life")
+
+#+END_SRC
+
