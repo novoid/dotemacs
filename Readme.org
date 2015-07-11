@@ -1,0 +1,4 @@
+* Read the Source!
+
+This is my emacs configuration -- currently in a terrible state but still worth putting under version control and in a safe place. I am adding bits to the config *slowly* but in the meantime check out [[emacs-init.org]] which is beginning to have some documentation -- in places!
+
