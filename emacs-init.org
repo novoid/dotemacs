@@ -1,62 +1,34 @@
+#+POSTID: 26
+#+DATE: [2015-07-15 Wed 14:13]
 #+SETUPFILE: /home/matt/src/org-html-themes/setup/theme-readtheorg.setup
+#+CATEGORY: emacs
 
-* Startup
-This file is my [[http://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html][Emacs Init file]].  It's a mess, and has been for years.  However, I've recently converted it from an old-fashioned code file to a much-cooler "[[http://sachachua.com/blog/2012/06/literate-programming-emacs-configuration-file/][Lieterate Programming]]" file -- written in [[http://orgmode.org/][Org-Mode]], and evaluated piece by piece.  
-
-The standard way to do this is to use the amazing [[http://orgmode.org/worg/org-contrib/babel/][Org Babel]] library, and once I've gotten things properly in order that's probably what I will do.  [[http://pages.sachachua.com/.emacs.d/Sacha.html#unnumbered-2][Sacha Chua shows how that's done]] in her own, excellent dotemacs repository.  But I stumbled on [[http://endlessparentheses.com/init-org-Without-org-mode.html][Artur Malabarba's example]] and it's great for me, so I've stolen it.  The fantastic part is that, on startup, Emacs echoes the current heading to the *Messages* buffer. This means that when my Init file breaks -- which happens all the time! -- I can just look at the messages and see what block I got to; the error is always there.  
-
-This is the content of my ~.emacs~. All it does is find the emacs-lisp source blocks in my ~emacs-init.org~ file and evaluate them one by one.  
-
-#+BEGIN_SRC emacs-lisp :tangle no
-
-;; this fantastic trick from endless parentheses
-;; sends a message to *Messages* every time we get
-;; to a new header
-(defvar endless/init.org-message-depth 5
-  "What depth of init.org headers to message at startup.")
-
-(with-temp-buffer
-  (insert-file "~/.emacs.d/emacs-init.org")
-  (goto-char (point-min))
-  ;;(search-forward "\n* init.el")
-  (while (not (eobp))
-    (forward-line 1)
-    (cond
-     ;; Report Headers
-     ((looking-at
-       (format "\\*\\{1,%s\\} +.*$" 
-               endless/init.org-message-depth))
-      (message "%s" (match-string 0)))
-     ;; Evaluate Code Blocks
-     ((looking-at "^#\\+BEGIN_SRC +emacs-lisp *$")
-      (let ((l (match-end 0)))
-        (search-forward "\n#+END_SRC")
-        (eval-region l (match-beginning 0))))
-     ;; Finish on the next level-1 header
-     )))
-
-#+END_SRC
-
-** First things
-These are some early settings that avoid unwanted UI elements -- the tool bar and the startup message.  It also initializes the package system for later.  
-
-#+BEGIN_SRC emacs-lisp
-(if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
-(if (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
-
-;; No splash screen please ... jeez
-(setq inhibit-startup-message t)
-
-;; package issues
-(setq package-enable-at-startup t)
-(require 'seq)
-
-#+END_SRC
 * Load Paths
+Allow emacs to find locanl files, which are mostly in ~/home/me/src/~ and ~/home/me/.emacs.d/site-lisp/~
 #+BEGIN_SRC emacs-lisp
-(setq site-lisp-dir
-      (expand-file-name "site-lisp" user-emacs-directory))
-(add-to-list 'load-path site-lisp-dir)
+  (setq site-lisp-dir
+        (expand-file-name "site-lisp" user-emacs-directory)
+        src-dir
+        (expand-file-name "src" "/home/matt/")
+        org-dir
+        (expand-file-name "org-mode" src-dir)
+        org-lisp
+        (expand-file-name "lisp" org-dir)
+        org-contrib
+        (expand-file-name "contrib/lisp" org-dir)
+        mu4e-dir
+        (expand-file-name "mu/mu4e/" src-dir))
+
+  ;; Set up load path
+  (add-to-list 'load-path site-lisp-dir)
+  (add-to-list 'load-path src-dir)
+  (setq load-path (cons org-lisp load-path))
+  (setq load-path (cons org-contrib load-path))
+  ;; this should be moved!
+  (setq load-path (cons "~/src/org2blog/" load-path))
+  (setq load-path (cons "/home/matt/src/mu/mu4e/" load-path))
+  ;; get current Org-mode docs
+  (setq Info-default-directory-list (cons (expand-file-name "docs" org-dir) Info-default-directory-list))
 
 #+END_SRC
 * Official Packages
@@ -79,54 +51,234 @@ These are some early settings that avoid unwanted UI elements -- the tool bar an
 
 #+END_SRC
 ** Require the packages
-#+BEGIN_SRC emacs-lisp
-;; (require) your ELPA packages, configure them as normal
-(require 'yasnippet )
-(require 'ac-js2 )
 
-(require 'autopair )
-(require 'diminish )
-(require 'expand-region)
-(require 'flymake )
-(require 'flymake-css )
-(require 'flymake-easy )
-(require 'flymake-json )
-(require 'flymake-php )
-(require 'flymake-sass )
-(require 'highlight-symbol )
-(require 'htmlize )
-(require 'jquery-doc )
-(require 'js2-mode )
-(require 'js-doc )
-(require 'json-mode )
-(require 'markdown-mode )
-(require 'mc-extras )
-(require 'mc-extras )
-(require 'php-eldoc )
-(require 'php-extras )
-(require 'paredit )
-(require 'php-mode )
-(require 'sass-mode )
-(require 'simple-httpd )
-(require 'skewer-mode )
-(require 'smex )
-(require 'undo-tree)
-(require 'web-beautify )
-(require 'web-mode )
+I'm not sure why I have most of these.  I'm currently experimenting with commenting out some of them. 
+#+BEGIN_SRC emacs-lisp
+  ;; (require) your ELPA packages, configure them as normal
+  (require 'yasnippet )
+  (require 'ac-js2 )
+
+  (require 'autopair )
+
+  ;; clener modeline
+  ;; http://whattheemacsd.com/init.el-04.html
+  (require 'diminish )
+
+  ;; C-= to expand selection by semantic unit
+  ;; https://github.com/magnars/expand-region.el
+  (require 'expand-region)
+
+
+  (require 'highlight-symbol )
+
+  ;; essential for all html exports
+  (require 'htmlize )
+
+  ;; js stuff
+  (require 'jquery-doc )
+  (require 'js2-mode )
+  (require 'js-doc )
+  (require 'json-mode )
+
+  ;; I don't actually use this much
+  ;; and it appears ot cause errors, so squashing for now!
+  ;; (require 'markdown-mode )
+  ;; multiple cursors extras
+  ;; not using right now
+  ;; (require 'mc-extras )
+
+  ;; php
+  (require 'php-eldoc )
+  (require 'php-extras )
+  (require 'php-mode )
+
+  ;; difficult but cool
+  (require 'paredit )
+
+  ;; essential
+  (require 'sass-mode )
+  ;; mostly a dependency
+  (require 'simple-httpd )
+  ;; live editing for javascript, but haven't been able to get it to work.
+  (require 'skewer-mode )
+
+  ;; node js also -- both skewer and node are actually required to really make this work
+
+  ;;; nodejs-repl-eval.el --- Summary
+  ;;; Commentary:
+  ;;;
+  ;;; Evaluation functions for the `nodejs-repl' package.  Written on a stormy
+  ;;; night between days of node hacking.
+  ;;; 
+  ;;; Code:
+
+  (require 'js2-mode)
+  (require 'nodejs-repl)
+
+  (defun nodejs-repl-eval-region (start end)
+    "Evaluate the region specified by `START' and `END'."
+    (let ((proc (get-process nodejs-repl-process-name)))
+      (comint-simple-send proc (buffer-substring-no-properties start end))))
+
+  (defun nodejs-repl-eval-node (node)
+    "Evaluate `NODE', a `js2-mode' node."
+    (let ((beg (js2-node-abs-pos node))
+          (end (js2-node-abs-end node)))
+      (nodejs-repl-eval-region beg end)))
+
+  (defun nodejs-repl--find-current-or-prev-node (pos &optional include-comments)
+    "Locate the first node before `POS'.  Return a node or nil.
+  If `INCLUDE-COMMENTS' is set to t, then comments are considered
+  valid nodes.  This is stupid, don't do it."
+    (let ((node (js2-node-at-point pos (not include-comments))))
+      (if (or (null node)
+              (js2-ast-root-p node))
+          (unless (= 0 pos)
+            (nodejs-repl--find-current-or-prev-node (1- pos) include-comments))
+	node)))
+
+  (defun nodejs-repl-eval-function ()
+    "Evaluate the current or previous function."
+    (interactive)
+    (let* ((fn-above-node (lambda (node)
+                           (js2-mode-function-at-point (js2-node-abs-pos node))))
+          (fn (funcall fn-above-node
+               (nodejs-repl--find-current-or-prev-node
+		(point) (lambda (node)
+                          (not (null (funcall fn-above-node node))))))))
+      (unless (null fn)
+	(nodejs-repl-eval-node fn))))
+
+  (defun nodejs-repl-eval-first-stmt (pos)
+    "Evaluate the first statement found from `POS' by `js2-mode'.
+  If this statement is a block statement, its first parent
+  statement is found.  This will be either a function declaration,
+  function call, or assignment statement."
+    (let ((node (js2-mode-find-first-stmt (nodejs-repl--find-current-or-prev-node pos))))
+      (cond
+       ((js2-block-node-p node) (nodejs-repl-eval-node (js2-node-parent-stmt node)))
+       ((not (null node)) (nodejs-repl-eval-node node)))))
+
+  (defun nodejs-repl-eval-dwim ()
+    "Heuristic evaluation of JS code in a NodeJS repl.
+  Evaluates the region, if active, or the first statement found at
+  or prior to the point.
+  If the point is at the end of a line, evaluation is done from one
+  character prior.  In many cases, this will be a semicolon and will
+  change what is evaluated to the statement on the current line."
+    (interactive)
+    (cond
+     ((use-region-p) (nodejs-repl-eval-region (region-beginning) (region-end)))
+     ((= (line-end-position) (point)) (nodejs-repl-eval-first-stmt (1- (point))))
+     (t (nodejs-repl-eval-first-stmt (point)))))
+
+  (defun nodejs-repl-eval-buffer (&optional buffer)
+    "Evaluate the current buffer or the one given as `BUFFER'.
+  `BUFFER' should be a string or buffer."
+    (interactive)
+    (let ((buffer (or buffer (current-buffer))))
+      (with-current-buffer buffer
+	(nodejs-repl-eval-region (point-min) (point-max)))))
+
+  ;; (provide 'nodejs-repl-eval)
+  (define-key js2-mode-map (kbd "C-c C-e") 'nodejs-repl-eval-buffer)
+
+  ;;; nodejs-repl-eval.el ends here
+
+  (defun send-region-to-nodejs-repl-process (start end)
+    "Send region to `nodejs-repl' process."
+    (interactive "r")
+    (save-selected-window
+      (save-excursion (nodejs-repl)))
+    (comint-send-region (get-process nodejs-repl-process-name)
+			start end))
+
+  (define-key js2-mode-map (kbd "C-c C-r") 'send-region-to-nodejs-repl-process)
+
+  ;; not sure if I need this or not
+  ;; (require 'smex )
+
+  ;; this has become super important -- allows me to go back to any previous state of buffer
+  (require 'undo-tree)
+
+  ;; not sure of the status of these either
+  (require 'web-beautify )
+  (require 'web-mode )
+
+  ;; modern replacement for flymake
+  ;; lfycheck is dependent on external tools. Not set up properly yet
+  ;; http://www.flycheck.org/manual/latest/Quickstart.html#Quickstart
+  ;; This really needs its own lesson, it's fantastic!
+  (require 'flycheck)
+  (add-hook 'after-init-hook #'global-flycheck-mode)
+
 
 #+END_SRC
 * Site-local Packages
+Packages that I don't use ELPA to manage -- mostly org and related org-mode stuff, and local modifications.  It would be better to move some of this to ELPA.
 ** From site-lisp
+A lot of this is from Magnar
 #+BEGIN_SRC emacs-lisp
-;; staret with some saner/better defaults
+;; start with some saner/better defaults
+;; stole this from Magnar, can't remember what's in it.  
 (require 'better-defaults)
+
+;; more of magnar's defuns and modes
+;; some of these I should get rid of
+(setq defuns-dir (expand-file-name "defuns" user-emacs-directory))
+(dolist (file (directory-files defuns-dir t "\\w+"))
+  (when (file-regular-p file)
+    (load file)))
+;; paredit for html. not using it yet, too hard
+(require 'tagedit)
+
+;; trying to activate tagedt
+(eval-after-load "sgml-mode"
+  '(progn
+     (require 'tagedit)
+     (tagedit-add-paredit-like-keybindings)
+     (add-hook 'html-mode-hook (lambda () (tagedit-mode 1)))))
+
+;; https://github.com/magnars/simplezen.el
+;; it's cool but not currently in use by me.  I would like to give it a tryhttps://github.com/magnars/simplezen.el
+(require 'emmet-mode)
+
+;; not using yet, too hard
+(require 'multiple-cursors)
+(require 'delsel)
+(require 'jump-char)
+;;(require 'eproject)
+;; also super cool but too hard for me right now.
+;; (require 'wgrep)
+;; (require 'smart-forward)
+;; (require 'change-inner)
+;; (require 'multifiles)
+;; Smart M-x is smart
+;; (require 'smex)
+;; (smex-initialize)
+
+;; this is supposed to provide gnome recent files integration, but doesn't
 (add-to-list 'load-path "~/src/zeitgeist-dataproviders/emacs/")
 (require 'zeitgeist)
 
+;; this next bit is actually just part of my configuration, which needs to be incorporated
+;; into this file
+;;; web programming tweaks
+(load-library "webstuff")
+
+
 #+END_SRC
 ** From ~src~ dir
+
 * User Experience
 ** Backup and AUtosave
+
+- backup everything to ~/.backup
+- keep 5 recent and 5 old versions of every file
+- rename to ~!home!matt!etc~
+
+- save place in files on exit
+
 #+BEGIN_SRC emacs-lisp
 ;;; backup and autosave
 ;;
@@ -154,7 +306,10 @@ These are some early settings that avoid unwanted UI elements -- the tool bar an
 (setq server-visit-hook (quote (save-place-find-file-hook)))
 (setq save-place-file (expand-file-name ".places" user-emacs-directory))
 
-
+#+END_SRC
+** Guidekey
+This has been helpful for when I'm forgetful. It pops up a help buffer showing possible completions of chord keys. 
+#+BEGIN_SRC emacs-lisp
 ;; learn some more key bindings with guide-key
 ;; guide-key
 (require 'guide-key)
@@ -168,9 +323,8 @@ These are some early settings that avoid unwanted UI elements -- the tool bar an
   (guide-key/add-local-guide-key-sequence "C-c C-x")
   (guide-key/add-local-highlight-command-regexp "org-"))
 (add-hook 'org-mode-hook 'guide-key/my-hook-function-for-org-mode)
-
-
 #+END_SRC
+
 ** Tramp, other advanced stuff
 #+BEGIN_SRC emacs-lisp
 ;;;; sml-modeline-scrollbar...
@@ -188,29 +342,11 @@ These are some early settings that avoid unwanted UI elements -- the tool bar an
  scroll-conservatively 100000
  scroll-preserve-screen-position 1)
 
-
 ;;;; flyspell
 (add-hook 'wl-mail-setup-hook
           (lambda()
             (flyspell-mode 1)))
 
-;; abbrevs
-;; improved autocorrect, with a decent keybinding
-(define-key ctl-x-map "\C-i" 'endless/ispell-word-then-abbrev)
-
-(defun endless/ispell-word-then-abbrev (p)
-  "Call `ispell-word'. Then create an abbrev for the correction made.
-With prefix P, create local abbrev. Otherwise it will be global."
-  (interactive "P")
-  (let ((bef (downcase (or (thing-at-point 'word) ""))) aft)
-    (call-interactively 'ispell-word)
-    (setq aft (downcase (or (thing-at-point 'word) "")))
-    (unless (string= aft bef)
-      (message "\"%s\" now expands to \"%s\" %sally"
-               bef aft (if p "glob" "loc" ))
-      (define-abbrev
-        (if p global-abbrev-table local-abbrev-table)
-        bef aft)))) 
 
 
 ;;;; iswitchb-mode
@@ -233,6 +369,58 @@ With prefix P, create local abbrev. Otherwise it will be global."
 ;;;; tramp mode
  (require 'tramp)
 
+#+END_SRC
+
+** Kill this buffer, delete this frame 
+:PROPERTIES:
+:GRADE:    1
+:END:
+Excellent [[http://irreal.org/blog/?p=5585][summary on irreeal]] of another post that remaps ~C-x k~ to a command that actually just kills the darn buffer that you're currently in, which is what you pretty much always want to do (!).  A really nice,m if extremely simple, improvement. Thanks guys!
+#+BEGIN_SRC emacs-lisp
+    (defun jcs-kill-a-buffer (askp)
+      (interactive "P")
+      (if askp
+          (call-interactively #'kill-buffer)
+        (kill-buffer (current-buffer))))
+
+    (global-set-key (kbd "C-x k") 'jcs-kill-a-buffer)
+;;  (global-set-key (kbd "C-x k") 'kill-this-buffer)
+#+END_SRC
+
+#+RESULTS:
+: jcs-kill-a-buffer
+
+more from Pragmatic Emacs:
+
+Following on from my post on using C-x k to kill the current buffer, why not bind C-x w to delete-frame in order close the current emacs “window” (remember, in Emacs-speak, a frame is what most other apps would call a window). This is way
+better than the default C-x 5 0 
+
+Just add the following to your emacs config file 
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-x w") 'delete-frame)
+
+#+END_SRC
+
+#+RESULTS:
+: delete-frame
+
+** Make Parent Directory
+Mbork discusses [[http://mbork.pl/2016-07-25_Making_directories_on_the_fly][this simple bit of code]] to automatically create parent directories when saving a file to a non-existent directory. I don't quite understand why the variables in the internal function call don't have to be passed in as parameters but maybe the hook mechanism always provides certain variables to the hook function.
+#+BEGIN_SRC emacs-lisp
+(defun make-parent-directory ()
+  "Make sure the directory of `buffer-file-name' exists."
+  (make-directory (file-name-directory buffer-file-name) t))
+
+(add-hook 'find-file-not-found-functions #'make-parent-directory)
+#+END_SRC
+
+** One-line fix for disappearing clipboard entries 
+OFten I copy something in Firefox and then go to emacs, but in between I kill some text. Then when I want to paste/yank in the ff text, it's gone and I have to recopy.  TThis one-line setting fixes that:
+#+BEGIN_SRC emacs-lisp
+;; Save whatever’s in the current (system) clipboard before
+;; replacing it with the Emacs’ text.
+;; https://github.com/dakrone/eos/blob/master/eos.org
+(setq save-interprogram-paste-before-kill t)
 #+END_SRC
 * Function Definitions
 #+BEGIN_SRC emacs-lisp
@@ -287,265 +475,8 @@ point reaches the beginning or end of the buffer, stop there."
 (eval-after-load "dash" '(dash-enable-font-lock))
 
 #+END_SRC
-* Keybindings
-* Unused
-#+BEGIN_SRC emacs-lisp
-;; This is how Magnar manages his packages.  I'm not there yet.  soon I hope.  
-;; Setup packages
-;; (require 'setup-package)
-;; Install extensions if they're missing
-;; (defun init--install-packages ()
-;;   (packages-install
-;;    '(magit
-;;      paredit
-;;      move-text
-;;      gist
-;;      htmlize
-;;      visual-regexp
-;;      flycheck
-;;      flx
-;;      flx-ido
-;;      css-eldoc
-;;      yasnippet
-;;      smartparens
-;;      ido-vertical-mode
-;;      ido-at-point
-;;      simple-httpd
-;;      guide-key
-;;      nodejs-repl
-;;      restclient
-;;      highlight-escape-sequences
-;;      whitespace-cleanup-mode
-;;      elisp-slime-nav
-;;      git-commit-mode
-;;      gitconfig-mode
-;;      gitignore-mode
-;;      clojure-mode
-;;      groovy-mode
-;;      prodigy
-;;      cider
-;;      cider-tracing)))
 
-;; (condition-case nil
-;;     (init--install-packages)
-;;   (error
-;;    (package-refresh-contents)
-;;    (init--install-packages)))
-
-;; this is the main structure of magnar's .emacs; it's a little complex for me
-;; Setup extensions
-;; (eval-after-load 'ido '(require 'setup-ido))
-;; (eval-after-load 'org '(require 'setup-org))
-;; (eval-after-load 'dired '(require 'setup-dired))
-;; (eval-after-load 'magit '(require 'setup-magit))
-;; (eval-after-load 'grep '(require 'setup-rgrep))
-;; (eval-after-load 'shell '(require 'setup-shell))
-;; (require 'setup-hippie)
-;; (require 'setup-yasnippet)
-;; (require 'setup-perspective)
-;; (require 'setup-ffip)
-;; (require 'setup-html-mode)
-;; (require 'setup-paredit)
-
-;; ;; Elisp go-to-definition with M-. and back again with M-,
-;; (autoload 'elisp-slime-nav-mode "elisp-slime-nav")
-;; (add-hook 'emacs-lisp-mode-hook (lambda () (elisp-slime-nav-mode t) (eldoc-mode 1)))
-
-;; ;; Run at full power please
-;; (put 'downcase-region 'disabled nil)
-;; (put 'upcase-region 'disabled nil)
-;; (put 'narrow-to-region 'disabled nil)
-(put 'upcase-region 'disabled nil)
-
-;; ;; Conclude init by setting up specifics for the current user
-;; (when (file-exists-p user-settings-dir)
-;;   (mapc 'load (directory-files user-settings-dir nil "^[^#].*el$")))
-
-;; setup autopair
-;; (autopair-global-mode) ;; enable autopair in all buffers
-
-;; ;; add opened files to gnome recent-files list
-;; (defun fd-add-file-to-recent ()
-;;   (when buffer-file-name
-;;     (start-process "addtorecent" nil "addtorecent"
-;;                    (concat "file://" buffer-file-name)
-;;                    "text/plain"
-;;                    "Emacs"
-;;                    "emacsclient %F")))
-
-;; (add-hook 'find-file-hook 'fd-add-file-to-recent)
-;;; Speedbar and Imenu
-;; This adds support for speedbar and Imenu.  Right now I'm not actually using either though.
-;; (add-hook 'org-mode-hook
-;;                     (lambda () (imenu-add-to-menubar "Imenu")))
-;; (require 'speedbar)
-;; (speedbar-add-supported-extension ".org")
-
-;;;; changing languages for e.g. spellcheck.  I don't use this much right now
-;; (let ((langs '("canadian" "francais")))
-;;   (setq lang-ring (make-ring (length langs)))
-;;   (dolist (elem langs) (ring-insert lang-ring elem)))
-
-;; (defun cycle-ispell-languages ()
-;;   (interactive)
-;;   (let ((lang (ring-ref lang-ring -1)))
-;;     (ring-insert lang-ring lang)
-;;     (ispell-change-dictionary lang)))
-
-;; (global-set-key [f6] 'cycle-ispell-languages)
-;;; Worg and Wanderlust
-;; also some org-wl interaction
-;; stolen from worg: http://orgmode.org/worg/org-hacks.html
-
-;; (defun dmj/wl-send-html-message ()
-;;   "Send message as html message.
-;; Convert body of message to html using
-;;   `org-export-region-as-html'."
-;;   (require 'org)
-;;   (save-excursion
-;;     (let (beg end html text)
-;;       (goto-char (point-min))
-;;       (re-search-forward "^--text follows this line--$")
-;;       ;; move to beginning of next line
-;;       (beginning-of-line 2)
-;;       (setq beg (point))
-;;       (if (not (re-search-forward "^--\\[\\[" nil t))
-;;           (setq end (point-max))
-;;         ;; line up
-;;         (end-of-line 0)
-;;         (setq end (point)))
-;;       ;; grab body
-;;       (setq text (buffer-substring-no-properties beg end))
-;;       ;; convert to html
-;;       (with-temp-buffer
-;;         (org-mode)
-;;         (insert text)
-;;         ;; handle signature
-;;         (when (re-search-backward "^-- \n" nil t)
-;;           ;; preserve link breaks in signature
-;;           (insert "\n#+BEGIN_VERSE\n")
-;;           (goto-char (point-max))
-;;           (insert "\n#+END_VERSE\n")
-;;           ;; grab html
-;;           (setq html (org-export-region-as-html
-;;                       (point-min) (point-max) t 'string))))
-;;       (delete-region beg end)
-;;       (insert
-;;        (concat
-;;         "--" "<<alternative>>-{\n"
-;;         "--" "[[text/plain]]\n" text
-;;         "--" "[[text/html]]\n"  html
-;;         "--" "}-<<alternative>>\n")))))
-
-;; (defun dmj/wl-send-html-message-toggle ()
-;;   "Toggle sending of html message."
-;;   (interactive)
-;;   (setq dmj/wl-send-html-message-toggled-p
-;;         (if dmj/wl-send-html-message-toggled-p
-;;             nil "HTML"))
-;;   (message "Sending html message toggled %s"
-;;            (if dmj/wl-send-html-message-toggled-p
-;;                "on" "off")))
-
-;; (defun dmj/wl-send-html-message-draft-init ()
-;;   "Create buffer local settings for maybe sending html message."
-;;   (unless (boundp 'dmj/wl-send-html-message-toggled-p)
-;;     (setq dmj/wl-send-html-message-toggled-p nil))
-;;   (make-variable-buffer-local 'dmj/wl-send-html-message-toggled-p)
-;;   (add-to-list 'global-mode-string
-;;                '(:eval (if (eq major-mode 'wl-draft-mode)
-;;                            dmj/wl-send-html-message-toggled-p))))
-
-;; (defun dmj/wl-send-html-message-maybe ()
-;;   "Maybe send this message as html message.
-
-;; If buffer local variable `dmj/wl-send-html-message-toggled-p' is
-;; non-nil, add `dmj/wl-send-html-message' to
-;; `mime-edit-translate-hook'."
-;;   (if dmj/wl-send-html-message-toggled-p
-;;       (add-hook 'mime-edit-translate-hook 'dmj/wl-send-html-message)
-;;     (remove-hook 'mime-edit-translate-hook 'dmj/wl-send-html-message)))
-
-;; (add-hook 'wl-draft-reedit-hook 'dmj/wl-send-html-message-draft-init)
-;; (add-hook 'wl-mail-setup-hook 'dmj/wl-send-html-message-draft-init)
-;; (add-hook 'wl-draft-send-hook 'dmj/wl-send-html-message-maybe) 
-
-;; (defun dmj/org-export-region-as-html-attachment (beg end arg)
-;;   "Export region between BEG and END as html attachment.
-;; If BEG and END are not set, use current subtree.  Region or
-;; subtree is exported to html without header and footer, prefixed
-;; with a mime entity string and pushed to clipboard and killring.
-;; When called with prefix, mime entity is not marked as
-;; attachment."
-;;   (interactive "r\nP")
-;;   (save-excursion
-;;     (let* ((beg (if (region-active-p) (region-beginning)
-;;                   (progn
-;;                     (org-back-to-heading)
-;;                     (point))))
-;;            (end (if (region-active-p) (region-end)
-;;                   (progn
-;;                     (org-end-of-subtree)
-;;                     (point))))
-;;            (html (concat "--[[text/html"
-;;                          (if arg "" "\nContent-Disposition: attachment")
-;;                          "]]\n"
-;;                          (org-export-region-as-html beg end t 'string))))
-;;       (when (fboundp 'x-set-selection)
-;;         (ignore-errors (x-set-selection 'PRIMARY html))
-;;         (ignore-errors (x-set-selection 'CLIPBOARD html)))
-;;       (message "html export done, pushed to kill ring and clipboard"))))
-
-;; temp fix for heckboxes in orgh-html export
-;; disabling cause it messes up my export
-;; (defun org-html-checkbox (checkbox)
-;;   "Format CHECKBOX into HTML."
-;;   (case checkbox (on "<input type=\"checkbox\" checked />")
-;; 	(off "<input type=\"checkbox\" />")
-;; 	(trans "<code>[-]</code>")
-;; 	(t "")))
-
-;; (defun org-html-format-list-item (contents type checkbox info
-;; 					   &optional term-counter-id
-;; 					   headline)
-;;   "Format a list item into HTML."
-;;   (let ((checkbox (concat (org-html-checkbox checkbox) (and checkbox " ")))
-;; 	(br (org-html-close-tag "br" nil info)))
-;;     (concat
-;;      (case type
-;;        (ordered
-;; 	(let* ((counter term-counter-id)
-;; 	       (extra (if counter (format " value=\"%s\"" counter) "")))
-;; 	  (concat
-;; 	   (format "<li%s>" extra)
-;; 	   (when headline (concat headline br)))))
-;;        (unordered
-;; 	(let* ((id term-counter-id)
-;; 	       (extra (if id (format " id=\"%s\"" id) ""))
-;; 	       (chkclass (if checkbox (format " class=\"checkbox\"") "")))
-;; 	  (concat
-;; 	   (format "<li%s%s>" extra chkclass)
-;; 	   (when headline (concat headline br)))))
-;;        (descriptive
-;; 	(let* ((term term-counter-id))
-;; 	  (setq term (or term "(no term)"))
-;; 	  ;; Check-boxes in descriptive lists are associated to tag.
-;; 	  (concat (format "<dt> %s </dt>"
-;; 			  (concat checkbox term))
-;; 		  "<dd>"))))
-;;      (unless (eq type 'descriptive) checkbox)
-;;      contents
-;;      (case type
-;;        (ordered "</li>")
-;;        (unordered "</li>")
-;;        (descriptive "</dd>")))))
-
-
-
-#+END_SRC
-* First Half
-The first part of this file is a little miscellaneous. They are things I'velearned to setearly on, but don't always fully understand.
-** More Load Paths
+* More Load Paths
 #+BEGIN_SRC emacs-lisp
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
@@ -579,44 +510,8 @@ The first part of this file is a little miscellaneous. They are things I'velearn
   ;; Keep emacs Custom-settings in separate file
   (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
   (load custom-file)
-
-
-  (setq defuns-dir (expand-file-name "defuns" user-emacs-directory))
-  (dolist (file (directory-files defuns-dir t "\\w+"))
-    (when (file-regular-p file)
-      (load file)))
-  (require 'tagedit)
-  (require 'simplezen)
-  (require 'browse-kill-ring)
-  (require 'expand-region)
-  (require 'multiple-cursors)
-  (require 'delsel)
-  (require 'jump-char)
-  ;;(require 'eproject)
-  ;; (require 'wgrep)
-  ;; (require 'smart-forward)
-  ;; (require 'change-inner)
-  ;; (require 'multifiles)
-  ;; Smart M-x is smart
-  ;; (require 'smex)
-  ;; (smex-initialize)
-
 #+END_SRC
-
-** Rest of the first hapf
-#+BEGIN_SRC emacs-lisp
-
-
-;; Visual regexp
-;; (require 'visual-regexp)
-;; (define-key global-map (kbd "M-&") 'vr/query-replace)
-;; (define-key global-map (kbd "M-/") 'vr/replace)
-
-;; here's a better method
-;; in .bashrc alias orgupdate='cd /home/scot/.emacs.d/vendor/org-mode; git pull && make && make doc'
-
-#+END_SRC
-** Paredit
+* Paredit
 
 #+BEGIN_SRC emacs-lisp
 
@@ -632,7 +527,7 @@ The first part of this file is a little miscellaneous. They are things I'velearn
 ;; (require 'key-bindings)
 
 #+END_SRC
-** Server
+* Server
 #+BEGIN_SRC emacs-lisp
 
 ;; ;; Emacs server
@@ -641,222 +536,364 @@ The first part of this file is a little miscellaneous. They are things I'velearn
   (server-start))
 #+END_SRC
 
-* Second Half
-
+* Keybindings; Programming; More UI
 ** Magnars Keybindings
 #+BEGIN_SRC emacs-lisp
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; some stuff form magnars,
-;; https://github.com/magnars/.emacs.d/blob/master/key-bindings.el
-;; this should be moved to own file keybindings.el
-(require 'misc)
-(global-set-key (kbd "s-.") 'copy-from-above-command)
+  ;; some stuff form magnars,
+  ;; https://github.com/magnars/.emacs.d/blob/master/key-bindings.el
+  ;; this should be moved to own file keybindings.el
 
-;; find function!  a must
-(global-set-key (kbd "C-h C-f") 'find-function)
+  ;; this is old, and some of this gets written over later in the process.
+  (require 'misc)
+  (global-set-key (kbd "s-.") 'copy-from-above-command)
 
-;; Smart M-x
-(global-set-key (kbd "M-x") 'smex)
-(global-set-key (kbd "M-X") 'smex-major-mode-commands)
-;; (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command) ;
-;; Use C-x C-m to do M-x per Steve Yegge's advice
-(global-set-key (kbd "C-x C-m") 'smex)
+  ;; find function!  a must
+  (global-set-key (kbd "C-h C-f") 'find-function)
 
-
-;; M-i for back-to-indentation
-(global-set-key (kbd "M-i") 'back-to-indentation)
-
-;; Turn on the menu bar for exploring new modes
-(global-set-key (kbd "C-<f10>") 'menu-bar-mode)
-
-;; transposing
-;; Transpose stuff with M-t
-(global-unset-key (kbd "M-t")) ;; which used to be transpose-words
-(global-set-key (kbd "M-t l") 'transpose-lines)
-(global-set-key (kbd "M-t w") 'transpose-words)
-(global-set-key (kbd "M-t s") 'transpose-sexps)
-(global-set-key (kbd "M-t p") 'transpose-params)
-
-;; Killing text
-(global-set-key (kbd "C-S-k") 'kill-and-retry-line)
-(global-set-key (kbd "C-w") 'kill-region-or-backward-word)
-(global-set-key (kbd "C-c C-w") 'kill-to-beginning-of-line)
-
-;; Use M-w for copy-line if no active region
-(global-set-key (kbd "M-w") 'save-region-or-current-line)
-(global-set-key (kbd "s-w") 'save-region-or-current-line)
-(global-set-key (kbd "M-W") (λ (save-region-or-current-line 1)))
-
-;; Make shell more convenient, and suspend-frame less
-(global-set-key (kbd "C-z") 'shell)
-(global-set-key (kbd "C-x M-z") 'suspend-frame)
+  ;; Smart M-x
+  (global-set-key (kbd "M-x") 'smex)
+  (global-set-key (kbd "M-X") 'smex-major-mode-commands)
+  ;; (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command) ;
+  ;; Use C-x C-m to do M-x per Steve Yegge's advice
+  (global-set-key (kbd "C-x C-m") 'smex)
 
 
+  ;; M-i for back-to-indentation
+  (global-set-key (kbd "M-i") 'back-to-indentation)
 
-;; Zap to char
-(global-set-key (kbd "M-z") 'zap-up-to-char)
-(global-set-key (kbd "s-z") (lambda (char) (interactive "cZap up to char backwards: ") (zap-up-to-char -1 char)))
+  ;; Turn on the menu bar for exploring new modes
+  (global-set-key (kbd "C-<f10>") 'menu-bar-mode)
 
-(global-set-key (kbd "M-Z") (lambda (char) (interactive "cZap to char: ") (zap-to-char 1 char)))
-(global-set-key (kbd "s-Z") (lambda (char) (interactive "cZap to char backwards: ") (zap-to-char -1 char)))
+  ;; transposing
+  ;; Transpose stuff with M-t
+  (global-unset-key (kbd "M-t")) ;; which used to be transpose-words
+  (global-set-key (kbd "M-t l") 'transpose-lines)
+  (global-set-key (kbd "M-t w") 'transpose-words)
+  (global-set-key (kbd "M-t s") 'transpose-sexps)
+  (global-set-key (kbd "M-t p") 'transpose-params)
 
+  ;; Killing text
+  (global-set-key (kbd "C-S-k") 'kill-and-retry-line)
+  (global-set-key (kbd "C-w") 'kill-region-or-backward-word)
+  (global-set-key (kbd "C-c C-w") 'kill-to-beginning-of-line)
 
+  ;; Use M-w for copy-line if no active region
+  (global-set-key (kbd "M-w") 'save-region-or-current-line)
+  (global-set-key (kbd "s-w") 'save-region-or-current-line)
+  (global-set-key (kbd "M-W") (λ (save-region-or-current-line 1)))
 
+  ;; Make shell more convenient, and suspend-frame less
+  (global-set-key (kbd "C-z") 'shell)
+  (global-set-key (kbd "C-x M-z") 'suspend-frame)
 
-;; Jump to a definition in the current file. (This is awesome)
-(global-set-key (kbd "C-x C-i") 'ido-imenu)
+  ;; Zap to char
+  (global-set-key (kbd "M-z") 'zap-up-to-char)
+  (global-set-key (kbd "s-z") (lambda (char) (interactive "cZap up to char backwards: ") (zap-up-to-char -1 char)))
 
-;; Perform general cleanup.
-(global-set-key (kbd "C-c n") 'cleanup-buffer)
-(global-set-key (kbd "C-c C-n") 'cleanup-buffer)
-(global-set-key (kbd "C-c C-<return>") 'delete-blank-lines)
+  (global-set-key (kbd "M-Z") (lambda (char) (interactive "cZap to char: ") (zap-to-char 1 char)))
+  (global-set-key (kbd "s-Z") (lambda (char) (interactive "cZap to char backwards: ") (zap-to-char -1 char)))
 
-;; zen
-(define-key html-mode-map (kbd "C-c C-z") 'simplezen-expand)
-(define-key html-mode-map (kbd "TAB") 'simplezen-expand-or-indent-for-tab)
-(define-key web-mode-map (kbd "C-c C-z") 'simplezen-expand)
+  ;; Jump to a definition in the current file. (This is awesome)
+  ;; I'm using this keybinding for spell correcton though. Need to set to something else.
 
+  ;; (global-set-key (kbd "C-x C-i") 'ido-imenu)
+
+  ;; Perform general cleanup.
+  (global-set-key (kbd "C-c n") 'cleanup-buffer)
+  (global-set-key (kbd "C-c C-n") 'cleanup-buffer)
+  (global-set-key (kbd "C-c C-<return>") 'delete-blank-lines)
+
+  ;; zen
+  ;; this is pretty awesome.
+  ;; div.class#id[TAB] --> <div id="id" class="class"></div>
+  (define-key html-mode-map (kbd "C-c C-z") 'simplezen-expand)
+  (define-key html-mode-map (kbd "TAB") 'simplezen-expand-or-indent-for-tab)
+  (define-key web-mode-map (kbd "C-c C-z") 'simplezen-expand)
 #+END_SRC
 
+Here's one of my own
+#+BEGIN_SRC emacs-lisp
+(add-hook 'org-mode-hook
+  (lambda ()
+(define-key org-mode-map (kbd "C-c C-'") 'org-grading-pass)
+(define-key org-mode-map (kbd "C-c C-g a") 'org-grading-attach)
+(define-key org-mode-map (kbd "C-c C-\"") 'org-grading-chit)))
+#+END_SRC
 ** Programming
 #+BEGIN_SRC emacs-lisp
 
+  ;;;; add eldoc for python
+  (add-hook 'python-mode-hook
+            '(lambda () (eldoc-mode 1)) t)
+  ;;;;; indent yanked code
+  (dolist (command '(yank yank-pop))
+    (eval `(defadvice ,command (after indent-region activate)
+             (and (not current-prefix-arg)
+                  (member major-mode '(emacs-lisp-mode lisp-mode
+                                                       clojure-mode    scheme-mode
+                                                       haskell-mode    ruby-mode
+                                                       rspec-mode      python-mode
+                                                       c-mode          c++-mode
+                                                       objc-mode       latex-mode
+                                                       plain-tex-mode))
+                  (let ((mark-even-if-inactive transient-mark-mode))
+                    (indent-region (region-beginning) (region-end) nil))))))
 
-;;;; add eldoc for python
-(add-hook 'python-mode-hook
-          '(lambda () (eldoc-mode 1)) t)
-;;;;; indent yanked code
-(dolist (command '(yank yank-pop))
-  (eval `(defadvice ,command (after indent-region activate)
-           (and (not current-prefix-arg)
-                (member major-mode '(emacs-lisp-mode lisp-mode
-                                                     clojure-mode    scheme-mode
-                                                     haskell-mode    ruby-mode
-                                                     rspec-mode      python-mode
-                                                     c-mode          c++-mode
-                                                     objc-mode       latex-mode
-                                                     plain-tex-mode))
-                (let ((mark-even-if-inactive transient-mark-mode))
-                  (indent-region (region-beginning) (region-end) nil))))))
-
-;;;; Find a Function Definition
-;; A simple lambda function to search and find the definition of a function or variable.  Only works In Elisp.  Bound to C-c f.
-(global-set-key (kbd "C-c f")
-               (lambda ()
-                 (interactive)
-                 (require 'finder)
-                 (let ((thing (intern (thing-at-point 'symbol))))
-                   (if (functionp thing)
-                       (find-function thing)
-                      (find-variable thing)))))
-
-
+  ;;;; Find a Function Definition
+  ;; A simple lambda function to search and find the definition of a function or variable.  Only works In Elisp.  Bound to C-c f.
+  (global-set-key (kbd "C-c f")
+                  (lambda ()
+                    (interactive)
+                    (require 'finder)
+                    (let ((thing (intern (thing-at-point 'symbol))))
+                      (if (functionp thing)
+                          (find-function thing)
+                        (find-variable thing)))))
 #+END_SRC
+
+*** Web stuff
+I do have "webstuff" factored out as a separate library above, I notice. But I would rather have everything here, so I will lazily put this one little thing here, stolen from 
+http://blog.binchen.org/posts/code-completion-for-htmljscss-in-emacs.html 
+#+BEGIN_SRC emacs-lisp
+(require 'company-web-html)                          ; load company mode html backend
+(eval-after-load 'company-etags
+  '(progn
+     (add-to-list 'company-etags-modes 'js2-mode)
+     (add-to-list 'company-etags-modes 'web-mode)))
+#+END_SRC
+
+#+RESULTS:
+| web-mode | js2-mode | prog-mode | c-mode | objc-mode | c++-mode | java-mode | jde-mode | pascal-mode | perl-mode | python-mode |
 
 ** More UI and Misc
+- turn on visual-line-mode 
+- use auto-complete
+- use abbrev-mode (spell correction mostly)
+- word-count
+- integrate abbrev and ispell
+- windows
+- hippie expand
+- anzu, which is a really neat feature.  
+- make file name completion case insensitive (BIG usability improvement!)
 #+BEGIN_SRC emacs-lisp
+  ;; modeline appearance
+  ;; this enables smart-mode-line, which colorizes the modeline.
+  ;; it's pretty helpful.  
+  (sml/setup)
+  (setq sml/no-confirm-load-theme t)
 
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;; visual line mode
+  ;; enable visual line mode for text modes
+  (add-hook 'text-mode-hook 'turn-on-visual-line-mode)
 
-;;;; visual line mode
-;; enable visual line mode for text modes
-(add-hook 'text-mode-hook 'turn-on-visual-line-mode)
+  ;;;; auto-complete
+  (require 'auto-complete-config)
+  (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
+  (ac-config-default) 
+  ; Use dictionaries by default
+  (setq-default ac-sources (add-to-list 'ac-sources 'ac-source-dictionary))
+  (global-auto-complete-mode t)
 
-;;;; auto-complete
-(require 'auto-complete-config)
-(add-to-list 'ac-dictionary-directories "~/.emacs.d//ac-dict")
-(ac-config-default)
-                                        ; Use dictionaries by default
-(setq-default ac-sources (add-to-list 'ac-sources 'ac-source-dictionary))
-(global-auto-complete-mode t)
-                                        ; Start auto-completion after 2 characters of a word
-(setq ac-auto-start 2)
-                                        ; case sensitivity is important when finding matches
-(setq ac-ignore-case nil)
+  (setq ac-auto-start 2) ; Start auto-completion after 2 characters of a word
+  (setq ac-ignore-case nil) ; case sensitivity is important when finding matches
 
-;;;; abbrev-mode
-(setq default-abbrev-mode t)
-(setq abbrev-file-name "~/.emacs.d/abbrev_defs")
-(read-abbrev-file "~/.emacs.d/abbrev_defs")       ;; reads the abbreviations file on startup
-(setq save-abbrevs t)              ;; save abbrevs when files are saved
-;; you will be asked before the abbreviations are saved
-(setq save-abbrevs 'silently)              ;; now I won't be asked
+  ;;;; abbrev-mode
+  (setq-default abbrev-mode t)
+  (setq default-abbrev-mode t)
+  (setq abbrev-file-name "~/.emacs.d/abbrev_defs")
+  (read-abbrev-file "~/.emacs.d/abbrev_defs")       ;; reads the abbreviations file on startup
+  ;; setq save-abbrevs t)              ;; save abbrevs when files are saved
+  ;; you will be asked before the abbreviations are saved
+  (setq save-abbrevs 'silently)              ;; now I won't be asked
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;;; word counts
-;; word counts
-(defun wc (&optional start end)
-  "Prints number of lines, words and characters in region or whole buffer."
+  ;;;; auto spell correct! much better!
+   ;; this has been a godsend
+    (defun endless/ispell-word-then-abbrev (p)
+      "Call `ispell-word'. Then create an abbrev for the correction made.
+    With prefix P, create local abbrev. Otherwise it will be global."
+      (interactive "P")
+      (let ((bef (downcase (or (thing-at-point 'word) ""))) aft)
+        (call-interactively 'ispell-word)
+        (setq aft (downcase (or (thing-at-point 'word) "")))
+        (unless (string= aft bef)
+          (message "\"%s\" now expands to \"%s\" %sally"
+                   bef aft (if p "glob" "loc" ))
+          (define-abbrev
+            (if p global-abbrev-table local-abbrev-table)
+            bef aft))))
+
+
+  ;;; use accents dammit!
+  (require 'iso-transl)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;;; word counts
+  ;; word counts
+  (defun wc (&optional start end)
+    "Prints number of lines, words and characters in region or whole buffer."
+    (interactive)
+    (let ((n 0)
+          (start (if mark-active (region-beginning) (point-min)))
+          (end (if mark-active (region-end) (point-max))))
+      (save-excursion
+        (goto-char start)
+        (while (< (point) end) (if (forward-word 1) (setq n (1+ n)))))
+      (message "%3d %3d %3d" (count-lines start end) n (- end start))))
+
+  ;; unfilling paras
+  ;;; switching window configurations
+  (defun toggle-windows-split()
+    "Switch back and forth between one window and whatever split of windows we might have in the frame. The idea is to maximize the current buffer, while being able to go back to the previous split of windows in the frame simply by calling this command again."
+    (interactive)
+    (if (not(window-minibuffer-p (selected-window)))
+        (progn
+          (if (< 1 (count-windows))
+              (progn
+                (window-configuration-to-register ?u)
+                (delete-other-windows))
+            (jump-to-register ?u))))
+    (my-iswitchb-close))
+
+  ;; Then, the convenient key binding:
+  (define-key global-map (kbd "C-`") 'toggle-windows-split)
+  (define-key global-map (kbd "C-~") 'toggle-windows-split)
+  (define-key global-map (kbd "C-|") 'toggle-windows-split) ; same key, on a spanish keyword mapping since I commute a lot between both
+
+  (defun back-window ()
+    (interactive)
+    (other-window -1))
+  (define-key global-map (kbd "C-x O") 'back-window)
+
+  ;;;; unfill paragraph
+  ;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
+  (defun unfill-paragraph ()
+    "Takes a multi-line paragraph and makes it into a single line of text."
+    (interactive)
+    (let ((fill-column (point-max)))
+      (fill-paragraph nil)))
+
+  ;;;
+  ;; hippie expand
+  ;; (global-set-key [remap dabbrev-expand] 'hippie-expand)
+
+  ;; anzu -- pretty text replacement
+  (require 'anzu)
+  (global-anzu-mode)
+  (global-set-key (kbd "M-%") 'anzu-query-replace)
+  (global-set-key (kbd "C-M-%") 'anzu-query-replace-regexp)
+  (require 'appearance )
+
+  ;; this corrects an error I used to have. 
+  (setq print-length 2000)
+
+
+  ;; makes file name completion in the minibuffer case-insensitive
+  (setq read-file-name-completion-ignore-case t)
+#+END_SRC
+
+This bit here comes from http://timothypratley.blogspot.ca/2015/07/seven-specialty-emacs-settings-with-big.html
+Rainbow-delimiters for easily finding excess parens. Not sure I really need it.  
+#+BEGIN_SRC emacs-lisp
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+(require 'rainbow-delimiters)
+(set-face-attribute 'rainbow-delimiters-unmatched-face nil
+                    :foreground 'unspecified
+                    :inherit 'error)
+#+END_SRC
+
+*** Double Caps correction.
+:PROPERTIES:
+:EXPORT_FILE_NAME: double-caps-correction
+:END:
+
+Stolen from [[http://emacs.stackexchange.com/questions/13970/fixing-double-capitals-as-i-type/13975#13975][here]] and also Elndless Parentheses
+#+BEGIN_SRC emacs-lisp
+(defun dcaps-to-scaps ()
+  "Convert word in DOuble CApitals to Single Capitals."
   (interactive)
-  (let ((n 0)
-        (start (if mark-active (region-beginning) (point-min)))
-        (end (if mark-active (region-end) (point-max))))
-    (save-excursion
-      (goto-char start)
-      (while (< (point) end) (if (forward-word 1) (setq n (1+ n)))))
-    (message "%3d %3d %3d" (count-lines start end) n (- end start))))
+  (and (= ?w (char-syntax (char-before)))
+       (save-excursion
+         (and (if (called-interactively-p)
+                  (skip-syntax-backward "w")
+                (= -3 (skip-syntax-backward "w")))
+              (let (case-fold-search)
+                (looking-at "\\b[[:upper:]]\\{2\\}[[:lower:]]"))
+              (capitalize-word 1)))))
 
-;; unfilling paras
-;;; switching window configurations
-(defun toggle-windows-split()
-  "Switch back and forth between one window and whatever split of windows we might have in the frame. The idea is to maximize the current buffer, while being able to go back to the previous split of windows in the frame simply by calling this command again."
+(add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local)
+
+(define-minor-mode dubcaps-mode
+  "Toggle `dubcaps-mode'.  Converts words in DOuble CApitals to
+Single Capitals as you type."
+  :init-value nil
+  :lighter (" DC")
+  (if dubcaps-mode
+      (add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local)
+    (remove-hook 'post-self-insert-hook #'dcaps-to-scaps 'local)))
+
+ (add-hook 'text-mode-hook #'dubcaps-mode)
+    
+#+END_SRC
+
+#+RESULTS:
+| dubcaps-mode | turn-on-visual-line-mode | er/add-text-mode-expansions | text-mode-hook-identify |
+
+*** indent buffer!
+stolen from [[http://emacsredux.com/blog/2013/03/27/indent-region-or-buffer/][Emacs Redux]]
+
+#+BEGIN_SRC emacs-lisp
+(defun indent-buffer ()
+  "Indent the currently visited buffer."
   (interactive)
-  (if (not(window-minibuffer-p (selected-window)))
+  (indent-region (point-min) (point-max)))
+
+(defun indent-region-or-buffer ()
+  "Indent a region if selected, otherwise the whole buffer."
+  (interactive)
+  (save-excursion
+    (if (region-active-p)
+        (progn
+          (indent-region (region-beginning) (region-end))
+          (message "Indented selected region."))
       (progn
-        (if (< 1 (count-windows))
-            (progn
-              (window-configuration-to-register ?u)
-              (delete-other-windows))
-          (jump-to-register ?u))))
-  (my-iswitchb-close))
+        (indent-buffer)
+        (message "Indented buffer.")))))
+(global-set-key (kbd "C-M-\\") 'indent-region-or-buffer)
+#+END_SRC
 
-;; Then, the convenient key binding:
-(define-key global-map (kbd "C-`") 'toggle-windows-split)
-(define-key global-map (kbd "C-~") 'toggle-windows-split)
-(define-key global-map (kbd "C-|") 'toggle-windows-split) ; same key, on a spanish keyword mapping since I commute a lot between both
+#+RESULTS:
+: indent-region-or-buffer
 
-(defun back-window ()
-  (interactive)
-  (other-window -1))
-(define-key global-map (kbd "C-x O") 'back-window)
+*** Easy-kill
+I'm trying out the easy-kill package, which lets you cut or copy the current line just using the kill ring.  
 
-;;;; unfill paragraph
-;; Stefan Monnier <foo at acm.org>. It is the opposite of fill-paragraph
-(defun unfill-paragraph ()
-  "Takes a multi-line paragraph and makes it into a single line of text."
-  (interactive)
-  (let ((fill-column (point-max)))
-    (fill-paragraph nil)))
-
-;;;
-;; hippie expand
-(global-set-key [remap dabbrev-expand] 'hippie-expand)
-
-;; anzu -- pretty text replacement
-(require 'anzu)
-(global-anzu-mode)
-(global-set-key (kbd "M-%") 'anzu-query-replace)
-(global-set-key (kbd "C-M-%") 'anzu-query-replace-regexp)
-(require 'appearance )
+See [[: http://pragmaticemacs.com/emacs/cut-or-copy-current-line-with-easy-kill/][this post]]. 
+#+BEGIN_SRC emacs-lisp
+(global-set-key [remap kill-ring-save] 'easy-kill)
 
 #+END_SRC
 
-* Second Half
+#+RESULTS:
+: easy-kill
+
+*** Bugfix for package
+package-mode does not currently 'require url-handlers; so this must be done manually:
+https://lists.gnu.org/archive/html/emacs-devel/2015-11/msg01967.html 
 #+BEGIN_SRC emacs-lisp
+(require 'url-handlers) 
+#+END_SRC
 
-;;; web programming tweaks
-(load-library "webstuff")
-;;; session management with desktop
-(require 'desktop)
-(setq desktop-dirname "/home/matt/.emacs.d/desktop-sessions/")
-(desktop-save-mode 1)
+#+RESULTS:
+: url-handlers
 
-;; this was messed up somehow
-(setq print-length 1000)
-(setq print-length 2000)
+** Consel Mode
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "<f1> v") 'counsel-describe-variable)
+(global-set-key (kbd "<f1> f") 'counsel-describe-function)
+
 #+END_SRC
 * Organize my life
 ** Loading, hooks, minor modes
@@ -877,187 +914,204 @@ The first part of this file is a little miscellaneous. They are things I'velearn
 (require 'org-mouse)
 ;;;; allow firefox integration via org=protocl
 (require 'org-protocol)
-(require 'org-mime)
-(setq org-mime-library 'semi)
-(add-hook 'message-mode-hook
-          (lambda ()
-            (local-set-key "\C-c\M-o" 'org-mime-htmlize)))
 
-(add-hook 'org-mode-hook
-          (lambda ()
-            (local-set-key "\C-c\M-o" 'org-mime-org-buffer-htmlize)))
-(add-hook 'org-mime-html-hook
-          (lambda ()
-            (org-mime-change-element-style
-             "pre" (format "color: %s; background-color: %s; padding: 0.5em;"
-                           "#E6E1DC" "#232323"))))
-(add-hook 'org-mime-html-hook
-          (lambda ()
-            (org-mime-change-element-style
-
-              "blockquote" "border-left: 2px solid gray; padding-left: 4px;")))    
 (require 'ox-odt)
 (setq org-odt-styles-dir "/home/matt/src/org-mode/etc/styles/")
 (setq org-odt-styles-dir "/home/matt/.emacs.d/Templates/")
 
 ;;; Org HTML5 export Formats
-(require 'ox-deck)
+;;(require 'ox-deck)
 (require 'ox-s5)
 ;;;; markdown export
 (require 'ox-md nil t)
-
+(require 'ox-gfm)
 #+END_SRC
+
 
 ** Keybindings
 #+BEGIN_SRC emacs-lisp
-;;; Basic org-mode stuff
-(global-set-key "\C-cl" 'org-store-link)
-(global-set-key "\C-ca" 'org-agenda)
-;;; timesaving keybindings
-(global-set-key "\C-c\M-0" (lambda () (interactive)(write-abbrev-file "~/.emacs.d/abbrev_defs")))
+  ;;; Basic org-mode stuff
+  (global-set-key "\C-cl" 'org-store-link)
+  (global-set-key "\C-ca" 'org-agenda)
+  ;;; timesaving keybindings
+  ;; (global-set-key "\C-c\M-0" (lambda () (interactive)(write-abbrev-file "~/.emacs.d/abbrev_defs")))
 
 #+END_SRC
 ** Workflow, agenda, refiling, tasks
+Added <2016-10-25 Tue>: new capture template for email
+
+Added <2016-10-27 Thu>: Cusotm colors for intermediate ("started" or "In progress" states);. See [[http://orgmode.org/manual/Faces-for-TODO-keywords.html][the manual]].  
+
+Added <2016-11-15 Tue> org-protocol-capture-html
+
 #+BEGIN_SRC emacs-lisp
-;;;; add some workflow states
-(setq org-todo-keywords
-       '((sequence "ACTION(a)" "WAITING(w)" "BLOCKED(b)" "|" "DONE(d)" "WON'T DO(o)")
-         (sequence "PROJECT(p)" "SOMEDAY(s)" "MAYBE(m)" "|" "COMPLETE(c)")))
+
+  (add-to-list 'load-path "/home/matt/src/org-protocol-capture-html")
+  (require 'org-protocol-capture-html)
 
 
-;;;; Capture Templates
-(define-key global-map "\C-cc" 'org-capture)
-(setq org-capture-templates 
-      '(
-        ("t" "Todo Items" )
-        ("p" "Password" entry (file "~/GTD/Keep-it-safe.org.gpg") "* %^{Description} \n SITE: %^{URL} \n USER:%^{USER} \n PASS:%^{PASS}\n%? \n")
-        ("tt" "Teaching Todo with Sechedule & Tags set" entry (file+olp "~/Dropbox/GTD/gtd.org" "Tasks" "Teaching") "* ACTION %^{Description}  %^G:teaching:\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%?")
-        ("tx" "Other Todo entries" entry (file+headline "~/Dropbox/GTD/gtd.org" "Tasks") "* ACTION %^{Description}  %^G\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%? \n %i \n %l") 
-        ("th" "History" entry (file+olp "~/Dropbox/GTD/gtd.org" "Tasks" "History Dept") "* ACTION %^{Description}  %^G\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%?") 
-        ("b" "Bookmarks" entry (file+olp "~/Dropbox/GTD/Reference.org" "Links" ) "*  %:description  %^G\nSOURCE: %u, %c\n\n  %i") 
+    ;;;; add some workflow states
+    (setq org-todo-keywords
+           '((sequence "ACTION(a)" "WAITING(w)" "IN PROGRESS(p)" "BLOCKED(b)" "|" "DONE(d)" "WON'T DO(w)")
+             (sequence "PROJECT(p)" "SOMEDAY(s)" "MAYBE(m)" "|" "COMPLETE(c)")))
 
-        ("j" "Journal" entry (file+datetree "~/Dropbox/GTD/Reference.org") "* %?
-Entered on %U
-  %i
-  %a") 
-        ("a" "Appointments" entry (file+headline "~/Dropbox/GTD/diary.org" "Appointments") "* Appointment: %^{Desciption} %^G\nSCHEULED:%t")
-))
+    ;;;; recolor someo f those states
+    (setq org-todo-keyword-faces
+          '(("ACTION" . org-warning) ("IN PROGRESS" . "yellow") ("WAITING" . "dark orange")
+            ))
+    ;;;; Capture Templates
+    ;;;; edit <2016-10-25 Tue> 
+    (define-key global-map "\C-cc" 'org-capture)
+    (setq org-capture-templates 
+          '(
+            ("t" "Todo Items" )
+            ("p" "Password" entry (file "~/GTD/Keep-it-safe.org.gpg") "* %^{Description} \n SITE: %^{URL} \n USER:%^{USER} \n PASS:%^{PASS}\n%? \n")
+            ("tt" "Teaching Todo with Sechedule & Tags set" entry (file+olp "~/Dropbox/GTD/gtd.org" "Tasks" "Teaching") "* ACTION %^{Description}  %^G:teaching:\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%?")
+            ("tx" "Other Todo entries" entry (file+headline "~/Dropbox/GTD/gtd.org" "Tasks") "* ACTION %^{Description}  %^G\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%? \n %i \n %l") 
+            ("th" "History" entry (file+olp "~/Dropbox/GTD/gtd.org" "Tasks" "History Dept") "* ACTION %^{Description}  %^G\nSCHEDULED:%(org-insert-time-stamp (org-read-date nil t \".+1d\"))%?") 
+            ("b" "Bookmarks" entry (file+olp "~/Dropbox/GTD/Reference.org" "Links" ) "*  %:description  %^G\nSOURCE: %u, %c\n\n  %i") 
 
-;;; REFILING
-;; Use IDO for target completion
-;; (setq org-completion-use-ido t)
-;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
-(setq org-refile-targets (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5) ("/home/matt/org/.org2blog.el" :maxlevel . 1) ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
+            ("j" "Journal" entry (file+datetree "~/Dropbox/GTD/Reference.org") "* %?
+    Entered on %U
+      %i
+      %a") 
+            ("a" "Appointments" entry (file+headline "~/Dropbox/GTD/diary.org" "Appointments") "* Appointment: %^{Desciption} %^G\nSCHEULED:%t")
 
-;; Targets start with the file name - allows creating level 1 tasks
-(setq org-refile-use-outline-path (quote file))
+            ("m" "mail-todo" entry (file+headline "~/Dropbox/GTD/Reference.org" "Tasks")
+             "* ACTION Reply to  %:fromname %? about %a :email:\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")
+            ("w" "capture for the bucket (thought for captures from the web via org-protocoll)" entry
+             (file+headline "~/GTD/Reference.org" "Web Links")
+             "* %:description
+          :PROPERTIES:
+          :CREA_DATE:  %U
+          :END:
 
-;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
-(setq org-outline-path-complete-in-steps t)
+          :origin:
+          %U, %c
 
-;; Allow refile to create parent tasks with confirmation
-(setq org-refile-allow-creating-parent-nodes (quote confirm))
+          %i
+          :END:" :prepend t :empty-lines 1 :clock-in t :clock-resume t)
+            ;; ("w" "Web site" entry
+            ;;  (file+headline "~/Dropbox/GTD/Reference.org" "Tasks")
+            ;;  "* %a :website:\n\n%U %?\n\n%:initial")
+    ))
 
-;; stuff from http://www.jboecker.de/2010/04/14/general-reference-filing-with-org-mode.html#sec-1 
-;; for org-mode remember integration
+    ;;; REFILING
+    ;; Use IDO for target completion
+    ;; (setq org-completion-use-ido t)
+    ;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
+    (setq org-refile-targets (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5) ("/home/matt/org/.org2blog.el" :maxlevel . 1) ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
 
-;;; Agenda Commands
-;; customized agenda commiands
-(setq org-agenda-custom-commands
-      '(("g" . "GTD contexts")
-        ("ge" "email" tags-todo "email/+ACTION")
-        ("gc" "Computer" tags-todo "computer/+ACTION")
-        ("go" "Office" tags-todo "office/+ACTION")
-        ("gp" "Phone" tags-todo "phone/+ACTION")
-        ("gh" "Home" tags-todo "home/+ACTION")
-        ("gr" "Errands" tags-todo "errand/+ACTION")
-        ("G" "GTD Block Agenda"
-         ((tags-todo "phone/+ACTION")
-          (tags-todo "office/+ACTION")
-          (tags-todo "email/+ACTION")
-          (tags-todo "computer/+ACTION")
-          (tags-todo "home/+ACTION")
-          (tags-todo "errand/+ACTION")
-          (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
-         nil                      ;; i.e., no local settings
-         ("~/next-actions.html")) ;; exports block to this file with C-c a e
-        ("T" "Teaching Block Agenda"
-         ((tags-todo "phone+teaching/+ACTION")
-          (tags-todo "office+teaching/+ACTION")
-          (tags-todo "email+teaching/+ACTION")
-          (tags-todo "computer+teaching/+ACTION")
-          (tags-todo "home+teaching/+ACTION")
-          (tags-todo "errand+teaching/+ACTION")
-          (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
-         nil                      ;; i.e., no local settings
-         ("~/next-actions.html")) ;; exports block to this file with C-c a e
-        ("H" "GTD Block Agenda"
-         ((tags-todo "+history+phone/+ACTION|BLOCKED")
-          (tags-todo "+history+office/+ACTION|BLOCKED")
-          (tags-todo "+history+email/+ACTION|BLOCKED")
-          (tags-todo "+history+computer/+ACTION|BLOCKED")
-          (tags-todo "+history+home/+ACTION+|BLOCKED")
-          (tags-todo "+history+errand/+ACTION|BLOCKED")
-          (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
-         nil                      ;; i.e., no local settings
-         ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
-        ("W" "WAITING block Agenda"
-         ((tags-todo "phone/+WAITING")
-          (tags-todo "email/+WAITING")
-          (tags-todo "computer/+WAITING")
-          (tags-todo "office/+WAITING")
-          (tags-todo "home/+WAITING")
-          (tags-todo "errand/+WAITING"))
-         nil                      ;; i.e., no local settings
-         ("~/next-actions.html")) ;; exports block to this file with C-c a e
-       ;; ..other commands here
-        ("t" agenda "Teaching Agenda"
-         (( org-agenda-filter-preset '("+teaching") )  ) )
-         ("p" "Projects" todo "PROJECT")
-         ))
+    ;; Targets start with the file name - allows creating level 1 tasks
+    (setq org-refile-use-outline-path (quote file))
 
-;;; agenda diary stuff
-(setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
-(setq org-agenda-include-diary t)
+    ;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
+    (setq org-outline-path-complete-in-steps t)
+
+    ;; Allow refile to create parent tasks with confirmation
+    (setq org-refile-allow-creating-parent-nodes (quote confirm))
+
+    ;; stuff from http://www.jboecker.de/2010/04/14/general-reference-filing-with-org-mode.html#sec-1 
+    ;; for org-mode remember integration
+
+    ;;; Agenda Commands
+    ;; customized agenda commiands
+    (setq org-agenda-custom-commands
+          '(("g" . "GTD contexts")
+            ("ge" "email" tags-todo "email/+ACTION")
+            ("gc" "Computer" tags-todo "computer/+ACTION")
+            ("go" "Office" tags-todo "office/+ACTION")
+            ("gp" "Phone" tags-todo "phone/+ACTION")
+            ("gh" "Home" tags-todo "home/+ACTION")
+            ("gr" "Errands" tags-todo "errand/+ACTION")
+            ("G" "GTD Block Agenda"
+             ((tags-todo "phone/+ACTION")
+              (tags-todo "office/+ACTION")
+              (tags-todo "email/+ACTION")
+              (tags-todo "computer/+ACTION")
+              (tags-todo "home/+ACTION")
+              (tags-todo "errand/+ACTION")
+              (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
+             nil                      ;; i.e., no local settings
+             ("~/next-actions.html")) ;; exports block to this file with C-c a e
+            ;; ("T" "Teaching Block Agenda"
+            ;;  ((tags-todo "phone+teaching/+ACTION")
+            ;;   (tags-todo "office+teaching/+ACTION")
+            ;;   (tags-todo "email+teaching/+ACTION")
+            ;;   (tags-todo "computer+teaching/+ACTION")
+            ;;   (tags-todo "home+teaching/+ACTION")
+            ;;   (tags-todo "errand+teaching/+ACTION")
+            ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
+            ;;  nil                      ;; i.e., no local settings
+            ;;  ("~/next-actions.html"))
+            ;; exports block to this file with C-c a e
+            ("H" "GTD Block Agenda"
+             ((tags-todo "+history+phone/+ACTION|BLOCKED")
+              (tags-todo "+history+office/+ACTION|BLOCKED")
+              (tags-todo "+history+email/+ACTION|BLOCKED")
+              (tags-todo "+history+computer/+ACTION|BLOCKED")
+              (tags-todo "+history+home/+ACTION+|BLOCKED")
+              (tags-todo "+history+errand/+ACTION|BLOCKED")
+              (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
+             nil                      ;; i.e., no local settings
+             ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
+            ("W" "WAITING block Agenda"
+             ((tags-todo "phone/+WAITING")
+              (tags-todo "email/+WAITING")
+              (tags-todo "computer/+WAITING")
+              (tags-todo "office/+WAITING")
+              (tags-todo "home/+WAITING")
+              (tags-todo "errand/+WAITING"))
+             nil                      ;; i.e., no local settings
+             ("~/next-actions.html")) ;; exports block to this file with C-c a e
+           ;; ..other commands here
+            ;; ("t" agenda "Teaching Agenda"
+            ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
+             ("p" "Projects" todo "PROJECT")
+             ))
+
+    ;;; agenda diary stuff
+    (setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
+    (setq org-agenda-include-diary t)
 
 
-;;; still more agenda
-(defadvice org-agenda-add-entry-to-org-agenda-diary-file
-    (after add-to-google-calendar)
-  "Add a new Google calendar entry that mirrors the diary entry just created by
-org-mode."
-  (let ((type (ad-get-arg 0))
-	(text (ad-get-arg 1))
-	(d1 (ad-get-arg 2))
-	(year1 (nth 2 d1))
-	(month1 (car d1))
-	(day1 (nth 1 d1))
-	(d2 (ad-get-arg 3))
-	entry dates)
-    (if (or (not (eq type 'block)) (not d2))
-	(setq dates (format "%d-%02d-%02d" year1 month1 day1))
-      (let ((year2 (nth 2 d2)) (month2 (car d2)) (day2 (nth 1 d2)) (repeats (-
-									     (calendar-absolute-from-gregorian d1)
+    ;;; still more agenda
+    (defadvice org-agenda-add-entry-to-org-agenda-diary-file
+        (after add-to-google-calendar)
+      "Add a new Google calendar entry that mirrors the diary entry just created by
+    org-mode."
+      (let ((type (ad-get-arg 0))
+	    (text (ad-get-arg 1))
+	    (d1 (ad-get-arg 2))
+	    (year1 (nth 2 d1))
+	    (month1 (car d1))
+	    (day1 (nth 1 d1))
+	    (d2 (ad-get-arg 3))
+	    entry dates)
+        (if (or (not (eq type 'block)) (not d2))
+	    (setq dates (format "%d-%02d-%02d" year1 month1 day1))
+          (let ((year2 (nth 2 d2)) (month2 (car d2)) (day2 (nth 1 d2)) (repeats (-
+									         (calendar-absolute-from-gregorian d1)
 
-									     (calendar-absolute-from-gregorian d2))))
-	(if (> repeats 0)
-	    (setq dates (format "%d-%02d-%02d every day for %d days" year1
-				month1 day1 (abs repeats)))
-	  (setq dates (format "%d-%02d-%02d every day for %d days" year1 month1
-			      day1 (abs repeats))))
-	))
-    (setq entry (format "/usr/bin/google calendar add --cal org \"%s on %s\"" text dates))
-    (message entry)
-    (if (not (string= "MYLAPTOPCOMPUTER" mail-host-address))
-	(shell-command entry)
-      (let ((offline "~/tmp/org2google-offline-entries"))
-	(find-file offline)
-	(goto-char (point-max))
-	(insert (concat entry "\n"))
-	(save-buffer)
-	(kill-buffer (current-buffer))
-	(message "Plain text written to %s" offline)))))
-(ad-activate 'org-agenda-add-entry-to-org-agenda-diary-file)
+									         (calendar-absolute-from-gregorian d2))))
+	    (if (> repeats 0)
+	        (setq dates (format "%d-%02d-%02d every day for %d days" year1
+				    month1 day1 (abs repeats)))
+	      (setq dates (format "%d-%02d-%02d every day for %d days" year1 month1
+			          day1 (abs repeats))))
+	    ))
+        (setq entry (format "/usr/bin/google calendar add --cal org \"%s on %s\"" text dates))
+        (message entry)
+        (if (not (string= "MYLAPTOPCOMPUTER" mail-host-address))
+	    (shell-command entry)
+          (let ((offline "~/tmp/org2google-offline-entries"))
+	    (find-file offline)
+	    (goto-char (point-max))
+	    (insert (concat entry "\n"))
+	    (save-buffer)
+	    (kill-buffer (current-buffer))
+	    (message "Plain text written to %s" offline)))))
+    (ad-activate 'org-agenda-add-entry-to-org-agenda-diary-file)
 
 #+END_SRC
 
@@ -1112,43 +1166,69 @@ org-mode."
         ("php" . "<?php echo \"<?xml version=\\\"1.0\\\" encoding=\\\"%s\\\" ?>\";
 ?>")))
 
+(fset 'grading-template
+   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([42 42 32 return 124 32 79 114 103 97 110 105 122 97 116 105 111 110 32 124 32 124 32 backspace tab 67 108 97 114 105 116 121 32 111 102 32 84 104 101 115 105 115 tab tab 80 114 101 115 101 110 116 97 116 105 111 110 32 111 102 32 69 118 105 100 101 110 99 101 32 124 32 124 backspace backspace backspace backspace tab tab 71 114 97 109 109 97 114 32 97 110 100 32 83 112 101 108 108 105 110 103 tab tab 83 116 121 108 101 tab tab 67 105 116 97 116 105 111 110 115 tab tab 70 117 114 116 104 101 114 32 67 111 109 109 101 110 116 115 tab tab 71 114 97 100 101 tab up up up up up up up up 32] 0 "%d")) arg)))
+
 #+END_SRC
 
 ** Exporting and Publishing
 *** General
 Some general options and fixes
 #+BEGIN_SRC emacs-lisp
-;;;; export options for org-mode
-(setq org-export-with-section-numbers nil
-      org-export-with-toc nil
-      org-export-preserve-breaks nil
-      org-export-email-info nil
-)
-;;;; Timestamps in Exports
-;; removing annoying brackets from timestamp on html export
-(add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
-(defun matt-org-export-filter-timestamp-function (timestamp backend info)
-  "removes relevant brackets from a timestamp"
-  (when (org-export-derived-backend-p backend 'html) 
-    ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
-    ;; (replace-regexp-in-string "[][]" "" timestamp)
-    (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp)
-    ;; (replace-regexp-in-string "&lt;" "" timestamp)
-))
+    ;;;; export options for org-mode
+    (setq org-export-with-section-numbers nil
+          org-export-with-toc nil
+          org-export-preserve-breaks nil
+          org-export-email-info nil
+    )
+    ;;;; Timestamps in Exports
+    ;; removing annoying brackets from timestamp on html export
+    (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
+    (defun matt-org-export-filter-timestamp-function (timestamp backend info)
+      "removes relevant brackets from a timestamp"
+      (pcase backend
+        ((or 'html 'wp 'odt 'reveal)
+         (replace-regexp-in-string "&[lg]t;" "" timestamp))
+    
+          ))
+  (defun org-export-filter-timestamp-remove-brackets (timestamp backend info)
+    "removes relevant brackets from a timestamp"
+    (cond
+     ((org-export-derived-backend-p backend 'latex)
+      (replace-regexp-in-string "[<>]\\|[][]" "" timestamp))
+     ((org-export-derived-backend-p backend 'html)
+      (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp))))
 
-;; removing annoying brackets from timestamp on html export
-(add-to-list 'org-export-filter-paragraph-functions 'matt-org-export-filter-paragraph-function)
-(defun matt-org-export-filter-paragraph-function (paragraph backend info)
-  "removes comments from export"
-  (when (org-export-derived-backend-p backend 'html) 
-    ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
-    (replace-regexp-in-string "^#\+.*$" "" paragraph)
-    ;; (replace-regexp-in-string "&lt;" "" paragraph)
-))
+  (eval-after-load 'ox '(add-to-list
+                         'org-export-filter-timestamp-functions
+                         'org-export-filter-timestamp-remove-brackets))
+      ;; (when (or  (org-export-derived-backend-p backend 'html)(org-export-derived-backend-p backend 'odt)) 
+      ;;   ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
+      ;;   ;; (replace-regexp-in-string "[][]" "" timestamp)
+      ;;   (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp)
+      ;;   ;; (replace-regexp-in-string "&lt;" "" timestamp))
+  
+
+    ;; removing annoying brackets from timestamp on html export
+    ;; (add-to-list 'org-export-filter-paragraph-functions 'matt-org-export-filter-paragraph-function)
+    ;; (defun matt-org-export-filter-paragraph-function (paragraph backend info)
+    ;;   "removes comments from export"
+    ;;   (when (org-export-derived-backend-p backend 'html) 
+    ;;     ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
+    ;;     (replace-regexp-in-string "^#\+.*$" "" paragraph)
+    ;;     ;; (replace-regexp-in-string "&lt;" "" paragraph)
+    ;; ))
 
 
 #+END_SRC
 *** Creating and Publishing Presentations with Org-reveal
+:PROPERTIES:
+:ID:       o2b:cef9afbb-5bec-4b01-a32a-783315ffc727
+:POST_DATE: [2015-07-11 Sat 10:20]
+:POSTID:   13
+:CATEGORY: emacs
+:BLOG:     matt
+:END:
 For several years, I've been using Org-mode to compose slides for my lectures.  This method is great, because I get to work in plain-text and focus on the content of my lectures rather than animations; but it's meant that when I want to share my presentations with others, there's a certain amount of work involved as I move from a local copy on my computer to a web-based version. (This has largely been an issue because I sometimes /compose/ my lectures sitting in a café with lousy Internet, and I sometimes /give/ my lectures in a horrible classroom at U of T with terrible Internet reception.)  I've now largely solved this problem, though there is hopefully an improvement coming down the pipe which will make it even easier.  
 
 Org-mode has the capacity to export to a number of slide-like formats, including the [[http://orgmode.org/worg/exporters/beamer/beamer-dual-format.html][LaTeX-based Beamer format]], which also makes good PDF presentations, a couple of Emacs-based presentation tools, and a number of HTML5 formats.  Since I teach about the web all the time, the HTML5 formats have always been the most appealing to me.  
@@ -1178,134 +1258,176 @@ Then I use org-mode's fantastic built-in [[http://orgmode.org/worg/org-tutorials
 First, my ~org-publish-project-alist~, which defines the publishing targets.  Note especially the top part, which defines "meta-projects": for instance, I can publish all the slides and source files for all my classes with one command, ~M-x org-publish-projects [RET] courses~.  
 
 #+BEGIN_SRC emacs-lisp
-(setq org-publish-project-alist
-      '(
-        ("courses"
-         :components ("dh" "rlg231"))
-        ("rlg231"
-         :components ("rlg231-lecture-slides" "rlg231-lecture-source"))
-        ("dh"
-         :components ("digital-history-lecture-slides" "digital-history-lecture-source"))
+  (setq org-publish-project-alist
+        '(
+          ("courses"
+           :components ("dh" "rlg231" "inf1501"))
+          ("rlg231"
+           :components ("rlg231-lecture-slides" "rlg231-lecture-source"))
+          ("dh"
+           :components ("digital-history-lecture-slides" "digital-history-lecture-source"))
+          ("inf1501"
+           :components ("inf1501-lecture-slides" "inf1501-lecture-source"))
 
- 	("rlg231-lecture-slides"
-	 :base-directory "~/RLG231/Lectures/"
-	 :base-extension "org"
-	 :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/RLG231/Lectures/Slides"
-	 :recursive t
-	 :publishing-function mwp-org-reveal-publish-to-html
-	 :preparation-function nil 
-         :completion-function nil
-	 :headline-levels 4             ; Just the default for this project.
-         :exclude "LectureOutlines.org"
-	 :exclude-tags note noexport
-	 :auto-preamble t)
-        
- 	("rlg231-lecture-source"
-	 :base-directory "~/RLG231/Lectures/"
-	 :base-extension "org"
-	 :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/RLG231/Lectures/Source"
-	 :recursive t
-	 :publishing-function org-org-publish-to-org
-	 :preparation-function nil
-         :completion-function nil
-	 :headline-levels 4             ; Just the default for this project.
-         :exclude "LecturePlans.org"
-         ;; :exclude "LectureOutlines.org"
-	 :exclude-tags note noexport
-	 :auto-preamble t)
+          ("rlg231-lecture-slides"
+           :base-directory "~/RLG231/Lectures/"
+           :base-extension "org"
+           :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/RLG231/Lectures/Slides"
+           :recursive t
+           :publishing-function mwp-org-reveal-publish-to-html
+           :headline-levels 4             ; Just the default for this project.
+           :exclude "LectureOutlines.org"
+           :exclude-tags note noexport
+           :auto-preamble t)
 
-        ("digital-history-lecture-source"
-	 :base-directory "~/DH/Lectures"
-	 :base-extension "org"
-	 :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/DigitalHistory/Lectures/Source"
-	 :recursive t
-	 :publishing-function org-org-publish-to-org
-	 :preparation-function 
-         :completion-function 
-	 :headline-levels 4             ; Just the default for this project.
-         ;; :exclude "LecturePlans.org"
-         :exclude "LectureOutlines.org"
-	 :exclude-tags note noexport
-	 :auto-preamble t)
+          ("rlg231-lecture-source"
+           :base-directory "~/RLG231/Lectures/"
+           :base-extension "org"
+           :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/RLG231/Lectures/Source"
+           :recursive t
+           :publishing-function org-org-publish-to-org
+           :preparation-function nil
+           :completion-function nil
+           :headline-levels 4             ; Just the default for this project.
+           :exclude "LecturePlans.org"
+           ;; :exclude "LectureOutlines.org"
+           :exclude-tags note noexport
+           :auto-preamble t)
 
-        ("digital-history-lecture-slides"
-	 :base-directory "~/DH/Lectures"
-	 :base-extension "org"
-	 :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/DigitalHistory/Lectures/Slides"
-	 :recursive t
-	 :publishing-function mwp-org-reveal-publish-to-html
-	 :preparation-function 
-         :completion-function 
-	 :headline-levels 4             ; Just the default for this project.
-         ;; :exclude "LecturePlans.org"
-         :exclude "LectureOutlines.org"
-	 :exclude-tags note noexport
-	 :auto-preamble t)
+          ("digital-history-lecture-source"
+           :base-directory "~/DH/Lectures"
+           :base-extension "org"
+           :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/DigitalHistory/Lectures/Source"
+           :recursive t
+           :publishing-function org-org-publish-to-org
+           :preparation-function 
+           :completion-function 
+           :headline-levels 4             ; Just the default for this project.
+           ;; :exclude "LecturePlans.org"
+           :exclude "LectureOutlines.org"
+           :exclude-tags note noexport
+           :auto-preamble t)
 
-        ;; ("newone-lecture-slides"
-	;;  :base-directory "~/NewOne/Lectures/"
-	;;  :base-extension "org"
-	;;  :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Lectures"
-	;;  :recursive t
-	;;  :publishing-function org-deck-publish-to-html
-	;;  :headline-levels 4             ; Just the default for this project.
-	;;  :exclude-tags note noexport
-	;;  :auto-preamble t)
+          ("digital-history-lecture-slides"
+           :base-directory "~/DH/Lectures"
+           :base-extension "org"
+           :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/DigitalHistory/Lectures/Slides"
+           :recursive t
+           :publishing-function mwp-org-reveal-publish-to-html
+           :preparation-function 
+           :completion-function 
+           :headline-levels 4             ; Just the default for this project.
+           ;; :exclude "LecturePlans.org"
+           :exclude "LectureOutlines.org"
+           :exclude-tags note noexport
+           :auto-preamble t)
 
- 	;; ("newone-lecture-notes"
-	;;  :base-directory "~/NewOne/Lectures/"
-	;;  :base-extension "org"
-	;;  :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Lectures-with-notes"
-	;;  :recursive t
-	;;  :publishing-function org-html-publish-to-html
-	;;  :headline-levels 4             ; Just the default for this project.
-	;;  :exclude-tags noexport
-	;;  :auto-preamble t)
-	
-	;;  ("newone-images"
-        ;;        :base-directory "~/NewOne/Images/"
-        ;;        :base-extension "jpg\\|gif\\|png"
-        ;;        :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Images"
-        ;;        :publishing-function org-publish-attachment)
+          ("inf1501-lecture-slides"
+           :base-directory "~/INF1501/Lectures/"
+           :base-extension "org"
+           :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/INF1501/Lectures/Slides"
+           :recursive t
+           :publishing-function mwp-org-reveal-publish-to-html
+           :headline-levels 4             ; Just the default for this project.
+           :exclude "LectureOutlines.org"
+           :exclude-tags note noexport
+           :auto-preamble t)
 
-	;;  ("newone" :components ("newone-lecture-slides" "newone-lecture-notes" "newone-images") )
+          ("inf1501-lecture-source"
+           :base-directory "~/INF1501/Lectures/"
+           :base-extension "org"
+           :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/INF1501/Lectures/Source"
+           :recursive t
+           :publishing-function org-org-publish-to-org
+           :preparation-function nil
+           :completion-function nil
+           :headline-levels 4             ; Just the default for this project.
+           :exclude "LecturePlans.org"
+           ;; :exclude "LectureOutlines.org"
+           :exclude-tags note noexport
+           :auto-preamble t)
 
-        ;;  ("presentations"
-        ;;   :base-directory "~/Dropbox/Work/Talks/"
-        ;;   :base-extension "org"
-        ;;   :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/Presentations"
-        ;;   :headline-levels 4 ; just the default for this project
-        ;;   :exclude-tags noexport
-        ;;   :auto-preamble t
-        ;;   :publishing-function mwp-org-deck-publish-to-html
-        ;;   ;; :completion-function mwp-update-published-paths
-        ;;   )
-        
-      ))
 
+          ;; ("newone-lecture-slides"
+          ;;  :base-directory "~/NewOne/Lectures/"
+          ;;  :base-extension "org"
+          ;;  :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Lectures"
+          ;;  :recursive t
+          ;;  :publishing-function org-deck-publish-to-html
+          ;;  :headline-levels 4             ; Just the default for this project.
+          ;;  :exclude-tags note noexport
+          ;;  :auto-preamble t)
+
+          ;; ("newone-lecture-notes"
+          ;;  :base-directory "~/NewOne/Lectures/"
+          ;;  :base-extension "org"
+          ;;  :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Lectures-with-notes"
+          ;;  :recursive t
+          ;;  :publishing-function org-html-publish-to-html
+          ;;  :headline-levels 4             ; Just the default for this project.
+          ;;  :exclude-tags noexport
+          ;;  :auto-preamble t)
+
+          ;;  ("newone-images"
+          ;;        :base-directory "~/NewOne/Images/"
+          ;;        :base-extension "jpg\\|gif\\|png"
+          ;;        :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/NewOne/Images"
+          ;;        :publishing-function org-publish-attachment)
+
+          ;;  ("newone" :components ("newone-lecture-slides" "newone-lecture-notes" "newone-images") )
+
+          ;;  ("presentations"
+          ;;   :base-directory "~/Dropbox/Work/Talks/"
+          ;;   :base-extension "org"
+          ;;   :publishing-directory "/ssh:matt@shimano:/var/www/sandbox/Presentations"
+          ;;   :headline-levels 4 ; just the default for this project
+          ;;   :exclude-tags noexport
+          ;;   :auto-preamble t
+          ;;   :publishing-function mwp-org-deck-publish-to-html
+          ;;   ;; :completion-function mwp-update-published-paths
+          ;;   )
+
+        ))
+
+  (defun org-export-all (backend)
+    "Export all subtrees that are *not* tagged with :noexport: to
+  separate files.
+
+  Note that subtrees must have the :EXPORT_FILE_NAME: property set
+  to a unique value for this to work properly."
+    (interactive "sEnter backend: ")
+    (let ((fn (cond ((equal backend "html") 'org-html-export-to-html)
+                    ((equal backend "latex") 'org-latex-export-to-latex)
+                    ((equal backend "org") 'org-org-export-to-org)
+                    ((equal backend "reveal") 'org-reveal-export-to-html)
+                    ((equal backend "pdf") 'org-latex-export-to-pdf))))
+      (org-map-entries (lambda () (let((org-reveal-single-file t)) (funcall fn nil t))) "+LEVEL=1-COMMENT") ))
 #+END_SRC
 
 Notice the publishing function, which is set to ~mwp-org-deck-publish-to-html~. This is a simple function that resets the base url and ~extra-css~ values to web-based ones before publication, so that the presentations work when online. Notice I've also reset the ~deck.js~ base url, in case I ever decide to change back to deck.  
 
 #+BEGIN_SRC emacs-lisp
 
-(defun mwp-org-reveal-publish-to-html (plist filename pub-dir)
-  "Publish an org file to reveal.js HTML Presentation.
-FILENAME is the filename of the Org file to be published.  PLIST
-is the property list for the given project.  PUB-DIR is the
-publishing directory. Returns output file name."
-  (let ((org-deck-base-url "http://sandbox.hackinghistory.ca/Tools/deck.js/")
-        (org-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js/")
-        (org-reveal-extra-css "http://sandbox.hackinghistory.ca/Tools/reveal.js/css/local.css"))
-    
-    (org-publish-org-to 'reveal filename ".html" plist pub-dir))
+    (defun mwp-org-reveal-publish-to-html (plist filename pub-dir)
+      "Publish an org file to reveal.js HTML Presentation.
+    FILENAME is the filename of the Org file to be published.  PLIST
+    is the property list for the given project.  PUB-DIR is the
+    publishing directory. Returns output file name."
+      (let (
+            ;;(org-deck-base-url "http://sandbox.hackinghistory.ca/Tools/deck.js/")
+            ;;(org-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js/")
+            ;;(org-reveal-extra-css "http://sandbox.hackinghistory.ca/Tools/reveal.js/css/local.css")
+            (org-reveal-single-file t)
   )
+    
+        (org-publish-org-to 'reveal filename ".html" plist pub-dir))
+      )
 #+END_SRC
 
 And that's it, magic!
 **** Still to do
 I like this a lot, but there are a couple of pieces I'd still like to implement.
-- Fix all local file URL's :: I'd like to write a function to take a final pass through all the links and change ~file:///~ links to *HTML relative links*. That will take some work htough
+- Fix all local file URL's :: I'd like to write a function to take a final pass through all the links and change ~file:///~ links to *HTML relative links*. That will take some work though.
 - Export as standalone :: There is work underway to allow presentations to be generated as stand-alone files that can be, e.g, sent by email.  I like this idea a lot.  [[https://github.com/yjwen/org-reveal/issues/121][See this Github issue]].
 - Standardize notes, fragments :: Every time I switch from one presentation framework to another, I have to learn a whole different syntax for things like fragments (bits of content that don't appear on the slide immediately, but are instead stepped through) and speaker notes (that don't appear on the slide that your viewers see, but are only visible to you in some kind of preview mode).  It would be great if the various slide modes could work towards a common syntax for these things.  If I have time, energy, and skills, I would like to help develop this a little.
 **** See my slides
@@ -1439,72 +1561,118 @@ dependencies: [
 
 #+END_SRC
 *** Org2Blog
+:PROPERTIES:
+:POST_DATE: [2015-07-11 Sat 12:28]
+:ID:       3ac2a7c3-b4f5-4318-9477-5081fb955d21
+:POSTID: 
+:END:
+I have used org2blog for years, first to blog on my own, then when I stopped that, to post pretty much all my course content to websites for [[http://www.hackinghistory.ca/][Hacking History]] and other courses such as [[http://digital.hackinghistory.ca][Digital History]]. 
 
+Org2blog wil ltake a buffer or subtree and post it to any blog of your choosing, as long as the xmlrpc interface on that blog is open.  You can start a new post with ~M-x org2blog/wp-new-entry~, or call ~org2blog/wp~post[buffer|subtree][-as-page][-and-publish]~ from an existing buffer/subtree.  
+
+This section defines my blogs (there are 4 right now, sometimes there are more, sometimes fewer), and has a couple of little defuns that make it easier to type some of the relevant functions.  It also adds a hook to change some keybindings.  
+
+There's way more info at [[https://github.com/punchagan/org2blog/][the Github repository page]].  
 #+BEGIN_SRC emacs-lisp
-;;; Org2blog
+  ;;; Org2blog
 
-(setq org2blog/wp-blog-alist
-      '(("hh"
-	 :url "http://2014.hackinghistory.ca/xmlrpc.php"
-	 :username "matt"
-	 :default-title "Title"
-	 :default-categories (nil)
-	 :tags-as-categories nil)
-        ("rel"
-	 :url "http://relsci.hackinghistory.ca/xmlrpc.php"
-	 :username "matt"
-	 :default-title "Title"
-	 :default-categories (nil)
-	 :tags-as-categories nil)
-        ("dig"
-	 :url "http://digital.hackinghistory.ca/xmlrpc.php"
-	 :username "matt"
-	 :default-title "Title"
-	 :default-categories (nil)
-	 :tags-as-categories nil)
-         ("matt"
-	 :url "http://matt.hackinghistory.ca/xmlrpc.php"
-	 :username "matt"
-	 :default-title ""
-	 :default-categories (nil)
-	 :tags-as-categories nil)
-        ))
-
-
-(defun o2bnew ()
-  (interactive)
-  (org2blog/wp-new-entry))
-(defun o2blin ()
-  (interactive)
-  (org2blog/wp-login))
+  (setq org2blog/wp-blog-alist
+        '(("hh"
+           :url "http://2016.hackinghistory.ca/xmlrpc.php"
+           :username "matt"
+           :default-title "Title"
+           :default-categories (nil)
+           :tags-as-categories nil)
+          ("sik"
+           :url "http://sikkim.hackinghistory.ca/xmlrpc.php"
+           :username "matt"
+           :default-title "Title"
+           :default-categories (nil)
+           :tags-as-categories nil)
+          ("rel"
+           :url "http://relsci.hackinghistory.ca/xmlrpc.php"
+           :username "matt"
+           :default-title "Title"
+           :default-categories (nil)
+           :tags-as-categories nil)
+          ("dig"
+           :url "http://digital.hackinghistory.ca/xmlrpc.php"
+           :username "matt"
+           :default-title "Title"
+           :default-categories (nil)
+           :tags-as-categories nil)
+           ("matt"
+           :url "http://matt.hackinghistory.ca/xmlrpc.php"
+           :username "matt"
+           :default-title ""
+           :default-categories (nil)
+           :tags-as-categories nil)
+          ))
 
 
-;;; Org2blog
-;; starting org2blog a little more easily
-;; example of binding keys only when html-mode is active
+  (defun o2bnew ()
+    (interactive)
+    (org2blog/wp-new-entry))
+  (defun o2blin ()
+    (interactive)
+    (org2blog/wp-login))
 
-;;;; O2B kebybindings
-(defun matt-org-mode-keys ()
-  "Modify keymaps used by `org-mode'."
-  (local-set-key (kbd "C-c <f1>") 'org2blog/wp-mode)
-  (local-set-key "\C-c\C-r" 'org-decrypt-entry)
-  ;; insert a NOTES drawer with C-c C-x n
-;;  (local-set-key (kbd "C-c C-x n") (org-insert-drawer "NOTE"))
 
-  ;; (local-set-key (kbd "C-c C-p") nil) ; remove a key
+  ;;; Org2blog
+  ;; starting org2blog a little more easily
+  ;; example of binding keys only when html-mode is active
 
-  )
+  ;;;; O2B kebybindings
+  (defun matt-org-mode-keys ()
+    "Modify keymaps used by `org-mode'."
+    (local-set-key (kbd "C-c <f1>") 'org2blog/wp-mode)
+    (local-set-key "\C-c\C-r" 'org-decrypt-entry)
+    ;; (local-set-key (kbd "RET") 'org-return-indent)
+    ;; insert a NOTES drawer with C-c C-x n
+  ;;  (local-set-key (kbd "C-c C-x n") (org-insert-drawer "NOTE"))
 
-;; add to org-mode-hook
-(add-hook 'org-mode-hook 'matt-org-mode-keys)
+    ;; (local-set-key (kbd "C-c C-p") nil) ; remove a key
+
+    )
+
+  ;; add to org-mode-hook
+  (add-hook 'org-mode-hook 'matt-org-mode-keys)
 
 #+END_SRC
-*** Temporary exporting
+
+Here's a little treat from [[http://emacs.stackexchange.com/questions/2206/i-want-to-have-the-kbd-tags-for-my-blog-written-in-org-mode][Stack Exchange]].  This function and accompanying keybinding let me insert a <kbd> tag very easily.
+#+BEGIN_SRC emacs-lisp
+
+  (define-key org-mode-map "\C-ck" #'endless/insert-key)
+  (defun endless/insert-key (key)
+    "Ask for a key then insert its description.
+  Will work on both org-mode and any mode that accepts plain html."
+    (interactive "kType key sequence: ")
+    (let* ((is-org-mode (derived-mode-p 'org-mode))
+           (tag (if is-org-mode
+                    "@@html:<kbd>%s</kbd>@@"
+                  "<kbd>%s</kbd>")))
+      (if (null (equal key "\r"))
+          (insert
+           (format tag (help-key-description key nil)))
+        (insert (format tag ""))
+        (forward-char (if is-org-mode -8 -6)))))
+#+END_SRC
+*** Exporting org-files to a temporary location
+:PROPERTIES:
+:ID:       o2b:30e0ee49-9842-4cee-aff6-55283f9043c8
+:POST_DATE: [2015-07-11 Sat 12:25]
+:POSTID:   18
+:BLOG:     matt
+:END:
+I have a private journal, which lives in an encrypted file in a Dropbox-backed-up directory.  I use html export to examine the contents sometimes -- there are some big old tables that are hard to read in org-mode -- but I don't want the html file to end up in Dropbox.  
+
+So I just copied the definition of org-export-html-as-html and made trivial modifications.  There's probably a better way to do this.  
 #+BEGIN_SRC emacs-lisp
 ;; export html to tmp dir
 (defun mwp-org-html-to-tmp
     (&optional async subtreep visible-only body-only ext-plist)
-  "Export current buffer to a HTML file.
+  "Export current buffer to a HTML file in the tmp directory.
 
 If narrowing is active in the current buffer, only export its
 narrowed part.
@@ -1535,6 +1703,7 @@ Return output file's name."
   (let* ((extension (concat "." (or (plist-get ext-plist :html-extension)
 				    org-html-extension
 				    "html")))
+;; this is the code I've changed from the original function. 
 	 (file (org-export-output-file-name extension subtreep "/home/matt/tmp/"))
          
 	 (org-export-coding-system org-html-coding-system))
@@ -1548,6 +1717,8 @@ Return output file's name."
 #+END_SRC
 
 *** Zotero!
+One of the few weaknesses that I see in Org compared to other platforms is citation handling, which until recently I really had no way of doing. But recently things have started to really get better, thanks to Erik Hetzner's ~org-zotxt~.  I'll blog more about this soon, because it's so awesome.  Not quite finished yet though!
+
 #+BEGIN_SRC emacs-lisp
 (require 'org-zotxt)
 ;; zotxt
@@ -1620,17 +1791,36 @@ Return output file's name."
      (mapconcat #'org-zotxt-htmltree2org html ""))))
 
 #+END_SRC
-** Publishing
-#+BEGIN_SRC emacs-lisp
-;; publishing lectures
-;;(require 'org-publish)
 
+#+RESULTS:
+: org-zotxt-htmltree2org
+
+*** Writer's Room
+This is an idea I've had for a couple of years, which hasn't yet come to fruition. If I figure it out, I'll put something in this section!
+
+*** org-present
+This uses org-present to do presentations inside emacs itself!
+#+BEGIN_SRC emacs-lisp
+  (eval-after-load "org-present"
+    '(progn
+       (add-hook 'org-present-mode-hook
+                 (lambda ()
+                   (org-present-big)
+                   (org-display-inline-images)
+                   (org-present-hide-cursor)
+                   (org-present-read-only)))
+       (add-hook 'org-present-mode-quit-hook
+                 (lambda ()
+                   (org-present-small)
+                   (org-remove-inline-images)
+                   (org-present-show-cursor)
+                   (org-present-read-write)))))
 #+END_SRC
 ** First part 
 #+BEGIN_SRC emacs-lisp
 
-;; ;;; Misc.  what is this stuff?
- (setq org-use-speed-commands t)
+;; ;;; Thisi s essential for code blocks, etc. 
+ (setq org-use-speed-commands (lambda () (and (looking-at org-outline-regexp) (looking-back "^\**"))))
 
 ;;; Extract Links
 (defun my-org-extract-link ()
@@ -1639,6 +1829,9 @@ Return output file's name."
   (when (org-in-regexp org-bracket-link-regexp 1)
     (kill-new (org-link-unescape (org-match-string-no-properties 1)))))
 
+;; add a new timestamp one week later than the previous
+(defun mwp/one-week-later (n)
+)
 ;;; changing timestamps    
 (defun update-org-days (n)
   "Change all org-mode timestamps in the current buffer by N days."
@@ -1656,17 +1849,19 @@ Return output file's name."
   '( (perl . t)         
      (ruby . t)
      (sh . t)
+     (dot . t)
      (python . t)
+     (js . t) 
      (emacs-lisp . t)   
    ))
 
 
 
 ;; yasnippet
-(add-hook 'org-mode-hook
-	  (lambda ()
-	    (org-set-local 'yas/trigger-key [tab])
-	    (define-key yas/keymap [tab] 'yas/next-field-or-maybe-expand)))
+;;(add-hook 'org-mode-hook
+;;	  (lambda ()
+;;	    (org-set-local 'yas/trigger-key [tab])
+;;	    (define-key yas/keymap [tab] 'yas/next-field-or-maybe-expand)))
 
 (defun yas/org-very-safe-expand ()
   (let ((yas/fallback-behavior 'return-nil)) (yas/expand)))
@@ -1756,9 +1951,10 @@ Return output file's name."
 
 
 ;; open things properly in org-mode
-(setcdr (assq 'system org-file-apps-defaults-gnu ) "xdg-open %s")
+;;(setcdr (assq 'system org-file-apps-defaults-gnu ) "xdg-open %s")
 
 #+END_SRC
+
 ** Encryption
 #+BEGIN_SRC emacs-lisp
 ;; encryption with easypg
@@ -1774,42 +1970,84 @@ Return output file's name."
 #+END_SRC
 ** Org Function defuns
 #+BEGIN_SRC emacs-lisp
-(defun mwp-change-dates ()
-  (interactive)
-  (progn
-    (save-excursion
-      (setq ts-regex "\\*\\*\\s-*<\\(\\([0-9]\\{4\\}\\)-\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)\\s-\\(Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\|Sun\\)\\)>")
-      ;; go to timestamp
-      (re-search-forward ts-regex)
-      (setq mwp-test-value (match-beginning 0))
-      (message (number-to-string  (match-beginning 0)))
-      (let ((base-date (match-string 1)) ;; this is the timestamp
-            (seven-days (seconds-to-time (* 7 24 60 60)))
-            (new-ts)
-            (week-num 0))
-        (message base-date)
-        (message "in let!")
-        (while (< week-num 12)
-          (message "in while!")
-          (let ((add-value (seconds-to-time (* week-num 50 24 60 60))))
-            (message "in second let")
-            (setq new-ts (format-time-string "** <%Y-%m-%d %a>"
-                                             (time-add (date-to-time base-date) add-value)))
-            (message new-ts)
-            (re-search-forward ts-regex)
+  (defun mwp-change-dates ()
+    (interactive)
+    (progn
+      (save-excursion
+        (setq ts-regex "\\*\\*\\s-*<\\(\\([0-9]\\{4\\}\\)-\\([0-9]\\{2\\}\\)-\\([0-9]\\{2\\}\\)\\s-\\(Mon\\|Tue\\|Wed\\|Thu\\|Fri\\|Sat\\|Sun\\)\\)>")
+        ;; go to timestamp
+        (re-search-forward ts-regex)
+        (setq mwp-test-value (match-beginning 0))
+        (message (number-to-string  (match-beginning 0)))
+        (let ((base-date (match-string 1)) ;; this is the timestamp
+              (seven-days (seconds-to-time (* 7 24 60 60)))
+              (new-ts)
+              (week-num 0))
+          (message base-date)
+          (message "in let!")
+          (while (< week-num 12)
+            (message "in while!")
+            (let ((add-value (seconds-to-time (* week-num 50 24 60 60))))
+              (message "in second let")
+              (setq new-ts (format-time-string "** <%Y-%m-%d %a>"
+                                               (time-add (date-to-time base-date) add-value)))
+              (message new-ts)
+              (re-search-forward ts-regex)
 
-            (message (number-to-string  (match-beginning 0)))
-            (message (number-to-string  (match-end 0)))
-            ;; now we kill the old time stamp, and insert the new one
-            (set-mark (match-beginning 0))
+              (message (number-to-string  (match-beginning 0)))
+              (message (number-to-string  (match-end 0)))
+              ;; now we kill the old time stamp, and insert the new one
+              (set-mark (match-beginning 0))
           
-            ;; (beginning-of-line)
-            (delete-region (match-beginning 0) (match-end 0))
-            (insert new-ts)
-            (setq week-num (1+ week-num))
-            (re-search-forward ts-regex)))
-        ))))
+              ;; (beginning-of-line)
+              (delete-region (match-beginning 0) (match-end 0))
+              (insert new-ts)
+              (setq week-num (1+ week-num))
+              (re-search-forward ts-regex)))
+          ))))
 
+  (defun insert-ts+1w ()
+    "Insert a timestamp at point that is one week later than the
+  last timestamp found in the buffer."
+    (interactive)
+    (let ((last-ts (car (last (org-element-map (org-element-parse-buffer) 'timestamp
+                                (lambda (timestamp)
+                                  (org-element-property :raw-value timestamp)))))))
+      (insert last-ts)
+      (backward-char 2)
+      (org-timestamp-change +7 'day)
+      (forward-char 2)
+      ))
+(defun insert-ts+7 ()
+  (interactive)
+  (insert
+   (concat ""
+           (save-excursion
+             (re-search-backward
+              (org-re-timestamp 'all))
+             (match-string 0)))
+   "")
+  (org-timestamp-change 7 'day))
+
+#+END_SRC
+
+here's another version:
+#+begin_src emacs-lisp
+(defun update-org-days (n)
+  "Change all org-mode timestamps in the current buffer by N days."
+  (interactive "nChange days: ")
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "[[<]" nil t)
+      (when (org-at-timestamp-p t)
+        (org-timestamp-change n 'day)))))
+;; (update-org-days 200)
+#+end_src
+
+#+RESULTS:
+: update-org-days
+
+#+BEGIN_SRC emacs-lisp
 (defun insert-ts+1w ()
   "Insert a timestamp at point that is one week later than the
 last timestamp found in the buffer."
@@ -1822,9 +2060,12 @@ last timestamp found in the buffer."
     (org-timestamp-change +7 'day)
     ))
 
-
 #+END_SRC
+
 ** Helm and Org
+Not sure what I wanted here. There's a whole bunch of stuff here about helm..
+which I don't remember having done myself.
+
 #+BEGIN_SRC emacs-lisp
 ;; helm-bibtex
 (setq helm-bibtex-bibliography '("/home/matt/.emacs.d/bibliography.bibtex/bibliography.bibtex.bib"))
@@ -1885,94 +2126,1921 @@ last timestamp found in the buffer."
 
 #+END_SRC
 
+*** Helm-swish-e
+An indexer for forg-mode files.  from: http://kitchingroup.cheme.cmu.edu/blog/2015/06/25/Integrating-swish-e-and-Emacs/
+
+A much cooler version is described here:
+http://kitchingroup.cheme.cmu.edu/blog/2015/07/06/Indexing-headlines-in-org-files-with-swish-e-with-laser-sharp-results/
+
+But requires some setup first.  
+#+BEGIN_SRC emacs-lisp
+  (defun helm-swish-e-candidates (query)
+    "Generate a list of cons cells (swish-e result . path)."
+    (let* ((result (shell-command-to-string
+                    (format "swish-e -f ~/.swish-e/index.swish-e -x \"%%r\t%%p\n\" -w %s"
+                            (shell-quote-argument query))))
+           (lines (s-split "\n" result t))
+           (candidates '()))
+      (loop for line in lines
+            unless (or  (s-starts-with? "#" line)
+                        (s-starts-with? "." line))
+            collect (cons line (cdr (s-split "\t" line))))))
+
+
+  (defun helm-swish-e (query)
+    "Run a swish-e query and provide helm selection buffer of the results."
+    (interactive "sQuery: ")
+    (helm :sources `(((name . ,(format "swish-e: %s" query))
+                      (candidates . ,(helm-swish-e-candidates query))
+                      (action . (("open" . (lambda (f)
+                                             (find-file (car f)))))))
+                     ((name . "New search")
+                      (dummy)
+                      (action . (("search" . (lambda (f)
+                                               (helm-swish-e helm-pattern)))))))))
+#+END_SRC
+
+second try from jmax
+#+BEGIN_SRC emacs-lisp
+  ;;; swish-e.el --- Interface to swish-e
+
+  ;;; Commentary:
+  ;;
+
+  ;; This is the configuration file I used.
+  ;; # Example configuration file
+
+  ;; # where to save the index
+  ;; IndexFile /Users/jkitchin/.swish-e/index-org.swish-e
+
+  ;; PropertyNames swish-position
+
+  ;; # Save descriptions for context on search results.
+  ;; StoreDescription XML <desc> 500
+  ;; StoreDescription XML* <desc> 500
+
+  ;; # index all tags for searching
+  ;; UndefinedMetaTags auto
+  ;; UndefinedXMLAttributes auto
+
+  ;; Run the index command as:
+  ;; swish-e -c ~/.swish-e/swish-org.conf -S prog -i ~/bin/swish-org-documents.el
+
+  ;;; Code:
+
+  (defvar swish-e-index
+    "~/.swish-e/index-org.swish-e"
+    "Path to the index for searching.")
+
+
+  (defun helm-swish-e-candidates (query)
+    "Generate a list of cons cells (swish-e result . path)."
+    (let* ((result (shell-command-to-string
+		    (format "swish-e -f %s -x \"<swishrank>\t<swishdocpath>\t<swish-position>\t<swishtitle>\t<swishdescription>\n\" -w %s"
+			    swish-e-index
+			    (shell-quote-argument query))))
+	   (lines (s-split "\n" result t))
+	   (candidates '()))
+      (loop for line in lines
+	    unless (or  (s-starts-with? "#" line)
+		        (s-starts-with? "." line))
+	    collect  (let* ((fields (s-split "\t" line))
+			    (rank (nth 0 fields))
+			    (docpath (nth 1 fields))
+			    (position (nth 2 fields))
+			    (title (nth 3 fields))
+			    (description (nth 4 fields)))
+		       (cons (format "%4s %s%s\n%s\n"
+				     rank title (if (not (string= "" position))
+						    (concat  "::" position)
+						  "")
+				     description)
+			     docpath)))))
+
+
+  (defun helm-swish-e (query)
+    "Run a swish-e query and provide helm selection buffer of the results.
+  Example queries:
+  paragraph=foo
+  src-block.language=python
+  not foo
+  foo near5 bar
+  see http://swish-e.org/docs/swish-search.html
+  "
+    (interactive "sQuery: ")
+    (helm :sources `(((name . ,(format "swish-e: %s" query))
+		      (multiline)
+		      (candidates . ,(helm-swish-e-candidates query))
+		      (action . (("open" . (lambda (f)
+					     (org-open-link-from-string f))))))
+		     ((name . "New search")
+		      (dummy)
+		      (action . (("search" . (lambda (f)
+					       (helm-swish-e helm-pattern)))))))))
+
+  (defun swish-e-todo ()
+    (interactive)
+    (helm-swish-e "todo-keyword=TODO"))
+
+  (provide 'swish-e)
+
+  ;;; swish-e.el ends here
+#+END_SRC
+
+** Org-mode html copy
+This code from John Kitchen & abo-abo makes it a lot easier to copy text directly from org to other programs:
+https://github.com/abo-abo/oremacs/commit/6c86696c0a1f66bf690e1a934683f85f04c6f34d#diff-ecff87135600df0cafffb47c303ae9c6
+http://kitchingroup.cheme.cmu.edu/blog/2016/06/16/Copy-formatted-org-mode-text-from-Emacs-to-other-applications/#comment-2735698988
+
+#+BEGIN_SRC emacs-lisp
+(defun ora-org-to-html-to-clipboard ()
+  "Export region to HTML, and copy it to the clipboard."
+  (interactive)
+  (let
+      ((org-html-postamble nil)
+       (org-html-xml-declaration nil)
+       (org-html-preamble nil))
+    
+    (org-export-to-file 'html "/tmp/org.html")
+    (apply
+     'start-process "xclip" "*xclip*"
+     (split-string
+      "xclip -verbose -i /tmp/org.html -t text/html -selection clipboard" " "))))
+(global-set-key (kbd "C-c w") 'ora-org-to-html-to-clipboard)
+#+END_SRC
+
 ** More of the mixed up stuff
 #+BEGIN_SRC emacs-lisp
-;; ibuffer
-(require 'ibuffer)
+  ;; ibuffer
+  (require 'ibuffer)
 
-(setq ibuffer-saved-filter-groups
-      (quote (("default"
-               ("dired" (mode . dired-mode))
-               ("java" (mode . java-mode))
-               ("org" (mode . org-mode))
-               ("elisp" (mode . elisp-mode))
-               ("xml" (mode . nxml-mode))))))    
+  (setq ibuffer-saved-filter-groups
+        (quote (("default"
+                 ("dired" (mode . dired-mode))
+                 ("java" (mode . java-mode))
+                 ("org" (mode . org-mode))
+                 ("elisp" (mode . elisp-mode))
+                 ("xml" (mode . nxml-mode))))))    
 
-(setq ibuffer-show-empty-filter-groups nil)
+  (setq ibuffer-show-empty-filter-groups nil)
 
-(add-hook 'ibuffer-mode-hook 
-          (lambda () 
-            (ibuffer-switch-to-saved-filter-groups "default")
-            (ibuffer-filter-by-filename "."))) ;; to show only dired and files buffers
-
-
-;; org-mobile
-(setq org-mobile-directory "~/Dropbox/MobileOrg")
-;; ace
-;; 
-;; enable a more powerful jump back function from ace jump mode
-;;
-(define-key global-map (kbd "C-c C-SPC") 'ace-jump-mode)
-(autoload
-  'ace-jump-mode-pop-mark
-  "ace-jump-mode"
-  "Ace jump back:-)"
-  t)
-(eval-after-load "ace-jump-mode"
-  '(ace-jump-mode-enable-mark-sync))
-(define-key global-map (kbd "C-x C-SPC") 'ace-jump-mode-pop-mark)
-
-;; which function mode
-(require 'which-func)
-(add-to-list 'which-func-modes 'org-mode)
-(which-func-mode 1)
+  (add-hook 'ibuffer-mode-hook 
+            (lambda () 
+              (ibuffer-switch-to-saved-filter-groups "default")
+              (ibuffer-filter-by-filename "."))) ;; to show only dired and files buffers
 
 
-;; fix open links
-(setcdr (assq 'system org-file-apps-defaults-gnu ) '(call-process "xdg-open" nil 0 nil file))
-;; ox-reveal, change initialization options
+  ;; org-mobile
+  (setq org-mobile-directory "~/Dropbox/MobileOrg")
+  ;; ace
+  ;; 
+  ;; enable a more powerful jump back function from ace jump mode
+  ;;
+  (define-key global-map (kbd "C-c C-SPC") 'ace-jump-mode)
+  (autoload
+    'ace-jump-mode-pop-mark
+    "ace-jump-mode"
+    "Ace jump back:-)"
+    t)
+  (eval-after-load "ace-jump-mode"
+    '(ace-jump-mode-enable-mark-sync))
+  (define-key global-map (kbd "C-x C-SPC") 'ace-jump-mode-pop-mark)
+
+  ;; which function mode
+  (require 'which-func)
+  ;;(add-to-list 'which-func-modes 'org-mode)
+  (which-func-mode 1)
 
 
-;; github (push  )
-
-(defun endless/visit-pull-request-url ()
-  "Visit the current branch's PR on Github."
-  (interactive)
-  (browse-url
-   (format "https://github.com/%s/compare/%s"
-           (replace-regexp-in-string
-            "\\`.+github\\.com:\\(.+\\)\\.git\\'" "\\1"
-            (magit-get "remote"
-                       (magit-get-current-remote)
-                       "url"))
-           (magit-get-current-branch))))
-
-(eval-after-load 'magit
-  '(define-key magit-mode-map "V"
-     #'endless/visit-pull-request-url))
+  ;; open links
+  ;; (setcdr (assq 'system org-file-apps-defaults-gnu ) '(call-process "xdg-open" nil 0 nil file))
+  ;; ox-reveal, change initialization options
 
 
-;; change default c-u values for C-c C-l
-(defun mwp-org-insert-link (&optional complete-file link-location default-description)
-  "insert a link at location, but insert a letave link by default, and absolute one only by necessity."
-  (interactive)
-    (cond
-   ((eq current-prefix-arg nil)
-    (let ((current-prefix-arg 4)) 
-      (call-interactively 'org-insert-link)))
-   (t
-    (let ((current-prefix-arg nil)) 
-      (call-interactively 'org-insert-link)))
-   (t (call-interactively 'org-insert-link))
-   ))
+  ;; github (push  )
+
+  (defun endless/visit-pull-request-url ()
+    "Visit the current branch's PR on Github."
+    (interactive)
+    (browse-url
+     (format "https://github.com/%s/compare/%s"
+             (replace-regexp-in-string
+              "\\`.+github\\.com:\\(.+\\)\\.git\\'" "\\1"
+              (magit-get "remote"
+                         (magit-get-current-remote)
+                         "url"))
+             (magit-get-current-branch))))
+
+  (eval-after-load 'magit
+    '(define-key magit-mode-map "V"
+       #'endless/visit-pull-request-url))
+
+
+  ;; change default c-u values for C-c C-l
+  (defun mwp-org-insert-link (&optional complete-file link-location default-description)
+    "insert a link at location, but insert a letave link by default, and absolute one only by necessity."
+    (interactive)
+      (cond
+     ((eq current-prefix-arg nil)
+      (let ((current-prefix-arg 4)) 
+        (call-interactively 'org-insert-link)))
+     (t
+      (let ((current-prefix-arg nil)) 
+        (call-interactively 'org-insert-link)))
+     ;;(t (call-interactively 'org-insert-link))
+     ))
 
 #+END_SRC
-** 
-** load orig library
+** Mailing subtrees with Attachments
+:PROPERTIES:
+:ID:       o2b:f2904bd7-c966-4c5a-91c6-6cad0b0f22ef
+:POST_DATE: [2015-07-15 Wed 15:17]
+:END:
+
+This is pretty exciting; I've figured out how to quickly send org-mode subtrees as MIME-encoded emails.  That means that, essentially, I can write in org, as plain text, and very quickly export to HTML, add attachments, and send. The exciting part about this for me is that it should streamline my communications with students, while also letting me stay in Org and keep my records in order. Let's walk through the process.
+
+*** Use-case
+For the moment, I still use Thunderbird as my primary MUA. It's pretty easy to use, minimal configuration compared to all things Emacs, and if something goes wrong with it I don't have to quit Emacs (!), just Thunderbird.
+
+In some cases, though, Thunderbird makes for an awkward workflow. That's certainly the case for grading, whih has many, poorly-integrated elements. To mark an assignment I need to:
+- log in to Blackboard (in Firefox; I wonder if I could do that in Emacs?)
+- download the set of student papers (one at a time, 2 clicks per paper) to ~Downlads~
+- move papers to a directory (usually ~/COURSENAME/Grading/ASSIGNMENTNAME )
+- Read papers in LibreOffice, comment inline
+- record mark in Libreoffice Calc spreadsheet
+- email paper back to student with comments
+- upload marks back into Blackboard
+- find a place to archive the student paper in case I need it later, e.g. for a contested grade.  
+
+The whole process basically sucks. I spend maybe 20% of my time fussing with paths and mouse clicks and email addresses. So I am experimenting with moving as much of this process into Emacs. So far, I don't think there's any way at all to bulk-download the papers -- that sucks, but I can live with it I guess (I have to!).  So I start the optimization at the point where I have all my papers ready to go in a subdir.
+
+*** Org-mime
+Org-mime is the library that allows org buffers and other elements to be quickly converted to HTML and prepared for multi-part messaging.  Load it and set it up (see [[http://orgmode.org/worg/org-contrib/org-mime.html]]):
+#+BEGIN_SRC emacs-lisp
+  ;; enable HTML email from org
+  (require 'org-mime)
+  ;; setup org-mime for wanderlust
+  ;; (setq org-mime-library 'semi)
+  ;; or for gnus/message-mode
+  (setq org-mime-library 'mml)
+
+  ;; easy access to htmlize in message-mode
+  (add-hook 'message-mode-hook
+            (lambda ()
+              (local-set-key "\C-c\M-o" 'org-mime-htmlize)))
+
+  ;; uncomment this to use the org-mome native functions for htmlizing.
+  ;; (add-hook 'org-mode-hook
+  ;;           (lambda ()
+  ;;             (local-set-key "\C-c\M-o" 'org-mime-org-buffer-htmlize)))
+
+  ;; uncomment to displyay src blocks with a dark background
+  ;; (add-hook 'org-mime-html-hook
+  ;;           (lambda ()
+  ;;             (org-mime-change-element-style
+  ;;              "pre" (format "color: %s; background-color: %s; padding: 0.5em;"
+  ;;                            "#E6E1DC" "#232323"))))
+
+  ;; pretty blockquotes
+  (add-hook 'org-mime-html-hook
+            (lambda ()
+              (org-mime-change-element-style
+
+               "blockquote" "border-left: 2px solid gray; padding-left: 4px;")))    
+  (setq user-mail-address "matt.price@utoronto.ca"
+        user-full-name "Matt Price")
+#+END_SRC
+*** Fix htmlization
+Upstream org-mime-htmlize unfortunately can't be called uninteractively (bummer!), 
+so we have to rewrite it to make programmatic calls work properly. I found the solution 
+[[http://emacs.stackexchange.com/questions/13505/a-function-to-org-mime-subtree-then-org-mime-htmlize][Emacs Stackexchange]].  
+
+OK, but actually this no longer works w/ org-mode 9 I think -- so I've commented it out for now -- the new version works great.  With nullmailer as my smtp agent this is unbelievably fast now.  Pretty fantastic.  
 
 #+BEGIN_SRC emacs-lisp
-;;; organizing my life
-;; (load-library "organize-my-life")
+  ;; (defun org-mime-htmlize (&optional arg)
+  ;; "Export a portion of an email body composed using `mml-mode' to
+  ;; html using `org-mode'.  If called with an active region only
+  ;; export that region, otherwise export the entire body."
+  ;;   (interactive "P")
+  ;;   (require 'ox-org)
+  ;;   (require 'ox-html)
+  ;;   (let* ((region-p (org-region-active-p))
+  ;;          (html-start (or (and region-p (region-beginning))
+  ;;                          (save-excursion
+  ;;                            (goto-char (point-min))
+  ;;                            (search-forward mail-header-separator)
+  ;;                            (+ (point) 1))))
+  ;;          (html-end (or (and region-p (region-end))
+  ;;                        ;; TODO: should catch signature...
+  ;;                        (point-max)))
+  ;;          (raw-body (concat org-mime-default-header
+  ;;                            (buffer-substring html-start html-end)))
+  ;;          (tmp-file (make-temp-name (expand-file-name
+  ;;                                     "mail" temporary-file-directory)))
+  ;;          (body (org-export-string-as raw-body 'org t))
+  ;;          ;; because we probably don't want to export a huge style file
+  ;;          (org-export-htmlize-output-type 'inline-css)
+  ;;          ;; makes the replies with ">"s look nicer
+  ;;          (org-export-preserve-breaks org-mime-preserve-breaks)
+  ;;          ;; dvipng for inline latex because MathJax doesn't work in mail
+  ;;          (org-html-with-latex 'dvipng)
+  ;;          ;; to hold attachments for inline html images
+  ;;          (html-and-images
+  ;;           (org-mime-replace-images
+  ;;            (org-export-string-as raw-body 'html t) tmp-file))
+  ;;          (html-images (unless arg (cdr html-and-images)))
+  ;;          (html (org-mime-apply-html-hook
+  ;;                 (if arg
+  ;;                     (format org-mime-fixedwith-wrap body)
+  ;;                   (car html-and-images)))))
+  ;;     (delete-region html-start html-end)
+  ;;     (save-excursion
+  ;;       (goto-char html-start)
+  ;;       (insert (org-mime-multipart
+  ;;                body html (mapconcat 'identity html-images "\n"))))))
+#+END_SRC
+
+*** Actually perform the export!
+
+These functions are crude helpers that gather extra information about the org subtree, of which org-mime is unaware.  
+
+- ~mwp-org-get-parent-headline~ traverses the tree to the ancestor headline, because that's what I want to set the subject to.
+- ~mwp-org-attachment-list~ is stolen directly from the Gnorb package, which looks cool, awesome ,and kinda complex; it just iterates through a subtree's attachments and grabs URLs.  
+- ~mwp-send-subtree-with-attachments~ performs the export and is bound to ~C-c M-o~
+
+So, if I want to mail a subtree, I just ~C-c M-o~ and I'm almost done -- the html mail is ready to go, and all org attachments are also attached to the email.
+
+Note there are some real weaknesses here: ~mwp-org-get-parent-headline~ actually gets the top-level /ancestor/ -- which only happens to be what I want right now. Better would be to use org-element to locate the parent (and other headline attributes) directly, but I'm not sure how to do that.
+
+Similarly, the initial greeting is generated from the current headline value -- so this only works because I name my subtrees after the addressee (which I only do because of my use case).  
+
+
+*URGENT URGENT URGENT*: need to amend mwp-send-subtre-with-attachemnts to make mu4e~draft-drafts-folder into mu4e-drafts-folder before calling mu4e-send. That *might* start to slve the problm w/ stuff not being saved.  
+#+BEGIN_SRC emacs-lisp
+  (defun mwp-org-get-parent-headline ()
+    "Acquire the parent headline & return."
+    (save-excursion
+      (org-mark-subtree)
+      (re-search-backward  "^\\* ")
+      (nth 4 (org-heading-components))))
+
+  (defun mwp-send-subtree-with-attachments ()
+    "org-mime-subtree and HTMLize"
+    (interactive)
+    (org-mark-subtree)
+    (let ((attachments (mwp-org-attachment-list))
+          (subject  (mwp-org-get-parent-headline)))
+      ;;(insert "Hello " (nth 4 org-heading-components) ",\n")
+      ;;(org-mime-subtree)
+      (org-mime-send-subtree)
+      (insert "\nBest,\nMP.\n")
+      (message-goto-body)
+      (insert "Hello,\n\nAttached are the comments from your assignment.\n")
+      ;; (message "subject is" )
+      ;; (message subject)
+      ;;(message-to)
+      (org-mime-htmlize)
+      ;; (mu4e-compose-mode)
+      ;; this comes from gnorb
+      ;; I will reintroduce it if I want to reinstate questions.
+      ;; (map-y-or-n-p
+      ;;  ;; (lambda (a) (format "Attach %s to outgoing message? "
+      ;;  ;;                    (file-name-nondirectory a)))
+      ;; (lambda (a)
+      ;;   (mml-attach-file a (mm-default-file-encoding a)
+      ;;                    nil "attachment"))
+      ;; attachments
+      ;; '("file" "files" "attach"))
+      ;; (message "Attachments: %s" attachments)
+      (dolist (a attachments) (message "Attachment: %s" a) (mml-attach-file a (mm-default-file-encoding a) nil "attachment"))
+      (message-goto-to)
+      ))
+
+  ;; add a keybinding for org-mode
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (local-set-key "\C-c\M-o" 'mwp-send-subtree-with-attachments)))
+
+  ;; stolen from gnorb; finds attachments in subtree
+  (defun mwp-org-attachment-list (&optional id)
+    "Get a list of files (absolute filenames) attached to the
+  current heading, or the heading indicated by optional argument ID."
+    (when (featurep 'org-attach)
+      (let* ((attach-dir (save-excursion
+                           (when id
+                           (org-id-goto id))
+                           (org-attach-dir t)))
+             (files
+              (mapcar
+               (lambda (f)
+                 (expand-file-name f attach-dir))
+               (org-attach-file-list attach-dir))))
+        files)))
+#+END_SRC
+(setq starttls-extra-arguments '("--priority" "NORMAL:%COMPAT"))
+*** Contacts
+That's a good start, but there are still some steps to make this truly convenient. For instance, I certainly don't want to type in students' email addresses by hand. So I imported my contacts from thunderbird to org-contacts. This was a pain -- the process was Thunderbird \rarr Gmail (via gsync plugin) \rarr vcard (via gmail export) \rarr org-contacts (via [[https://gist.github.com/tmalsburg/9747104][Titus's python importer]]).  I wish there was a CSV importer for org-contacts; probably this would be easy to write but I'm so slooooowwww at coding. My org contacts live in ~GTD/Contacts.org~, which is set in ~Customize~, and org reads them on startup with this line
+#+BEGIN_SRC emacs-lisp
+  ;; (require 'org-contacts)
+#+END_SRC
+With this single line, org-contacts now provides @@html:<kbd>TAB</kbd>@@ completion in message-mode to headers. It's very fast, so feels more convenient than Thunderbird.
+
+On the other hand... mu4e is sooo much better.  skipping this for now.  
+
+- Making it better :: I wish I could get org-contacts to provide tab completion in my subtrees (see below). I would need to access the completion function directly and somehow set the binding for @@html:<kbd>TAB</kbd>@@ to that completion function. 
+
+*** Adding Attachments with Drag & Drop                            :ATTACH:
+:PROPERTIES:
+:Attachments: minimal.el
+:ID:       7c9d8afa-0b2d-4be6-94b4-b586b4ea3bd7
+:END:
+After I make inline comments, I fill out a grading template and attach the paper to the resultant subtree (@@html:<kbd>C-c C-a a PATH</kbd>@@).  This is OK, but sometimes it would nice to be able to drag and drom the files, so I am working on these functions. 
+
+- Even better :: an even better solution be to add the attachments programmatically. The studnet papes follow a strict naming convention, so I should be able to crawl the directory and find the most recent paper with the student's name in it... I'm worried it wil lbe too error prone though.
+     
+Anyway: unfortunately the following code doesn't work right, so *don't just cut and paste this code!).  I *ought* to be able to bind the drag and drop action to a function -- even several functions -- and, if conditions are right, attach the dragged file to the current org header.  John Kitchin describes this method [[http://kitchingroup.cheme.cmu.edu/blog/2015/07/10/Drag-images-and-files-onto-org-mode-and-insert-a-link-to-them/][here]]. But I do the following instead, which is also broken right now:
+
+Start by loading org-download, which downloads dragged images as attachments and inserts a link. (yay). THen a modification which fixes handling of file links allowing me to drag-n-drop files links onto org as attachments. Unfortunately, I can't get org-attach to process the URI's properly.  Darn it.  
+#+BEGIN_SRC emacs-lisp
+  (require 'org-download)
+  (require 'org-attach)
+  ;; extending the dnd functionality
+  ;; but doesn't actually work... 
+  (defun mwp-org-file-link-dnd (uri action)
+      "When in `org-mode' and URI points to local file, 
+    add as attachment and also add a link. Otherwise, 
+    pass URI and Action back to dnd dispatch"
+      (let ((img-regexp "\\(png$\\|jp[e]?g$\\)")
+            (newuri (replace-regexp-in-string "file:///" "/" uri)))
+        (cond ((eq major-mode 'org-mode)
+               (message "Hi! newuri: %s " (file-relative-name newuri))
+               (cond ((string-match img-regexp newuri)
+                      (insert "#+ATTR_ORG: :width 300\n")
+                      (insert (concat  "#+CAPTION: " (read-input "Caption: ") "\n"))
+                      (insert (format "[[%s]]" uri))
+                      (org-display-inline-images t t))
+                     (t 
+                      (org-attach-new newuri)
+                      (insert (format "[[%s]]" uri))))
+               )
+              (t
+               (let ((dnd-protocol-alist
+                      (rassq-delete-all
+                       'mwp-org-file-link-dnd
+                       (copy-alist dnd-protocol-alist))))
+                 (dnd-handle-one-url nil action uri)))
+              )))
+
+    ;; add a new function that DOESN'T open the attachment!
+  (defun org-attach-new-dont-open (file)
+      "Create a new attachment FILE for the current task.
+    The attachment is created as an Emacs buffer."
+      (interactive "sCreate attachment named: ")
+      (when (and org-attach-file-list-property (not org-attach-inherited))
+        (org-entry-add-to-multivalued-property
+         (point) org-attach-file-list-property file))
+      )
+
+  (defun mwp-org-file-link-enable ()
+      "Enable file drag and drop attachments."
+      (unless (eq (cdr (assoc "^\\(file\\)://" dnd-protocol-alist))
+                  'mwp-org-file-link-dnd)
+        (setq dnd-protocol-alist
+              `(("^\\(file\\)://" . mwp-org-file-link-dnd) ,@dnd-protocol-alist))))
+
+  (defun mwp-org-file-link-disable ()
+    "Enable file drag and drop attachments."
+    (if (eq (cdr (assoc "^\\(file\\)://" dnd-protocol-alist))
+                'mwp-org-file-link-dnd)
+        (rassq-delete-all
+         'mwp-org-file-link-dnd
+         dnd-protocol-alist)
+    
+      ))
+
+  (mwp-org-file-link-enable)
 
 #+END_SRC
 
+*** Another attempt at attachments: attachfile
+John Kitchin uses a custom link type, "attachfile", for a ocupleo f things, and describes it in some detail [[
+
+#+BEGIN_SRC emacs-lisp
+  (org-add-link-type
+   "attachfile"
+   (lambda (link-string) (org-open-file link-string))
+   ;; formatting
+   (lambda (keyword desc format)
+     (cond
+      ((eq format 'html) (source-data-uri keyword)); no output for html
+      ((eq format 'latex)
+       ;; write out the latex command
+       (format "\\attachfile{%s}" keyword)))))
+
+(  defun source-data-uri (source)
+    "Encode the string in SOURCE to a data uri."
+    (format
+     "<a class=\"org-source\" href=\"data:text/plain;charset=US-ASCII;base64,%s\">source</a>"
+     (base64-encode-string source)))
+
+#+END_SRC
+
+** Note Taking with PDF Tools
+:PROPERTIES:
+:ID:       o2b:6ff4548c-1ab7-4ec0-af5a-8b65892ff412
+:POSTID:   38
+:BLOG:     matt
+:POST_DATE: [2015-11-11 Wed 15:11]
+:END:
+
+*NOTE:* This post has been modified as of <2015-11-22 Sun> -- the new code is a little cleaner, and I think the discussion a little fuller. 
+
+Almost all of my job-related reading is now done on a screen.  There are still disadvantages -- I find it much harder to concentrate when reading online -- but in other ways it is markedly more convenient.  
+
+In particular, it is now much easier to assemble quotations from sources; and now that I've found [[https://github.com/politza/pdf-tools][PDF Tools]], it has become even easier.  I've just  started to use it to extract annotations from my PDF's, and it works much better than the lousy command-line hack I was using previously.  
+
+As we're mid-semester, most of my reading is for classes I teach. My current workflow is as follows: 
+- Assemble the relevant readings in a Dropbox-synced directory (ClassName/Readings)
+- Using [[http://m.cerience.com/reader/][Repligo Reader]] (apparently no longer available in the app store?), highlight the passages I'm interested in.
+- execute code block (see below) to insert org headings with all highlights from one or more pdfs
+- Assemble reveal.js lecture presentation around those highlights, using [[https://github.com/yjwen/org-reveal][org-reveal]] or Pandoc.  
+
+*** Activating PDF Tools
+Begin by installing pdf-tools and org-pdfview from ELPA with ~package-list~packages~ or ~package-install~.  
+
+Then make sure they are activated by adding these lines in your init file:
+
+#+BEGIN_SRC emacs-lisp
+    (pdf-tools-install)
+    (eval-after-load 'org '(require 'org-pdfview))
+  (add-to-list 'org-file-apps '("\\.pdf\\'" . (lambda (file link) (org-pdfview-open link))))
+  
+#+END_SRC
+
+#+RESULTS:
+: ((\.doc\' . /usr/bin/libreoffice %s) (\.docx\' . /usr/bin/libreoffice %s) (\.pdf::\([[:digit:]]+\)\' . org-pdfview-open) (\.pdf\' . org-pdfview-open) (auto-mode . emacs) (\.mm\' . default) (\.x?html?\' . /usr/lib/firefox-developer-edition/firefox %s) (\.pdf\' . default) (\.odt\' . /usr/bin/libreoffice %s))
+
+*** Switching to PDF Tools for annotating and extracting PDF's
+
+Last month Penguim proposed some changes in a [[https://github.com/politza/pdf-tools/pull/133][pull request]], that export annotations as a set of org headlines.  It's potentially very interesting but not quite what I want to do, so I modified this code.  ~pdf-annot-markups-as-org-text~ extracts the text of an annotation (stored as the ~subject~ attribute in an alist), and also generates a link back to the page in the pdf.  ~mwp/pdf-multi-extract~ is just a helper function that makes it easier to construct elisp source blocks the way I'm used to doing:
+
+#+BEGIN_SRC emacs-lisp
+  ;; modified from https://github.com/politza/pdf-tools/pull/133 
+
+  (defun mwp/pdf-multi-extract (sources)
+    "Helper function to print highlighted text from a list of pdf's, with one org header per pdf, 
+  and links back to page of highlight."
+    (let (
+          (output ""))
+      (dolist (thispdf sources)
+        (setq output (concat output (pdf-annot-markups-as-org-text thispdf nil level ))))
+      (princ output))
+    )
+
+  ;; this is stolen from https://github.com/pinguim06/pdf-tools/commit/22629c746878f4e554d4e530306f3433d594a654
+  (defun pdf-annot-edges-to-region (edges)
+    "Attempt to get 4-entry region \(LEFT TOP RIGHT BOTTOM\) from several edges.
+  We need this to import annotations and to get marked-up text, because annotations
+  are referenced by its edges, but functions for these tasks need region."
+
+    (let ((left0 (nth 0 (car edges)))
+          (top0 (nth 1 (car edges)))
+          (bottom0 (nth 3 (car edges)))
+          (top1 (nth 1 (car (last edges))))
+          (right1 (nth 2 (car (last edges))))
+          (bottom1 (nth 3 (car (last edges))))
+          (n (safe-length edges)))
+      ;; we try to guess the line height to move
+      ;; the region away from the boundary and
+      ;; avoid double lines
+      (list left0
+            (+ top0 (/ (- bottom0 top0) 2))
+            right1
+            (- bottom1 (/ (- bottom1 top1) 2 )))))
+
+  (defun pdf-annot-markups-as-org-text (pdfpath &optional title level)
+    "Acquire highligh annotations as text, and return as org-heading"
+
+    (interactive "fPath to PDF: ")  
+    (let* ((outputstring "") ;; the text to be returned
+           (title (or title (replace-regexp-in-string "-" " " (file-name-base pdfpath ))))
+           (level (or level (1+ (org-current-level)))) ;; I guess if we're not in an org-buffer this will fail
+           (levelstring (make-string level ?*)) ;; set headline to proper level
+           (annots (sort (pdf-info-getannots nil pdfpath)  ;; get and sort all annots
+                         'pdf-annot-compare-annotations))
+           )
+      ;; create the header
+      (setq outputstring (concat levelstring " Quotes From " title "\n\n")) ;; create heading
+
+      ;; extract text
+      (mapc
+       (lambda (annot) ;; traverse all annotations
+         (if (eq 'highlight (assoc-default 'type annot))
+             (let* ((page (assoc-default 'page annot))
+                    ;; use pdf-annot-edges-to-region to get correct boundaries of highlight
+                    (real-edges (pdf-annot-edges-to-region
+                                 (pdf-annot-get annot 'markup-edges)))
+                    (text (or (assoc-default 'subject annot) (assoc-default 'content annot)
+                              (replace-regexp-in-string "\n" " " (pdf-info-gettext page real-edges nil pdfpath)
+                                                        ) ))
+                  
+                    (height (nth 1 real-edges)) ;; distance down the page
+                    ;; use pdfview link directly to page number
+                    (linktext (concat "[[pdfview:" pdfpath "::" (number-to-string page) 
+                                      "++" (number-to-string height) "][" title  "]]" ))
+                    )
+               (setq outputstring (concat outputstring text " ("
+                                          linktext ", " (number-to-string page) ")\n\n"))
+               )))
+       annots)
+      outputstring ;; return the header
+      )
+    )
+
+#+END_SRC
+
+#+RESULTS:
+: pdf-annot-markups-as-org-text
+
+*** Using in Org with a Source Block
+
+Now it's more or less trivial to quickly generate the org headers using a source block:
+
+#+BEGIN_EXAMPLE
+#+BEGIN_SRC elisp :results output raw :var level=(1+ (org-current-level))
+(mwp/pdf-multi-extract '(
+                   "/home/matt/HackingHistory/readings/Troper-becoming-immigrant-city.pdf"  "/home/matt/HackingHistory/readings/historical-authority-hampton.pdf"))
+
+#+END_SRC
+#+END_EXAMPLE
+And the output gives something like
+
+#+BEGIN_EXAMPLE
+*** Quotes From Troper becoming immigrant city
+
+Included in the Greater Toronto Area multiethnic mix are an estimated 450,000 Chinese, 400,000 Italians, and 250,000 African Canadians, the largest component of which are ofCar- ibbean background, although a separate and distinct infusion of Soma- lis, Ethiopians, and other Africans is currently taking place. ([[pdfview:/home/matt/HackingHistory/readings/Troper-becoming-immigrant-city.pdf::3][Troper becoming immigrant city]], 3)
+
+Although Toronto is Canada's leading immigrant-receiving centre, city officials have neither a hands-on role in immigrant selection nor an official voice in deciding immigration policy. In Canada, immigration policy and administration is a constitutional responsibility of the fed- eral government, worked out in consultation with the provinces. ([[pdfview:/home/matt/HackingHistory/readings/Troper-becoming-immigrant-city.pdf::4][Troper becoming immigrant city]], 4)
+
+#+END_EXAMPLE
+*** Alternative: Temporary buffer with custom link type
+An alternative workflow would be to pop to a second, temporary buffer and insert the annotations there; one could do this with a custom link type.  PDF-Tools already has a mechanism for listing annotations in a separate buffer, but it's not designed for quick access to all annotations at once. Anyway, here's one way to do this; I'm not really using it at the moment.
+
+#+BEGIN_SRC emacs-lisp
+  (org-add-link-type "pdfquote" 'org-pdfquote-open 'org-pdfquote-export)
+
+  (defun org-pdfquote-open (link)
+    "Open a new buffer with all markup annotations in an org headline."
+    (interactive)
+    (pop-to-buffer
+     (format "*Quotes from %s*"
+             (file-name-base link)))
+    (org-mode)
+    (erase-buffer)
+    (insert (pdf-annot-markups-as-org-text link nil 1))
+    (goto-char 0)
+    )
+
+  (defun org-pdfquote-export (link description format)
+    "Export the pdfview LINK with DESCRIPTION for FORMAT from Org files."
+    (let* ((path (when (string-match "\\(.+\\)::.+" link)
+                   (match-string 1 link)))
+           (desc (or description link)))
+      (when (stringp path)
+        (setq path (org-link-escape (expand-file-name path)))
+        (cond
+         ((eq format 'html) (format "<a href=\"%s\">%s</a>" path desc))
+         ((eq format 'latex) (format "\href{%s}{%s}" path desc))
+         ((eq format 'ascii) (format "%s (%s)" desc path))
+         (t path)))))
+
+  (defun org-pdfquote-complete-link ()
+    "Use the existing file name completion for file.
+  Links to get the file name, then ask the user for the page number
+  and append it."                                  
+
+    (replace-regexp-in-string "^file:" "pdfquote:" (org-file-complete-link)))
+#+END_SRC
+
+I've also added two bindings to make highlighting easier from the PDF buffer:
+
+#+BEGIN_SRC emacs-lisp
+(eval-after-load 'pdf-view 
+                    '(define-key pdf-view-mode-map (kbd "M-h") 'pdf-annot-add-highlight-markup-annotation))
+(eval-after-load 'pdf-view 
+                    '(define-key pdf-view-mode-map (kbd "<tab>") 'pdf-annot-add-highlight-markup-annotation))
+#+END_SRC
+
+All of this is getting me very close to using Emacs for all my PDF work. I am doing maybe 50% of my PDF work in Emacs instead of on my tablet.  It's incredibly convenient, although I still find it a little harder to concentrate on my laptop than on the tablet (for reasons ergonomic, optical, and psychological).  Here are the remaining papercuts from my perspective:
+
+- Highlighting text with the mouse is more awkward and less intimate than using my fingertip on a laptop.  I often find mouse movement a little awkward in Emacs, but pdf-view purposely relies on the mouse for movement (for good reasons).
+- Scrolling in pdf-view is also a bit awkward, and there's no "continuous" mode as one might find in Evince or acroread.  Again, I often find scrolling an issue in Emacs, so this might not be so easy to fix.
+- Finally, the laptop screen is just harder on my eyes than my high-res tablet. pdf-view hasa "midnight mode" which makes it a little easier to read, but it's not quite enough.  
+
+So, for the time being I will probably do much of my reading on the tablet. But for short pieces and for review (e.g., papers that I'm reading for the third year in a row in a graduate seminar...) PDF Tools is now my main interface. Which is pretty sweet.  
+
+*** Todo
+
+*UPDATE:* +I would like to extend the pdfview link type (in org-pdfview) to permit me to specify the precise location of an annotation, so I can jump precisely to that part of the page.+ This has now been [[https://github.com/markus1189/org-pdfview/pull/7][done]] and the code above has been updated to reflect the new syntax. 
+
+
+*UPDATE:* +Also, now that I think about it, it might be interesting to just have a link type that pops up a temporary buffer with all of the annotations; I could then cut and paste the annotations into the master document.  This might be even more convenient.+  OK, I've implemented this, see above!
+
+*Update <2015-11-22 Sun>:* I've cleaned up some of the code, and added a bit more commentary at the end. 
+
+# /home/matt/HackingHistory/readings/Troper-becoming-immigrant-city.pdf http://matt.hackinghistory.ca/wp-content/uploads/2015/11/wpid-Troper-becoming-immigrant-city.pdf
+** Elfeed
+:PROPERTIES:
+:ID:       o2b:f1821f6e-6faf-472b-abac-70e46397d4bc
+:POST_DATE: [2015-11-22 Sun 15:52]
+:POSTID:   44
+:BLOG:     matt
+:END:
+I've become pretty addicted to the [[https://github.com/skeeto/elfeed][Elfeed RSS reader]]. However, I haven't made much use of its tagging capabilities until recently.  I noticed that, whenever I thought I might want to keep track of the content of a blog, I would mark it "unread" after I'd read it, to make sure I didn't lose it in the deep mists of time. This worked for the first 4 months or so, but now my list of unreads is growing enormously. So I wanted to have a "starred" tag which would do this work for me.  I also wanted a keybinding that would apply the tag right away.  
+
+The code below does that for me. 
+
+*UPDATE <2016-11-23 Wed>:* I also added a few keybindings that mimic the default bindings for mu4e-mode. This way my muscle memory is less confused.  
+#+BEGIN_SRC emacs-lisp
+(require 'elfeed)
+(define-key elfeed-search-mode-map (kbd "<tab>") 'mwp/elfeed-star)
+(define-key elfeed-search-mode-map (kbd "C-S-u") 'elfeed-search-fetch)
+(define-key elfeed-search-mode-map (kbd "x") 'elfeed-search-update--force)
+(define-key elfeed-search-mode-map (kbd "d") 'elfeed-search-untag-all-unread)
+  (eval-after-load 'elfeed-search
+    (progn
+      '(define-key elfeed-search-mode-map (kbd "<tab>") 'mwp/elfeed-star)
+      '(define-key elfeed-search-mode-map (kbd "C-S-u") 'elfeed-search-fetch)
+      '(define-key elfeed-search-mode-map (kbd "x") 'elfeed-search-update--force)
+      '(define-key elfeed-search-mode-map (kbd "d") 'elfeed-search-untag-all-unread)))
+
+    (defun mwp/elfeed-star ()
+      "add a star tag to marked"
+
+      (interactive)
+      (elfeed-search-tag-all (list starred))
+      )
+
+    (defun mwp/elfeed-star ()
+      "Apply TAG to all selected entries."
+      (interactive )
+      (let* ((entries (elfeed-search-selected))
+             (tag (intern "starred")))
+
+        (cl-loop for entry in entries do (elfeed-tag entry tag))
+        (mapc #'elfeed-search-update-entry entries)
+        (unless (use-region-p) (forward-line))))
+
+  (setq elfeed-use-curl t)
+  (require 'elfeed)
+  ;; (require 'elfeed-goodies)
+
+  ;; (elfeed-goodies/setup)
+#+END_SRC
+
+I also wanted a visual cue to tell me the tagging had been successful -- now easy to do, thanks to a very recent commit.  I filed an issue as a question -- [[https://github.com/skeeto/elfeed/issues/108][can I do this?]] -- and within 24 hours skeeto had added the functionality.  First you have to define an appropriate face for the tag:
+#+BEGIN_SRC emacs-lisp
+(defface elfeed-search-starred-title-face
+ '((t :foreground "#f77"))
+ "Marks a starred Elfeed entry.")
+#+END_SRC
+
+All of this works great for me, and simplifies things quite a bit.  
+
+And then simply add an entry to ~elfeed-search-face-alist~. You can do this via ~Customize~, or follow [[https://github.com/skeeto/elfeed#custom-tag-faces][the instructions in the README]], which instruct you to ~(push '(starred elfeed-search-starred-title-face) elfeed-search-face-alist)~.  
+** Manage Grading
+#+RESULTS:
+: org-pdfquote-complete-link
+
+** Grading todo
+I've moved this stuff into its own org file: 
+
+#+BEGIN_SRC emacs-lisp
+(load-file "/home/matt/src/org-grading/org-grading.el")
+
+#+END_SRC
+
+#+RESULTS:
+: t
+
+** Opening attachments directly from org
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'org-file-apps '("\\.docx\\'" . "/usr/bin/libreoffice %s"))
+  (add-to-list 'org-file-apps '("\\.doc\\'" . "/usr/bin/libreoffice %s"))
+  (add-to-list 'org-file-apps '("\\.odt\\'" . "/usr/bin/libreoffice %s"))
+
+
+#+END_SRC
+
+#+RESULTS:
+: ((\.doc\' . /usr/bin/libreoffice %s) (\.docx\' . /usr/bin/libreoffice %s) (\.pdf::\([[:digit:]]+\)\' . org-pdfview-open) (\.pdf\' . org-pdfview-open) (auto-mode . emacs) (\.mm\' . default) (\.x?html?\' . firefox %s) (\.pdf\' . default) (\.odt\' . /usr/bin/libreoffice %s))
+
+* Keybindings
+really this should go at the end of the file so it doesn't get overwritten
+
+#+BEGIN_SRC emacs-lisp
+  ;; abbrevs
+  ;; improved autocorrect, with a decent keybinding
+  (define-key ctl-x-map "\C-i" 'endless/ispell-word-then-abbrev)
+
+#+END_SRC
+
+** key Chord
+I just installed key-chord.el.  I'm interested to see if it really works for me.  
+#+BEGIN_SRC emacs-lisp
+(require 'key-chord)
+(key-chord-mode 1) 
+;; This one was drifing me crazy! 
+;; (key-chord-define-global "FF" 'helm-find-files)
+;; (key-chord-define-global "BB" 'helm-mini)
+#+END_SRC
+
+#+RESULTS:
+: helm-mini
+
+
+* Wrap-region
+this is supposed to make it possible to wrap regions...
+#+BEGIN_SRC emacs-lisp
+;; wrap-region
+(use-package wrap-region
+  :ensure t
+  :config
+  (wrap-region-add-wrappers
+   '(("*" "*" nil org-mode)
+     ("~" "~" nil org-mode)
+     ("/" "/" nil org-mode)
+     ("=" "=" nil org-mode)
+     ("_" "_" nil org-mode)
+     ("$" "$" nil (org-mode latex-mode))))
+  (add-hook 'org-mode-hook 'wrap-region-mode)
+  (add-hook 'latex-mode-hook 'wrap-region-mode))
+#+END_SRC
+
+* 
+* Projects
+I don't have a really good system for delaing with projects. There's projectile, and there's speedbar, both of which kind of helpful... but for now I'm going to just experiment with projectile. 
+
+#+BEGIN_SRC emacs-lisp
+(projectile-global-mode)
+(helm-projectile-on)
+#+END_SRC
+* Miscellaneous programming
+** Get minor modes in the minibuffer
+This is stolen from http://emacsredux.com/blog/2016/03/02/pimp-my-minibuffer/
+
+In Emacs you can evaluate Emacs Lisp pretty much anywhere - even in the minibuffer. Writing Emacs Lisp in the minibuffer, however, is not exactly fantastic experience out-of-the-box - there’s TAB completion, but what about eldoc and paredit for instance?
+
+If only there was a way to enable them… I suggested one trick in my original post on eval-expression, but Emacs 24.4 made things even easier by adding eval-expression-minibuffer-setup-hook. To enable eldoc for minibuffer evaluations use this snippet:
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'eval-expression-minibuffer-setup-hook #'eldoc-mode)
+(add-hook 'eval-expression-minibuffer-setup-hook #'paredit-mode)
+#+END_SRC
+* Open current file with Sudo
+I very often want to reopen a current bufferin sudo. I stalling ~sudo-edit~ has done the trick for me.  
+
+* Unused
+#+BEGIN_SRC emacs-lisp
+  ;; This is how Magnar manages his packages.  I'm not there yet.  soon I hope.  
+  ;; Setup packages
+  ;; (require 'setup-package)
+  ;; Install extensions if they're missing
+  ;; (defun init--install-packages ()
+  ;;   (packages-install
+  ;;    '(magit
+  ;;      paredit
+  ;;      move-text
+  ;;      gist
+  ;;      htmlize
+  ;;      visual-regexp
+  ;;      flycheck
+  ;;      flx
+  ;;      flx-ido
+  ;;      css-eldoc
+  ;;      yasnippet
+  ;;      smartparens
+  ;;      ido-vertical-mode
+  ;;      ido-at-point
+  ;;      simple-httpd
+  ;;      guide-key
+  ;;      nodejs-repl
+  ;;      restclient
+  ;;      highlight-escape-sequences
+  ;;      whitespace-cleanup-mode
+  ;;      elisp-slime-nav
+  ;;      git-commit-mode
+  ;;      gitconfig-mode
+  ;;      gitignore-mode
+  ;;      clojure-mode
+  ;;      groovy-mode
+  ;;      prodigy
+  ;;      cider
+  ;;      cider-tracing)))
+
+  ;; (condition-case nil
+  ;;     (init--install-packages)
+  ;;   (error
+  ;;    (package-refresh-contents)
+  ;;    (init--install-packages)))
+
+  ;; this is the main structure of magnar's .emacs; it's a little complex for me
+  ;; Setup extensions
+  ;; (eval-after-load 'ido '(require 'setup-ido))
+  ;; (eval-after-load 'org '(require 'setup-org))
+  ;; (eval-after-load 'dired '(require 'setup-dired))
+  ;; (eval-after-load 'magit '(require 'setup-magit))
+  ;; (eval-after-load 'grep '(require 'setup-rgrep))
+  ;; (eval-after-load 'shell '(require 'setup-shell))
+  ;; (require 'setup-hippie)
+  ;; (require 'setup-yasnippet)
+  ;; (require 'setup-perspective)
+  ;; (require 'setup-ffip)
+  ;; (require 'setup-html-mode)
+  ;; (require 'setup-paredit)
+
+  ;; ;; Elisp go-to-definition with M-. and back again with M-,
+  ;; (autoload 'elisp-slime-nav-mode "elisp-slime-nav")
+  ;; (add-hook 'emacs-lisp-mode-hook (lambda () (elisp-slime-nav-mode t) (eldoc-mode 1)))
+
+  ;; ;; Run at full power please
+  ;; (put 'downcase-region 'disabled nil)
+  ;; (put 'upcase-region 'disabled nil)
+  ;; (put 'narrow-to-region 'disabled nil)
+  (put 'upcase-region 'disabled nil)
+
+  ;; ;; Conclude init by setting up specifics for the current user
+  ;; (when (file-exists-p user-settings-dir)
+  ;;   (mapc 'load (directory-files user-settings-dir nil "^[^#].*el$")))
+
+  ;; setup autopair
+  ;; (autopair-global-mode) ;; enable autopair in all buffers
+
+  ;; add opened files to gnome recent-files list
+  (defun fd-add-file-to-recent ()
+    (when buffer-file-name
+      (start-process "addtorecent" nil "addtorecent"
+                     (concat "file://" buffer-file-name)
+                     "text/plain"
+                     "Emacs"
+                     "emacsclient %F")))
+
+  ;; (add-hook 'find-file-hook 'fd-add-file-to-recent)
+  ;;; Speedbar and Imenu
+  ;; This adds support for speedbar and Imenu.  Right now I'm not actually using either though.
+  ;; (add-hook 'org-mode-hook
+  ;;                     (lambda () (imenu-add-to-menubar "Imenu")))
+  ;; (require 'speedbar)
+  ;; (speedbar-add-supported-extension ".org")
+
+  ;;;; changing languages for e.g. spellcheck.  I don't use this much right now
+  ;; (let ((langs '("canadian" "francais")))
+  ;;   (setq lang-ring (make-ring (length langs)))
+  ;;   (dolist (elem langs) (ring-insert lang-ring elem)))
+
+  ;; (defun cycle-ispell-languages ()
+  ;;   (interactive)
+  ;;   (let ((lang (ring-ref lang-ring -1)))
+  ;;     (ring-insert lang-ring lang)
+  ;;     (ispell-change-dictionary lang)))
+
+  ;; (global-set-key [f6] 'cycle-ispell-languages)
+  ;;; Worg and Wanderlust
+  ;; also some org-wl interaction
+  ;; stolen from worg: http://orgmode.org/worg/org-hacks.html
+
+  ;; (defun dmj/wl-send-html-message ()
+  ;;   "Send message as html message.
+  ;; Convert body of message to html using
+  ;;   `org-export-region-as-html'."
+  ;;   (require 'org)
+  ;;   (save-excursion
+  ;;     (let (beg end html text)
+  ;;       (goto-char (point-min))
+  ;;       (re-search-forward "^--text follows this line--$")
+  ;;       ;; move to beginning of next line
+  ;;       (beginning-of-line 2)
+  ;;       (setq beg (point))
+  ;;       (if (not (re-search-forward "^--\\[\\[" nil t))
+  ;;           (setq end (point-max))
+  ;;         ;; line up
+  ;;         (end-of-line 0)
+  ;;         (setq end (point)))
+  ;;       ;; grab body
+  ;;       (setq text (buffer-substring-no-properties beg end))
+  ;;       ;; convert to html
+  ;;       (with-temp-buffer
+  ;;         (org-mode)
+  ;;         (insert text)
+  ;;         ;; handle signature
+  ;;         (when (re-search-backward "^-- \n" nil t)
+  ;;           ;; preserve link breaks in signature
+  ;;           (insert "\n#+BEGIN_VERSE\n")
+  ;;           (goto-char (point-max))
+  ;;           (insert "\n#+END_VERSE\n")
+  ;;           ;; grab html
+  ;;           (setq html (org-export-region-as-html
+  ;;                       (point-min) (point-max) t 'string))))
+  ;;       (delete-region beg end)
+  ;;       (insert
+  ;;        (concat
+  ;;         "--" "<<alternative>>-{\n"
+  ;;         "--" "[[text/plain]]\n" text
+  ;;         "--" "[[text/html]]\n"  html
+  ;;         "--" "}-<<alternative>>\n")))))
+
+  ;; (defun dmj/wl-send-html-message-toggle ()
+  ;;   "Toggle sending of html message."
+  ;;   (interactive)
+  ;;   (setq dmj/wl-send-html-message-toggled-p
+  ;;         (if dmj/wl-send-html-message-toggled-p
+  ;;             nil "HTML"))
+  ;;   (message "Sending html message toggled %s"
+  ;;            (if dmj/wl-send-html-message-toggled-p
+  ;;                "on" "off")))
+
+  ;; (defun dmj/wl-send-html-message-draft-init ()
+  ;;   "Create buffer local settings for maybe sending html message."
+  ;;   (unless (boundp 'dmj/wl-send-html-message-toggled-p)
+  ;;     (setq dmj/wl-send-html-message-toggled-p nil))
+  ;;   (make-variable-buffer-local 'dmj/wl-send-html-message-toggled-p)
+  ;;   (add-to-list 'global-mode-string
+  ;;                '(:eval (if (eq major-mode 'wl-draft-mode)
+  ;;                            dmj/wl-send-html-message-toggled-p))))
+
+  ;; (defun dmj/wl-send-html-message-maybe ()
+  ;;   "Maybe send this message as html message.
+
+  ;; If buffer local variable `dmj/wl-send-html-message-toggled-p' is
+  ;; non-nil, add `dmj/wl-send-html-message' to
+  ;; `mime-edit-translate-hook'."
+  ;;   (if dmj/wl-send-html-message-toggled-p
+  ;;       (add-hook 'mime-edit-translate-hook 'dmj/wl-send-html-message)
+  ;;     (remove-hook 'mime-edit-translate-hook 'dmj/wl-send-html-message)))
+
+  ;; (add-hook 'wl-draft-reedit-hook 'dmj/wl-send-html-message-draft-init)
+  ;; (add-hook 'wl-mail-setup-hook 'dmj/wl-send-html-message-draft-init)
+  ;; (add-hook 'wl-draft-send-hook 'dmj/wl-send-html-message-maybe) 
+
+  ;; (defun dmj/org-export-region-as-html-attachment (beg end arg)
+  ;;   "Export region between BEG and END as html attachment.
+  ;; If BEG and END are not set, use current subtree.  Region or
+  ;; subtree is exported to html without header and footer, prefixed
+  ;; with a mime entity string and pushed to clipboard and killring.
+  ;; When called with prefix, mime entity is not marked as
+  ;; attachment."
+  ;;   (interactive "r\nP")
+  ;;   (save-excursion
+  ;;     (let* ((beg (if (region-active-p) (region-beginning)
+  ;;                   (progn
+  ;;                     (org-back-to-heading)
+  ;;                     (point))))
+  ;;            (end (if (region-active-p) (region-end)
+  ;;                   (progn
+  ;;                     (org-end-of-subtree)
+  ;;                     (point))))
+  ;;            (html (concat "--[[text/html"
+  ;;                          (if arg "" "\nContent-Disposition: attachment")
+  ;;                          "]]\n"
+  ;;                          (org-export-region-as-html beg end t 'string))))
+  ;;       (when (fboundp 'x-set-selection)
+  ;;         (ignore-errors (x-set-selection 'PRIMARY html))
+  ;;         (ignore-errors (x-set-selection 'CLIPBOARD html)))
+  ;;       (message "html export done, pushed to kill ring and clipboard"))))
+
+  ;; temp fix for heckboxes in orgh-html export
+  ;; disabling cause it messes up my export
+  ;; (defun org-html-checkbox (checkbox)
+  ;;   "Format CHECKBOX into HTML."
+  ;;   (case checkbox (on "<input type=\"checkbox\" checked />")
+  ;;      (off "<input type=\"checkbox\" />")
+  ;;      (trans "<code>[-]</code>")
+  ;;      (t "")))
+
+  ;; (defun org-html-format-list-item (contents type checkbox info
+  ;;                                         &optional term-counter-id
+  ;;                                         headline)
+  ;;   "Format a list item into HTML."
+  ;;   (let ((checkbox (concat (org-html-checkbox checkbox) (and checkbox " ")))
+  ;;      (br (org-html-close-tag "br" nil info)))
+  ;;     (concat
+  ;;      (case type
+  ;;        (ordered
+  ;;      (let* ((counter term-counter-id)
+  ;;             (extra (if counter (format " value=\"%s\"" counter) "")))
+  ;;        (concat
+  ;;         (format "<li%s>" extra)
+  ;;         (when headline (concat headline br)))))
+  ;;        (unordered
+  ;;      (let* ((id term-counter-id)
+  ;;             (extra (if id (format " id=\"%s\"" id) ""))
+  ;;             (chkclass (if checkbox (format " class=\"checkbox\"") "")))
+  ;;        (concat
+  ;;         (format "<li%s%s>" extra chkclass)
+  ;;         (when headline (concat headline br)))))
+  ;;        (descriptive
+  ;;      (let* ((term term-counter-id))
+  ;;        (setq term (or term "(no term)"))
+  ;;        ;; Check-boxes in descriptive lists are associated to tag.
+  ;;        (concat (format "<dt> %s </dt>"
+  ;;                        (concat checkbox term))
+  ;;                "<dd>"))))
+  ;;      (unless (eq type 'descriptive) checkbox)
+  ;;      contents
+  ;;      (case type
+  ;;        (ordered "</li>")
+  ;;        (unordered "</li>")
+  ;;        (descriptive "</dd>")))))
+
+  ;; wl-message-id-domain "smtp.gmail.com")
+
+  ;; (setq wl-from "Matt Price <matt.price@utoronto.ca>"
+
+  ;;       ;;all system folders (draft, trash, spam, etc) are placed in the
+  ;;       ;;[Gmail]-folder, except inbox. "%" means it's an IMAP-folder
+  ;;       wl-default-folder "%inbox"
+  ;;       wl-draft-folder   "%[Gmail]/Drafts"
+  ;;       wl-trash-folder   "%[Gmail]/Trash"
+  ;;       wl-fcc            "%[Gmail]/Sent"
+
+  ;;       ;; mark sent messages as read (sent messages get sent back to you and
+  ;;       ;; placed in the folder specified by wl-fcc)
+  ;;       wl-fcc-force-as-read    t
+
+  ;;       ;;for when auto-compleating foldernames
+  ;;       wl-default-spec "%")
+
+#+END_SRC
+** Smallcaps
+I actually have no need for smallcaps right now, but I had this code lying around so might as well save it.
+*** Eric Schulte's filter for HTML small caps
+
+#+name: es-small-caps
+#+begin_src emacs-lisp
+  ;;; "sc" links for the \sc{} latex command
+  (defun org-export-html-small-caps (string backend channel)
+    (when (org-export-derived-backend-p backend 'html)
+      (let ((rx "{\\\\sc ")
+            (fmt "<span style=\"font-variant:small-caps;\">%s</span>"))
+        (with-temp-buffer
+          (insert string)
+          (goto-char (point-min))
+          (while (re-search-forward rx nil t)
+            (let* ((start (match-beginning 0))
+                   (end (progn (goto-char start)
+                               (forward-sexp)
+                               (point)))
+                   (content (buffer-substring (+ start 5) (- end 1))))
+              (delete-region start end)
+              (goto-char start)
+              (insert (format fmt content))))
+          (buffer-string)))))
+
+  (add-to-list 'org-export-filter-final-output-functions
+               'org-export-html-small-caps)
+
+  (defun org-export-latex-sc (tree backend info)
+    "Handle sc: links for latex export."
+    (org-element-map tree 'link
+      (lambda (object)
+        (when (equal (org-element-property :type object) "sc")
+          (org-element-insert-before
+           (cond
+            ((org-export-derived-backend-p backend 'latex)
+             (list 'latex-fragment
+                   (list :value (format "{\\sc %s}"
+                                        (org-element-property :path object))
+                         :post-blank (org-element-property
+                                      :post-blank object))))
+            ((org-export-derived-backend-p backend 'html)
+             (list 'export-snippet
+                   (list :back-end "html"
+                         :value
+                         (format "<span class=\"sc\">%s</span>"
+                                 (org-element-property :path object))
+                         :post-blank
+                         (org-element-property :post-blank object))))
+            (:otherwise
+             (error "unsupported backend for `org-export-latex-sc'")))
+           object)
+          (org-element-extract-element object))))
+    tree)
+
+  (org-add-link-type "sc")
+
+  (add-hook 'org-export-filter-parse-tree-functions
+            'org-export-latex-sc)
+
+#+end_src
+
+
+
+
+* Late-breaking excellent additions
+TThis cool introdution to dired-ranger is really helpful: http://pragmaticemacs.com/emacs/copy-and-paste-files-with-dired-ranger/
+#+BEGIN_SRC emacs-lisp
+(use-package dired-ranger
+  :ensure t
+  :bind (:map dired-mode-map
+              ("W" . dired-ranger-copy)
+              ("X" . dired-ranger-move)
+              ("Y" . dired-ranger-paste)))
+
+#+END_SRC
+
+#+RESULTS:
+
+* New Packages
+** <2016-10-25 Tue>
+I have justi nstalled a whole bunch of emacs packages, including:
+- bog -- research note extensions to org-mode
+- speed-type -- speed typing
+- biblio -- lookup sources online (potentially helpful, maybe replace zotero a little bit)
+- spacemacs theme
+- org-beautify-theme, let's see how that looks
+- impatient-mode -- live preview!!
+- org-journal -- might use someday
+** Persistent scratch
+This seems pretty cool, I would love a persistent scratch buffer for crashes
+#+BEGIN_SRC emacs-lisp
+;; persistent-scratch
+(use-package persistent-scratch
+  :config
+  (persistent-scratch-setup-default))
+#+END_SRC
+* Theme
+Well, I tried spacemacs theme and so far I hate it for org!
+
+#+BEGIN_SRC emacs-lisp
+  ;; (defun enab-theme (theme) 
+  ;;  (if current-t43m3 (disable-theme current-t43m3))
+  ;;  (setq current-t43m3 theme) 
+  ;;  (load-theme theme t)) 
+
+  ;; (defadvice load-theme (before theme-dont-propagate activate)
+  ;;  (mapcar #'disable-theme custom-enabled-themes))
+
+#+END_SRC
+ 
+I still don't know much about themes, about the difference between color-themes and custom-themes, and about how to unload them.  For now I am enabling themes by hand -- quite cumbersome! -- and setting color-theme-is-global to nil, so I can have frames that look different (one for org, one for code, one for mail).
+
+#+BEGIN_SRC emacs-lisp
+(require 'color-theme)
+(load-file "~/.emacs.d/themes/zenburn.el")
+(setq color-theme-is-global nil)
+(setq color-theme-is-cumulative nil)
+;;(color-theme-initialize)
+#+END_SRC
+
+Once the frames have loaded, I call ~(color-theme-initialize)~ and then ~color-theme-wheat~ in the mail frame, and ~color-theme-zenburn~ in the code frame. THh main org frame stays white for now (not perfect though).
+
+The theme i'm using in mail, ~color-theme-wheat~, was giving me some trouble with the org-hide face that provides the indentation in org-mode.  With John Kitchin's help, I was able to fix this by adding a hook to ~focus-in-hook~:
+#+BEGIN_SRC emacs-lisp
+(defun set-org-hide ()
+  (interactive)
+  (face-spec-set 'org-hide `((((background light)) (:foreground ,(face-attribute 'default :background) ))
+    (((background dark)) (:foreground  ,(face-attribute 'default :background)))))
+  )
+
+(add-hook 'focus-in-hook 'set-org-hide t)
+#+END_SRC
+
+Note the backtick in front of the long list, and the commas in face of ~(face-attribute...)~. wthout these the lists don't evaluate properly and this doesn't work. I would like to understand lisp well enough to know intuitively why this is.  
+
+* Mail again
+
+** Initial Setup
+I have been really enjoying mu4e and it appears to have allowed me to finally switch my main mail activity & archiving from Thunderbird to Emacs. There are stilll a few pain points that I haven't figured out -- in particular, some HTML mails are just easier to read in Thunderbird, and I have not yet set up group aliases for e.g. my courses, etc., so to send those messages  I switch back to Thunderbird. But in general it's working great.  
+
+This first bit of code loads mu4e and dependencies that might be needed later, establishes it as the default mail program, and sets some sane defaults. It also tells mu4e that we'll be using offlineimap to collect mail, and sendmail (in this case nullmailer) to send messages out. 
+
+Switching to nullmailer has been really great.  Setup if pretty straightforward, and as it has its own queue it's much, much more responsive than Emacs's own sendmail programs. As a result, programmatically sending mail (e.g., when I send out grades) is much quicker and less error-prone.  
+
+#+BEGIN_SRC emacs-lisp
+  ;; I install mu4e from source/git; the arch package was difficult to
+  ;; install, and now I find myself modifying the source code with some
+  ;; frequency
+  (add-to-list 'load-path "/home/matt/src/mu/mu4e/")
+
+  ;; Not really the place ror this but org-reload ensures that I'm
+  ;; working with the right org version. ELPA requires the org package,
+  ;; nad of course Emacs also comes iwht org bundled.
+  (org-reload)
+
+  ;; In additoin to mu4e, I use org-mu4e and org-mime quite a bit, so
+  ;; might as well load here.
+  (require 'mu4e)
+  (require 'org-mu4e)
+  (require 'org-mime)
+
+  ;; set mu4e as the default mail agent
+  ;; NOT setting this led to quite a number of small frustrations
+  (setq mail-user-agent 'mu4e-user-agent)
+
+  ;; identify the maildir where mail is stored
+  (setq mu4e-maildir "/home/matt/UofTMail/")
+  ;; postponed message is put in the following draft file
+  (setq message-auto-save-directory "~/UofTMail/drafts")
+
+  ;; more default directories.  
+  (setq mu4e-sent-folder   "/Sent")
+  (setq mu4e-drafts-folder "/Drafts")
+  (setq mu4e-trash-folder  "/Trash")
+  (setq mu4e-refile-folder  "/Archives")
+
+  ;; smtp mail setting; these are the same that `gnus' uses. I don't
+  ;; realy need these anymore as I ave switched to nullmailer, but
+  ;; useful to keep around in case my setup changes in future
+  (setq
+   smtpmail-default-smtp-server "smtp.utoronto.ca"
+   smtpmail-smtp-server         "smtp.utoronto.ca"
+   smtpmail-local-domain        "utoronto.ca")
+
+  ;; nullmailer provides a /usr/bin/sendmail
+  (setq message-send-mail-function 'message-send-mail-with-sendmail)
+  (setq sendmail-program "/usr/bin/sendmail")
+
+  ;; the maildirs you use frequently; access them with 'j' ('jump')
+  (setq   mu4e-maildir-shortcuts
+          '(("/inbox"       . ?i)
+            ("/Archives"     . ?a)
+            ("/Sent"        . ?s)))
+
+  ;; address options
+  (setq mu4e-reply-to-address "matt.price@utoronto.ca"
+        user-mail-address "matt.price@utoronto.ca"
+        user-full-name  "Matt Price")
+  (setq mu4e-compose-signature
+        "")
+
+  (setq mu4e-user-mail-address-list '("matt.price@utoronto.ca" "moptop99@gmail.com"))
+  ;; when you want to use some external command for text->html
+  ;; conversion, e.g. the 'html2text' program
+  ;; (setq mu4e-html2text-command "html2text")
+  (require 'mu4e-contrib)
+  (setq mu4e-html2text-command 'mu4e-shr2text)
+  (add-hook 'mu4e-view-mode-hook
+            (lambda()
+              ;; try to emulate some of the eww key-bindings
+              (local-set-key (kbd "<tab>") 'shr-next-link)
+              (local-set-key (kbd "<backtab>") 'shr-previous-link)))
+
+  ;; the headers to show in the headers list -- a pair of a field
+  ;; and its width, with `nil' meaning 'unlimited'
+  ;; (better only use that for the last field.
+  ;; These are the defaults:
+  (setq mu4e-headers-fields
+        '( (:human-date          .  25)    ;; alternatively, use :human-date
+           (:flags         .   6)
+           (:mailing-list         .   10)
+           ;;(:attachments   .   6)
+           (:from-or-to          .  22)
+           (:subject       .  nil))) ;; alternatively, use :thread-subject
+
+  ;; program to get mail; alternatives are 'fetchmail', 'getmail'
+  ;; isync or your own shellscript. called when 'U' is pressed in
+  ;; main view.
+
+  ;; If you get your mail without an explicit command,
+  ;; use "true" for the command (this is the default)
+  (setq mu4e-get-mail-command "offlineimap")
+
+  ;; smtp mail setting
+  ;; I don't think this is being used by nullmailer at all, so probably irrelefant for me.
+  (setq
+
+   ;; if you need offline mode, set these -- and create the queue dir
+   ;; with 'mu mkdir', i.e.. mu mkdir /home/user/Maildir/queue
+   smtpmail-queue-mail  nil
+   smtpmail-queue-dir  "/home/matt/UofTMail/queue/cur")
+
+  ;; don't keep message buffers around
+  (setq message-kill-buffer-on-exit t)
+
+
+  ;; split horizontally, which is how I like it
+  ;; actually, switch to vertical (which is bizarrely called horizontal)
+  ;; can't seem to get it to switch, so we'll see how it goes.
+  (setq ;; mu4e-split-view 'horizontal
+   mu4e-headers-visible-lines 15
+   mu4e-headers-visible-columns 80)
+
+  ;; view images inline
+  ;; enable inline images
+  (setq mu4e-view-show-images t)
+  ;; use imagemagick, if available
+  (when (fboundp 'imagemagick-register-types)
+    (imagemagick-register-types))
+  (message "initial setup of mu4e accomplished")
+#+END_SRC
+
+** Setting modeline
+By default, mu4e doesn't show the number of messgaes in the modeline. This fixes that. Taken from [[https://github.com/djcb/mu/issues/52][this bug report]]
+
+#+BEGIN_SRC emacs-lisp
+  (setq kzar/mu4e-activity-string "")
+  (add-to-list 'global-mode-string '((:eval kzar/mu4e-activity-string)) t)
+  (defun kzar/get-mu4e-incoming-count ()
+    (let* ((query "flag:unread AND \(maildir:/INBOX or maildir:/INBOX.Eyeo\)")
+           (command (concat mu4e-mu-binary " msgs-count --query='" query "'")))
+      (string-trim (shell-command-to-string command))))
+  (defun kzar/format-mu4e-mode-string (count)
+    (concat "📧[" (if (string= count "0") "" count) "]"))
+  (defun kzar/update-mu4e-activity-string (&rest args)
+    (setq kzar/mu4e-activity-string
+          (kzar/format-mu4e-mode-string (kzar/get-mu4e-incoming-count)))
+    (force-mode-line-update))
+  (add-hook 'mu4e-main-mode-hook #'kzar/update-mu4e-activity-string)
+  (add-hook 'mu4e-view-mode-hook #'kzar/update-mu4e-activity-string)
+  (add-hook 'mu4e-index-updated-hook #'kzar/update-mu4e-activity-string)
+#+END_SRC
+** Saving and sending attachments
+Saving attachments is actually pretty easy in mu4e. I like the way that mu4e allows you to filter the default save location by attachment type.  I haven't done much with this now, but it's convenient to have images in a separate location from documents.
+
+#+BEGIN_SRC emacs-lisp
+  ;; extract attachments
+  ;; consider doing some sorting, e.g.: http://www.djcbsoftware.nl/code/mu/mu4e/Attachments.html#Attachments
+  (setq mu4e-attachment-dir  "~/Downloads")
+  (setq mu4e-attachment-dir
+        (lambda (fname mtype)
+          (cond
+           ;; jpgs go to ~/Pictures/FromEmails
+           ((and fname (string-match "\\.jpg$" fname))  "~/Pictures/FromEmails")
+           ;; ... other cases  ...
+           (t "~/Downloads")))) ;; everything else
+#+END_SRC
+** Sending HTML mail
+I keep these experimental functions around in case I want to get a look at what I learned while I was experimenting, but I don't use them anymore; that's why it's all commented out.  
+
+#+BEGIN_SRC emacs-lisp
+
+  ;; (defun org-mime-org-buffer-htmlize ()
+  ;;   "Create an email buffer containing the current org-mode file
+  ;;        exported to html and encoded in both html and in org formats as
+  ;;        mime alternatives."
+  ;;   (interactive)
+  ;;   (org-mime-send-buffer 'html)
+  ;;   (message-goto-to))
+
+
+  ;; (defun mu4e-compose-org-mail ()
+  ;;   (interactive)
+  ;;   (mu4e-compose-new)
+  ;;   (org-mu4e-compose-org-mode))
+
+  ;; (defun htmlize-and-send ()
+  ;;   "When in an org-mu4e-compose-org-mode message, htmlize and send it."
+  ;;   (interactive)
+  ;;   (when (member 'org~mu4e-mime-switch-headers-or-body post-command-hook)
+  ;;     (org-mime-htmlize)
+  ;;     (org-mu4e-compose-org-mode)
+  ;;     (mu4e-compose-mode)
+  ;;     ;; (remove-hook 'post-command-hook 'org~mu4e-mime-switch-headers-or-body t)
+  ;;     ;; (mu4e-compose-mode)
+  ;;     ;; (remove-hook 'post-command-hook 'org~mu4e-mime-switch-headers-or-body t)
+  ;;     ;; (org-mu4e-compose-org-mode)
+  ;;     (message-send-and-exit)))
+
+  ;; (defun mwp-htmlize-and-send ()
+  ;;   "When in an org-mu4e-compose-org-mode message, htmlize and send it."
+  ;;   (interactive)
+  ;;   (message "calling htmlize-and-send")
+  ;;   ;; 
+  ;;   (org-mime-htmlize)
+  ;;   (message "ḧtmlized succssfully")
+  ;;   ;; (goto-char (point-min))
+  ;;   (when (member 'org~mu4e-mime-switch-headers-or-body post-command-hook)
+  ;;     (org-mu4e-compose-org-mode))	
+  ;;   (message-send-and-exit)
+  ;;   (message "message hopfully sent and saved"))
+
+  ;; ;; let my fingers htmlize-and-send
+  ;; (add-hook 'org-ctrl-c-ctrl-c-hook 'htmlize-and-send t)
+
+  ;; ;; this hook allows me to compose in org mode by default
+  ;; (add-hook 'mu4e-compose-post-hook
+  ;;           (defun do-compose-stuff ()
+  ;;             "My settings for message composition."
+  ;;             (org-mu4e-compose-org-mode)))
+
+#+END_SRC
+
+** Sending HTML Mail with mu4e
+:PROPERTIES:
+:ID:       o2b:35128fcd-ad87-40fc-b0d1-fff959282787
+:POST_DATE: [2016-11-18 Fri 22:19]
+:END:
+John Kitchin [[http://kitchingroup.cheme.cmu.edu/blog/2016/10/29/Sending-html-emails-from-org-mode-with-org-mime/][has a terrific post]] detailing some configuration/improvements to mu4e that make it easier to send html mail.  This original post is really great, but I ran into quite a bit of trouble following this advice. 
+
+He uses a cool feature of mu4e,  ~org-mu4e-compose-org-mode~, which toggles the major mode of  the message buffer between org-mode (when you're in the message body) and mu4e-compose-mode (when you're in the headers area).  With a couple of custom functions, it's easy to convert the org text to html and send a mime-multipart email from Emacs, which is quite convenient.  If you add ~org-mu4e-compose-org-mode~ as a hook to ~mu4e-compose-mode~, you can compose in html by default, which is great.
+
+Unfortunately, ~org-mu4e-compose-org-mode~ is *deprecated* on account of its instability, and while John doesn't have any problems with it, for me it was unworkable. It turns out that this "mode" isn't really a standard emacs mode at all -- instead, it's a sly workaround that trickily adds an internal function to the 'post-command-hook in the draft buffer and switches major modes based on position.  This is a neat hack, but since the function /invokes the major modes directly/, setting the function as a hook to  ~mu4e-compose-mode~ appears to lead to some funky, inadvertent looping effects. On my machine, for some reason, those effects send the underlying ~message-send~ function crazy, and instead of sending directly, I get this amazingly annoying question:
+
+#+BEGIN_QUOTE
+Already sent message via mail; resend? (y or n) y 
+#+END_QUOTE
+
+On its own, that is already annoying; but worse, the sent message doesn't get saved to my Sent folder. Instead, it's lost completely.  
+
+Anyway, after fruitless hours of paying around with this, I realized that the problem could be fixed by adding a new hook to the mu4e compose functions (rather than to the compose /mode/).  I've [[https://github.com/djcb/mu/pull/952][submitted those changes as a pull request]] and hopefully they will be accepted; if not, though, feel free to navigate back to [[https://github.com/titaniumbones/mu/tree/org-mu4e-compose-stabilization][my branch]] and pull/install mu from there.  With those small changes, I now have frictionless html email working very quickly within emacs, using this small bit of code.  It is at least 90% stolen:
+
+#+BEGIN_SRC emacs-lisp
+  ;; this is stolen from John but it didn't work for me until I
+  ;; made those small changes to mu4e-compose.el
+  (defun htmlize-and-send ()
+    "When in an org-mu4e-compose-org-mode message, htmlize and send it."
+    (interactive)
+    (when (member 'org~mu4e-mime-switch-headers-or-body post-command-hook)
+      (org-mime-htmlize)
+      (org-mu4e-compose-org-mode)
+      (mu4e-compose-mode)
+      (message-send-and-exit)))
+
+
+  ;; This overloads the amazing C-c C-c commands in org-mode with one more function
+  ;; namely the htmlize-and-send, above.
+  (add-hook 'org-ctrl-c-ctrl-c-hook 'htmlize-and-send t)
+
+  ;; Originally, I set the `mu4e-compose-mode-hook' here, but
+  ;; this new hook works much, much better for me.  
+  (add-hook 'mu4e-compose-post-hook
+            (defun do-compose-stuff ()
+              "My settings for message composition."
+              (org-mu4e-compose-org-mode)))
+
+  ;; lightly modifies org-mime-org-buffer-htmlize to go to the to header
+  (defun org-mime-org-buffer-htmlize ()
+    "Create an email buffer containing the current org-mode file
+           exported to html and encoded in both html and in org formats as
+           mime alternatives."
+    (interactive)
+    (org-mime-send-buffer 'html)
+    (message-goto-to))
+
+  ;; I probalby don't need this anymore since I've added the hook! doh!
+  (defun mu4e-compose-org-mail ()
+    (interactive)
+    (mu4e-compose-new)
+    (org-mu4e-compose-org-mode))
+
+#+END_SRC
+
+It feels great to have gotten this far. There are still some small things I'd like to be able to improve; and I think I would like to add a few wrapper functions and keybindings to my setup, but for now I'm pretty efficient.  
+
+Still missing:
+- a better HTML viewing interface! right now, html mails render as mostly text -- it would be nice to have a rendered html message by default in emacs. This is an issue several times a day when I get promotional emails from organizations I work with -- usually the html part is really important. I can access these in the browser but it's comparatively awkward.
+- a way to forward these html emails to someone intact -- right now, the html parts are discarded.  No idea how hard it would be to do this.  
+
+*UPDATE <2016-11-30 Wed>:* 
+
+- It's now possible to use xwidgets to view rendered html in emacs. It's cool for sure -- but still not easy to use, as of November, 2016.
+- turns out that the FAQ contains some tips for forwarding HTML mail (as [[https://github.com/djcb/mu/issues/958][dcjb explained in my feature request issue]]:
+  #+BEGIN_QUOTE
+  How can I attach an existing message? Use
+‘mu4e-action-capture-message’ (i.e., ‘a c’ in the headers view) to
+’capture’ the to-be-attached message, then when editing the
+message, use ‘M-x mu4e-compose-attach-captured-message’.
+  #+END_QUOTE
+Thanks John and Dirk-Jan for these great tools!
+
+** Using mu4e and org-mime together
+:PROPERTIES:
+:ID:       o2b:8cb2d321-2a5c-48a6-9aa1-52c70a9111e5
+:POST_DATE: [2016-11-30 Wed 15:45]
+:POSTID:   63
+:BLOG:     matt
+:END:
+I use org-mime in my [[http://matt.hackinghistory.ca/2015/07/15/mailing-subtrees-with-attachments/][grading]] [[https://github.com/titaniumbones/Org-Marking-Mode][system]], to email my comments on student papers. One frustrating element has always been that messages sent by org-mime were never saved to my sent-mail folder.  I realized just recently that this was because I had failed to set emacs's mail-user-agent, which I now do in my initial mu4e setup:
+
+~(setq mail-user-agent 'mu4e-user-agent)~
+
+Now org-mime attempts to send messages using mu4e's internal compose functions. Unfortunately some of the information passed by org-mime is in a format that ~mu4e~compose-mail~ doesn't like, so I had to make some very slight changes to that function:
+#+BEGIN_SRC diff
+diff --git a/mu4e/mu4e-compose.el b/mu4e/mu4e-compose.el
+index a24e74a..0c7ec3c 100644
+--- a/mu4e/mu4e-compose.el
++++ b/mu4e/mu4e-compose.el
+@@ -780,7 +780,14 @@ draft message."
+ 
+   ;; add any other headers specified
+   (when other-headers
+-    (message-add-header other-headers))
++    (dolist (h other-headers other-headers)
++      (if (symbolp (car h)) (setcar h (symbol-name (car h))))
++      (message-add-header (concat (capitalize (car h)) ": " (cdr h) "\n"  ))
++      )
++    ;; (dolist (h other-headers)
++    ;;  (message-add-header h) )
++    ;;(message-add-header other-headers)
++    )
+ 
+   ;; yank message
+   (if (bufferp yank-action)
+
+#+END_SRC
+
+The commit is in its [[https://github.com/titaniumbones/mu/tree/org-mu4e-compose-stabilization][my org-mu4e-compose branch, contianing a couple of other fixes]], and in [[https://github.com/titaniumbones/mu/tree/fix-other-headers][its own branch]] on github, if prefer to pull from there.  A patch has been submitted, we'll see what dcjb thinks of it.  
+
+With these changes, org-mime now works perfectly for me.  
+
+** Key Rebindings
+
+I prefer these keys to the defaults, just because of muscle memory. ~C-c C-v~ is a little awkward for the "actions" menu, which I now use all the time, so I have reverted to the standard 'a' binding for actions, and am slowly unlearning "a" as a binding for "archive".  
+
+#+BEGIN_SRC emacs-lisp
+  (defun my-mu4e-main-mode-config ()
+    "For use in `mu4e-main-mode-hook'."
+    (local-set-key (kbd "m") 'mu4e-main-toggle-mail-sending-mode) ; add a key
+    (local-set-key (kbd "f") 'smtpmail-send-queued-mail) ; add a key
+    ;;(local-set-key (kbd "C-c C-p") nil) ; example of remove a key
+    ;; more here
+    )
+
+  (defun my-mu4e-headers-mode-config ()
+    "For use in 'mu4e-view-mode-hook'."
+    ;; (local-set-key (kbd "a") 'mu4e-headers-mark-for-refile) ;; remap from "r"
+    (local-set-key (kbd "f") 'mu4e-headers-mark-for-refile) ;; remap from "r"
+    (local-set-key (kbd "r") 'mu4e-compose-reply) ;; add new keymapping, along with "R"
+    (local-set-key (kbd "C-c C-v") 'mu4e-headers-action) ;; rebind from "a"
+    )
+
+  (defun my-mu4e-view-mode-config ()
+    "For use in 'mu4e-view-mode-hook'."
+    ;;(local-set-key (kbd "a") 'mu4e-view-mark-for-refile) ;; remap from "r"
+    (local-set-key (kbd "f") 'mu4e-view-mark-for-refile) ;; remap from "r"
+    (local-set-key (kbd "r") 'mu4e-compose-reply) ;; add new keymapping, along with "R"
+    (local-set-key (kbd "C-c C-v") 'mu4e-view-action) ;; rebind from a
+    (visual-line-mode)
+    )
+
+  (define-key mu4e-headers-mode-map (kbd "C-c c") 'org-mu4e-store-and-capture)
+  (define-key mu4e-view-mode-map    (kbd "C-c c") 'org-mu4e-store-and-capture)
+  (define-key mu4e-headers-mode-map "x" #'my-mu4e-mark-execute-all-no-confirm)  ;; turn off execution confirmation
+  (define-key mu4e-view-mode-map "x" #'my-mu4e-mark-execute-all-no-confirm)  ;; turn off execution confirmation
+  ;; (define-key mu4e-compose-mode-map (kbd "C-c o") 'mwp-add-mu-keys-to-org) ;; switch to org, also add a keybinding
+  (define-key mu4e-compose-mode-map (kbd "C-c o") 'org-mu4e-compose-org-mode)  ;; activate org-mu4e-compose-org-mode
+
+  ;; function to add a local key to the org-mode map!
+  (defun mwp-add-mu-keys-to-org ()
+    (interactive)
+    (org-mode)
+    (local-set-key (kbd "C-c o") 'mu4e-compose-mode))
+
+  ;; add to hook
+  (add-hook 'mu4e-main-mode-hook 'my-mu4e-main-mode-config)
+  (add-hook 'mu4e-headers-mode-hook 'my-mu4e-headers-mode-config)
+  (add-hook 'mu4e-view-mode-hook 'my-mu4e-view-mode-config)
+
+
+  ;; configure view actions
+  (add-to-list 'mu4e-view-actions
+               '("ViewInBrowser" . mu4e-action-view-in-browser) t)
+  (add-to-list 'mu4e-view-actions
+               '("xwidget" . mu4e-action-view-with-xwidget) t)
+
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; Interactive functions
+
+  (defun my-mu4e-mark-execute-all-no-confirm ()
+    "Execute all marks without confirmation."
+    (interactive)
+    (mu4e-mark-execute-all 'no-confirm))
+
+  ;; this seemed essential at first but now I'm not using the mstpmail queue
+  (defun mu4e-main-toggle-mail-sending-mode ()
+    "Toggle sending mail mode, either queued or direct."
+    (interactive)
+    (unless (file-directory-p smtpmail-queue-dir)
+      (mu4e-error "`smtpmail-queue-dir' does not exist"))
+    (setq smtpmail-queue-mail (not smtpmail-queue-mail))
+    (message
+     (concat "Outgoing mail will now be "
+             (if smtpmail-queue-mail "queued" "sent directly")))
+    (mu4e~main-view))
+
+#+END_SRC
+
+
+** Initial folder/gui setup (DEPRECATED)
+So far, mu4e is amazing. Not quite finished with the setup and some papercuts remain for me, which I will try to fix in the coming days (<2016-10-31 Mon>)
+
+Here's the initial setup information. Combine with offlineimap and nullmailer for fethcing and sending mail, respectively. 
+
+<2016-11-17 Thu> Pasting this back in, despite having much of the relevant info also above in the minimal setup
+
+<2016-11-30 Wed> Officially deprecating this, in favour of a modified and rationalized initial setup above
+
+#+BEGIN_SRC emacs-lisp
+  ;;       ;; example configuration for mu4e
+
+  ;;       ;; make sure mu4e is in your load-path
+  ;;       (require 'mu4e)
+
+  ;;       ;; Only needed if your maildir is _not_ ~/Maildir
+  ;;       ;; Must be a real dir, not a symlink
+  ;;       (setq mu4e-maildir "/home/matt/UofTMail/")
+
+  ;;       ;; these must start with a "/", and must exist
+  ;;       ;; (i.e.. /home/user/Maildir/sent must exist)
+  ;;       ;; you use e.g. 'mu mkdir' to make the Maildirs if they don't
+  ;;       ;; already exist
+
+  ;;       ;; below are the defaults; if they do not exist yet, mu4e offers to
+  ;;       ;; create them. they can also functions; see their docstrings.
+  ;;        (setq mu4e-sent-folder   "/Sent")
+  ;;        (setq mu4e-drafts-folder "/Drafts")
+  ;;       (setq mu4e-trash-folder  "/Trash")
+  ;;       (setq mu4e-refile-folder  "/Archives")
+
+  ;;       ;; smtp mail setting; these are the same that `gnus' uses.
+  ;;       (setq
+  ;;        ;;message-send-mail-function   'smtpmail-send-it
+  ;;        smtpmail-default-smtp-server "smtp.utoronto.ca"
+  ;;        smtpmail-smtp-server         "smtp.utoronto.ca"
+  ;;        smtpmail-local-domain        "utoronto.ca")
+
+
+  ;;       ;; use msmtp instead of sendmail!
+  ;;       ;; actually we're using nullmailer now. Both are great, but nullmailer send is subjetively instantaneous
+  ;;       (setq message-send-mail-function 'message-send-mail-with-sendmail)
+  ;;       ;; instead of sending directly with msmtp, sned with the enqueue script
+  ;;   ;;(setq sendmail-program "/usr/local/bin/msmtp-enqueue.sh")
+  ;;   (setq sendmail-program "/usr/bin/sendmail")
+  ;;   ;;(setq sendmail-program "/usr/bin/msmtp")
+
+  ;;       ;;; This line allows you to store a quick link to the relevant email in a TODO item.
+  ;;       ;;; thank you, Pragmatic Emacs: http://pragmaticemacs.com/emacs/master-your-inbox-with-mu4e-and-org-mode/
+  ;;       ;;store org-mode links to messages
+  ;;       (require 'org-mu4e)
+  ;;       ;;store link to message if in header view, not to header query
+  ;;       (setq org-mu4e-link-query-in-headers-mode nil)
+
+
+
+  ;;       ;; the maildirs you use frequently; access them with 'j' ('jump')
+  ;;       (setq   mu4e-maildir-shortcuts
+  ;;               '(("/inbox"       . ?i)
+  ;;                 ("/Archives"     . ?a)
+  ;;                 ("/Sent"        . ?s)))
+
+  ;;       ;; a  list of user's e-mail addresses
+  ;;       (setq mu4e-user-mail-address-list '("matt.price@utoronto.ca" "moptop99@gmail.com"))
+
+  ;;       ;; when you want to use some external command for text->html
+  ;;       ;; conversion, e.g. the 'html2text' program
+  ;;       ;; (setq mu4e-html2text-command "html2text")
+  ;;       (require 'mu4e-contrib)
+  ;;       (setq mu4e-html2text-command 'mu4e-shr2text)
+  ;;       (add-hook 'mu4e-view-mode-hook
+  ;;                 (lambda()
+  ;;                   ;; try to emulate some of the eww key-bindings
+  ;;                   (local-set-key (kbd "<tab>") 'shr-next-link)
+  ;;                   (local-set-key (kbd "<backtab>") 'shr-previous-link)))
+
+
+  ;;       ;; the headers to show in the headers list -- a pair of a field
+  ;;       ;; and its width, with `nil' meaning 'unlimited'
+  ;;       ;; (better only use that for the last field.
+  ;;       ;; These are the defaults:
+  ;;       (setq mu4e-headers-fields
+  ;;             '( (:human-date          .  25)    ;; alternatively, use :human-date
+  ;;                (:flags         .   6)
+  ;;                (:mailing-list         .   10)
+  ;;                ;;(:attachments   .   6)
+  ;;                (:from-or-to          .  22)
+  ;;                (:subject       .  nil))) ;; alternatively, use :thread-subject
+
+  ;;       ;; program to get mail; alternatives are 'fetchmail', 'getmail'
+  ;;       ;; isync or your own shellscript. called when 'U' is pressed in
+  ;;       ;; main view.
+
+  ;;       ;; If you get your mail without an explicit command,
+  ;;       ;; use "true" for the command (this is the default)
+  ;;       (setq mu4e-get-mail-command "offlineimap")
+
+  ;;       ;; general emacs mail settings; used when composing e-mail
+  ;;       ;; the non-mu4e-* stuff is inherited from emacs/message-mode
+  ;;       (setq mu4e-reply-to-address "matt.price@utoronto.ca"
+  ;;             user-mail-address "matt.price@utoronto.ca"
+  ;;             user-full-name  "Matt Price")
+  ;;       (setq mu4e-compose-signature
+  ;;             "")
+
+  ;;       ;; smtp mail setting
+  ;; ;; I don't think this is being used by nullmailer at all, so probably irrelefant for me.
+  ;;       (setq
+
+  ;;        ;; if you need offline mode, set these -- and create the queue dir
+  ;;        ;; with 'mu mkdir', i.e.. mu mkdir /home/user/Maildir/queue
+  ;;        smtpmail-queue-mail  nil
+  ;;        smtpmail-queue-dir  "/home/matt/UofTMail/queue/cur")
+
+  ;;       ;; don't keep message buffers around
+  ;;       (setq message-kill-buffer-on-exit t)
+
+
+  ;;       ;; split horizontally, which is how I like it
+  ;;       ;; actually, switch to vertical (which is bizarrely called horizontal)
+  ;; ;; can't seem to get it to switch, so we'll see how it goes.
+  ;;       (setq ;; mu4e-split-view 'horizontal
+  ;;             mu4e-headers-visible-lines 15
+  ;;             mu4e-headers-visible-columns 80)
+
+  ;;       ;; view images inline
+  ;;       ;; enable inline images
+  ;;       (setq mu4e-view-show-images t)
+  ;;       ;; use imagemagick, if available
+  ;;       (when (fboundp 'imagemagick-register-types)
+  ;;         (imagemagick-register-types))
+
+  ;;       ;; extract attachments
+  ;;       ;; consider doing some sorting, e.g.: http://www.djcbsoftware.nl/code/mu/mu4e/Attachments.html#Attachments
+  ;;       (setq mu4e-attachment-dir  "~/Downloads")
+  ;;       (setq mu4e-attachment-dir
+  ;;             (lambda (fname mtype)
+  ;;               (cond
+  ;;                ;; jpgs go to ~/Pictures/FromEmails
+  ;;                ((and fname (string-match "\\.jpg$" fname))  "~/Pictures/FromEmails")
+  ;;                ;; ... other cases  ...
+  ;;                (t "~/Downloads")))) ;; everything else
+  ;;     ;; 
+
+  ;;     ;; This is a rewrite if mu4e-main from [[https://github.com/zmalltalker/dot-emacs/blob/master/contrib/mu4e/mu4e-main.el]]
+
+  ;;       ;; (eval-after-load 'mu4e 
+  ;;       ;;   '(define-key mu4e-main-mode-map "m" 'mu4e-main-toggle-mail-sending-mode))
+  ;;       ;; (eval-after-load 'mu4e 
+  ;;       ;;   '(define-key mu4e-main-mode-map "f" 'smtpmail-send-queued-mail))
+
+#+END_SRC
+
+** Improving contact completion
+There's a lot of stuff out there for this. I'm trying this method stolen from 
+https://groups.google.com/forum/#!topic/mu-discuss/kzUlflMY9Zg
+
+#+BEGIN_SRC emacs-lisp
+  (setq mwp/contact-blacklist-file "/home/matt/.mu/contact-blacklist")
+  (defun mwp/read-contact-blacklist ()
+     "Return a list of blacklisted email addresses"
+     (with-temp-buffer
+       (insert-file-contents mwp/contact-blacklist-file)
+       (split-string (buffer-string) "\n" t)))
+ 
+   (defun mwp/make-contact-blacklist-regexp ()
+     "Combine listed addresses into a regexp"
+     (mapconcat 'identity (mwp/read-contact-blacklist) "\\|"))
+ 
+   (setq mu4e-compose-complete-ignore-address-regexp (mwp/make-contact-blacklist-regexp)) 
+#+END_SRC
+* Youtube
+#+BEGIN_SRC emacs-lisp
+  (defvar yt-iframe-format
+    ;; You may want to change your width and height.
+    (concat "<iframe width=\"440\""
+            " height=\"335\""
+            " src=\"https://www.youtube.com/embed/%s\""
+            " frameborder=\"0\""
+            " allowfullscreen>%s</iframe>"))
+
+  (org-add-link-type
+   "yt"
+   (lambda (handle)
+     (browse-url
+      (concat "https://www.youtube.com/embed/"
+              handle)))
+   (lambda (path desc backend)
+     (cl-case backend
+       (html (format yt-iframe-format
+                     path (or desc "")))
+       (latex (format "\href{%s}{%s}"
+                      path (or desc "video"))))))
+#+END_SRC
+* Desktop
+My computer used to crash VERY often. Session saving was essential, and becase of the frequent restarts, it's nice to shave some time off of the process. So, first we start session management with ~(require 'desktop)~, set some variables, and then use a function stolen from [[https://www.emacswiki.org/emacs?action=browse;oldid=DeskTop;id=Desktop#toc4][Emacswiki]] and override the stale lockfile from the crashed process. 
+#+BEGIN_SRC emacs-lisp
+;; check to see if the owner of the current desktop is still alive
+(defun emacs-process-p (pid)
+  "If pid is the process ID of an emacs process, return t, else nil.
+Also returns nil if pid is nil."
+  (when pid
+    (let ((attributes (process-attributes pid)) (cmd))
+      (dolist (attr attributes)
+        (if (string= "comm" (car attr))
+            (setq cmd (cdr attr))))
+      (if (and cmd (or (string= "emacs" cmd) (string= "emacs.exe" cmd))) t))))
+
+;; advise desktop: if the pid in lockfile is no longer alive, don't require confirmation to steal desktop file
+(defadvice desktop-owner (after pry-from-cold-dead-hands activate)
+  "Don't allow dead emacsen to own the desktop file."
+  (when (not (emacs-process-p ad-return-value))
+    (setq ad-return-value nil)))
+
+;;; session management with desktop
+(require 'desktop)
+;; (setq desktop-dirname "/home/matt/.emacs.d/desktop-sessions/")
+(desktop-save-mode 1)
+(message "just before recover-session")
+(recover-session)
+;; 
+#+END_SRC
