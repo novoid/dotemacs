@@ -50,6 +50,7 @@ Allow emacs to find locanl files, which are mostly in ~/home/me/src/~ and ~/home
 
 
 #+END_SRC
+
 ** Require the packages
 
 I'm not sure why I have most of these.  I'm currently experimenting with commenting out some of them. 
@@ -1016,59 +1017,59 @@ Added <2016-11-15 Tue> org-protocol-capture-html
 
     ;;; Agenda Commands
     ;; customized agenda commiands
-    (setq org-agenda-custom-commands
-          '(("g" . "GTD contexts")
-            ("ge" "email" tags-todo "email/+ACTION")
-            ("gc" "Computer" tags-todo "computer/+ACTION")
-            ("go" "Office" tags-todo "office/+ACTION")
-            ("gp" "Phone" tags-todo "phone/+ACTION")
-            ("gh" "Home" tags-todo "home/+ACTION")
-            ("gr" "Errands" tags-todo "errand/+ACTION")
-            ("G" "GTD Block Agenda"
-             ((tags-todo "phone/+ACTION")
-              (tags-todo "office/+ACTION")
-              (tags-todo "email/+ACTION")
-              (tags-todo "computer/+ACTION")
-              (tags-todo "home/+ACTION")
-              (tags-todo "errand/+ACTION")
-              (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
-             nil                      ;; i.e., no local settings
-             ("~/next-actions.html")) ;; exports block to this file with C-c a e
-            ;; ("T" "Teaching Block Agenda"
-            ;;  ((tags-todo "phone+teaching/+ACTION")
-            ;;   (tags-todo "office+teaching/+ACTION")
-            ;;   (tags-todo "email+teaching/+ACTION")
-            ;;   (tags-todo "computer+teaching/+ACTION")
-            ;;   (tags-todo "home+teaching/+ACTION")
-            ;;   (tags-todo "errand+teaching/+ACTION")
-            ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
-            ;;  nil                      ;; i.e., no local settings
-            ;;  ("~/next-actions.html"))
-            ;; exports block to this file with C-c a e
-            ("H" "GTD Block Agenda"
-             ((tags-todo "+history+phone/+ACTION|BLOCKED")
-              (tags-todo "+history+office/+ACTION|BLOCKED")
-              (tags-todo "+history+email/+ACTION|BLOCKED")
-              (tags-todo "+history+computer/+ACTION|BLOCKED")
-              (tags-todo "+history+home/+ACTION+|BLOCKED")
-              (tags-todo "+history+errand/+ACTION|BLOCKED")
-              (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
-             nil                      ;; i.e., no local settings
-             ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
-            ("W" "WAITING block Agenda"
-             ((tags-todo "phone/+WAITING")
-              (tags-todo "email/+WAITING")
-              (tags-todo "computer/+WAITING")
-              (tags-todo "office/+WAITING")
-              (tags-todo "home/+WAITING")
-              (tags-todo "errand/+WAITING"))
-             nil                      ;; i.e., no local settings
-             ("~/next-actions.html")) ;; exports block to this file with C-c a e
-           ;; ..other commands here
-            ;; ("t" agenda "Teaching Agenda"
-            ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
-             ("p" "Projects" todo "PROJECT")
-             ))
+  ;; (setq org-agenda-custom-commands
+  ;;         '(("g" . "GTD contexts")
+  ;;           ("ge" "email" tags-todo "email/+ACTION")
+  ;;           ("gc" "Computer" tags-todo "computer/+ACTION")
+  ;;           ("go" "Office" tags-todo "office/+ACTION")
+  ;;           ("gp" "Phone" tags-todo "phone/+ACTION")
+  ;;           ("gh" "Home" tags-todo "home/+ACTION")
+  ;;           ("gr" "Errands" tags-todo "errand/+ACTION")
+  ;;           ("G" "GTD Block Agenda"
+  ;;            ((tags-todo "phone/+ACTION")
+  ;;             (tags-todo "office/+ACTION")
+  ;;             (tags-todo "email/+ACTION")
+  ;;             (tags-todo "computer/+ACTION")
+  ;;             (tags-todo "home/+ACTION")
+  ;;             (tags-todo "errand/+ACTION")
+  ;;             (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
+  ;;            nil                      ;; i.e., no local settings
+  ;;            ("~/next-actions.html")) ;; exports block to this file with C-c a e
+  ;;           ;; ("T" "Teaching Block Agenda"
+  ;;           ;;  ((tags-todo "phone+teaching/+ACTION")
+  ;;           ;;   (tags-todo "office+teaching/+ACTION")
+  ;;           ;;   (tags-todo "email+teaching/+ACTION")
+  ;;           ;;   (tags-todo "computer+teaching/+ACTION")
+  ;;           ;;   (tags-todo "home+teaching/+ACTION")
+  ;;           ;;   (tags-todo "errand+teaching/+ACTION")
+  ;;           ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
+  ;;           ;;  nil                      ;; i.e., no local settings
+  ;;           ;;  ("~/next-actions.html"))
+  ;;           ;; exports block to this file with C-c a e
+  ;;           ("H" "GTD Block Agenda"
+  ;;            ((tags-todo "+history+phone/+ACTION|BLOCKED")
+  ;;             (tags-todo "+history+office/+ACTION|BLOCKED")
+  ;;             (tags-todo "+history+email/+ACTION|BLOCKED")
+  ;;             (tags-todo "+history+computer/+ACTION|BLOCKED")
+  ;;             (tags-todo "+history+home/+ACTION+|BLOCKED")
+  ;;             (tags-todo "+history+errand/+ACTION|BLOCKED")
+  ;;             (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
+  ;;            nil                      ;; i.e., no local settings
+  ;;            ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
+  ;;           ("W" "WAITING block Agenda"
+  ;;            ((tags-todo "phone/+WAITING")
+  ;;             (tags-todo "email/+WAITING")
+  ;;             (tags-todo "computer/+WAITING")
+  ;;             (tags-todo "office/+WAITING")
+  ;;             (tags-todo "home/+WAITING")
+  ;;             (tags-todo "errand/+WAITING"))
+  ;;            nil                      ;; i.e., no local settings
+  ;;            ("~/next-actions.html")) ;; exports block to this file with C-c a e
+  ;;          ;; ..other commands here
+  ;;           ;; ("t" agenda "Teaching Agenda"
+  ;;           ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
+  ;;            ("p" "Projects" todo "PROJECT")
+  ;;            ))
 
     ;;; agenda diary stuff
     (setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
@@ -1816,6 +1817,65 @@ This uses org-present to do presentations inside emacs itself!
                    (org-present-show-cursor)
                    (org-present-read-write)))))
 #+END_SRC
+
+** Transclusion
+From John Kitchin
+
+#+BEGIN_SRC emacs-lisp :results silent
+(defvar *transclude* t "Put overlays on or not")
+(setq *transclude* t)
+
+(org-link-set-parameters
+ "transclude"
+ :face '(:background "gray80")
+ :follow (lambda (path)
+           (org-open-link-from-string path))
+ :keymap (let ((map (copy-keymap org-mouse-map)))
+           (define-key map [C-mouse-1] (lambda ()
+                                         (interactive)
+                                         (setq *transclude* (not *transclude*))
+                                         (unless *transclude*
+                                           (ov-clear 'transclude))
+                                         (font-lock-fontify-buffer)))
+           map)
+ :help-echo "Transcluded element. Click to open source. C-mouse-1 to toggle overlay."
+ :activate-func (lambda (start end path bracketp)
+                  (if *transclude*
+                      (let ((ov (make-overlay start end))
+                            el disp)
+                        (ov-put ov 'transclude t)
+                        (save-window-excursion
+                          (with-temp-buffer
+                            (insert path)
+                            (org-open-file
+                             (org-element-property
+                              :path
+                              (org-element-context))
+                             nil nil
+                             (org-element-property
+                              :search-option
+                              (org-element-context)))
+
+                            (setq el (org-element-context))
+                            (setq disp (buffer-substring
+                                        (org-element-property :begin el)
+                                        (- (org-element-property :end el)
+                                           (or (org-element-property :post-blank el) 0)))))
+                          (message-box "%s" disp)
+
+                          (ov-put ov 'display disp)))
+                    (ov-clear 'transclude 'any start end))))
+#+END_SRC
+
+** org-ref
+Trying to get [[https://github.com/jkitchin/org-ref][org-ref]] working. Having trouble getting stuff formatted to my satisfaction. 
+#+BEGIN_SRC emacs-lisp
+
+
+#+END_SRC
+
+#+RESULTS:
+: ((misc . ${author} ${year}. /${title}/, [[${url}]]) (misc . ${author} ${year}. /${title}/, [[${url}]]) (misc . ${author} ${year}. /${title}/, [[${url}]]) (misc . ${author} ${year}. /${title}/, [[${url}]]) (article . ${author}, /${title}/, ${journal}, *${volume}(${number})*, ${pages} (${year}). ${doi}) (inproceedings . ${author}, /${title}/, In ${editor}, ${booktitle} (pp. ${pages}) (${year}). ${address}: ${publisher}.) (book . ${author} ${year}. /${title}/, ${address}:${publisher}. ${url}) (phdthesis . ${author}, /${title}/ (Doctoral dissertation) (${year}). ${school}, ${address}.) (inbook . ${author}, /${title}/, In ${editor} (Eds.), ${booktitle} (pp. ${pages}) (${year}). ${address}: ${publisher}.) (incollection . ${author}, /${title}/, In ${editor} (Eds.), ${booktitle} (pp. ${pages}) (${year}). ${address}: ${publisher}.) (proceedings . ${editor} (Eds.), _${booktitle}_ (${year}). ${address}: ${publisher}.) (unpublished . ${author}, /${title}/ (${year}). Unpublished manuscript.) (nil . ${author}, /${title}/ (${year}).))
 ** First part 
 #+BEGIN_SRC emacs-lisp
 
@@ -2936,7 +2996,17 @@ I've moved this stuff into its own org file:
 #+RESULTS:
 : ((\.doc\' . /usr/bin/libreoffice %s) (\.docx\' . /usr/bin/libreoffice %s) (\.pdf::\([[:digit:]]+\)\' . org-pdfview-open) (\.pdf\' . org-pdfview-open) (auto-mode . emacs) (\.mm\' . default) (\.x?html?\' . firefox %s) (\.pdf\' . default) (\.odt\' . /usr/bin/libreoffice %s))
 
-* Keybindings
+** tables of contents
+this is useful for github:
+https://github.com/snosov1/toc-org
+#+BEGIN_SRC emacs-lisp
+(if (require 'toc-org nil t)
+    (add-hook 'org-mode-hook 'toc-org-enable)
+  (warn "toc-org not found"))
+
+#+END_SRC
+
+ybindings
 really this should go at the end of the file so it doesn't get overwritten
 
 #+BEGIN_SRC emacs-lisp
@@ -3276,8 +3346,8 @@ I very often want to reopen a current bufferin sudo. I stalling ~sudo-edit~ has 
 I actually have no need for smallcaps right now, but I had this code lying around so might as well save it.
 *** Eric Schulte's filter for HTML small caps
 
-#+name: es-small-caps
-#+begin_src emacs-lisp
+# #+name: es-small-caps
+# #+begin_src emacs-lisp
   ;;; "sc" links for the \sc{} latex command
   (defun org-export-html-small-caps (string backend channel)
     (when (org-export-derived-backend-p backend 'html)
@@ -3332,9 +3402,7 @@ I actually have no need for smallcaps right now, but I had this code lying aroun
   (add-hook 'org-export-filter-parse-tree-functions
             'org-export-latex-sc)
 
-#+end_src
-
-
+# #+end_src
 
 
 * Late-breaking excellent additions
@@ -3993,6 +4061,25 @@ https://groups.google.com/forum/#!topic/mu-discuss/kzUlflMY9Zg
  
    (setq mu4e-compose-complete-ignore-address-regexp (mwp/make-contact-blacklist-regexp)) 
 #+END_SRC
+
+** adding tags
+
+I wanted to tag some messages so I don't lose them
+
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'mu4e-marks
+  '(tag
+     :char       "g"
+     :prompt     "gtag"
+     :ask-target (lambda () (read-string "What tag do you want to add?"))
+     :action      (lambda (docid msg target)
+                    (mu4e-action-retag-message msg (concat "+" target)))))
+
+(mu4e~headers-defun-mark-for tag)
+(define-key mu4e-headers-mode-map (kbd "g") 'mu4e-headers-mark-for-tag)
+#+END_SRC
+
+
 * Youtube
 #+BEGIN_SRC emacs-lisp
   (defvar yt-iframe-format
