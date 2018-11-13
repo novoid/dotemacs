@@ -5204,26 +5204,24 @@ expanding this to use additional options; could just be gneeralized, though rela
       )
     )
 
-  (require 'ox-md)
-  (require 'ox-gfm)
-  ;;(org-export-register-backend 'gfm)
-  ;; (with-eval-after-load "ox-md" (org-export-register-backend 'md))
+  ;; (use-package ox-md
+  ;;   :load-path: "~/src/org-mode/emacs/site-lisp/org/"
+  ;;   :after org
+  ;;   :config
+  ;;   (org-export-register-backend 'md)
+  ;;   (require 'ox-gfm)
+
+  ;;   )
+  ;; ;;  (require 'ox-md)
+  ;; ;;(org-export-register-backend 'gfm)
+  ;; ;; (with-eval-after-load "ox-md" )
   ;; (with-eval-after-load "ox-gfm" (org-export-register-backend 'gfm))
 
-  (use-package ox-slack
-    :load-path "~/src/ox-slack"
-    :pin manual
-    :preface
-    ;; (require 'ox-md)
-    ;; (require 'ox-gfm)
-    :after (org )
-    ;; :bind
-    ;; ("C-c W s" . org-slack-export-to-clibpoard-as-slack)
-    )
 
 
 
-  ;;(global-set-key (kbd "C-c W h") 'ora-org-to-html-to-clipboard)
+  ;; ;;(global-set-key (kbd  "C-c W h") 'ora-org-to-html-to-clipboard)
+
   ;;(global-set-key (kbd "C-c W s") 'ora-org-export-to-clipboard-as-slack)
 #+END_SRC
 
