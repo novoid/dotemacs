@@ -2066,6 +2066,7 @@ All that stuff above is a bunch of other stufff! Now we have some web-related pr
 #+RESULTS:
 | web-mode | js2-mode | prog-mode | c-mode | objc-mode | c++-mode | java-mode | jde-mode | pascal-mode | perl-mode | python-mode |
 
+
 *** Javascript
 Here are some things related to javascript, including tern and then hopefully swewer, etc. 
 
@@ -2926,6 +2927,7 @@ Mostly this just laods the diminish package and adds some stuff to it
 #+RESULTS:
 | lambda | (&optional arg) | Keyboard macro. | (interactive p) | (kmacro-exec-ring-item '([42 42 32 return 124 32 79 114 103 97 110 105 122 97 116 105 111 110 32 124 32 124 32 backspace tab 67 108 97 114 105 116 121 32 111 102 32 84 104 101 115 105 115 tab tab 80 114 101 115 101 110 116 97 116 105 111 110 32 111 102 32 69 118 105 100 101 110 99 101 32 124 32 124 backspace backspace backspace backspace tab tab 71 114 97 109 109 97 114 32 97 110 100 32 83 112 101 108 108 105 110 103 tab tab 83 116 121 108 101 tab tab 67 105 116 97 116 105 111 110 115 tab tab 70 117 114 116 104 101 114 32 67 111 109 109 101 110 116 115 tab tab 71 114 97 100 101 tab up up up up up up up up 32] 0 %d) arg) |
 
+
 * 
 * Organize my life
 The very extensive org-mode configuration.  whew.   
@@ -2936,61 +2938,61 @@ A couple of things to note here:
 - sets a large number of variables
 
 #+BEGIN_SRC emacs-lisp
-  (defvar modi/org-version-select 'dev
+      (defvar modi/org-version-select 'dev
         "Variable to choose the version of Org to be loaded.
-    Valid values are `dev', `elpa' and `emacs'.
+          Valid values are `dev', `elpa' and `emacs'.
 
-    When set to `dev', the development version of Org built locally
-    is loaded.
-    When set to `elpa', Org is installed and loaded from Org Elpa.
-    When set to `emacs', the Org version shipped with Emacs is used.
+          When set to `dev', the development version of Org built locally
+          is loaded.
+          When set to `elpa', Org is installed and loaded from Org Elpa.
+          When set to `emacs', the Org version shipped with Emacs is used.
 
-    The value is defaulted to `elpa' as few things in this config
-    need Org version to be at least 9.x.")
-  ;; Mark packages to *not* to be updated
-  ;; http://emacs.stackexchange.com/a/9342/115
-  (defvar modi/package-menu-dont-update-packages '(org)
-    "List of packages for which the package manager should not look for updates.
-    Example: '(org org-plus-contrib).")
-  ;; Do not upgrade Org using the package manager if it's set to *not* use the
-  ;; Elpa version of Org.
-  (unless (eq modi/org-version-select 'elpa)
-    (add-to-list 'modi/package-menu-dont-update-packages 'org-plus-contrib))
+          The value is defaulted to `elpa' as few things in this config
+          need Org version to be at least 9.x.")
+      ;; Mark packages to *not* to be updated
+      ;; http://emacs.stackexchange.com/a/9342/115
+      (defvar modi/package-menu-dont-update-packages '(org)
+        "List of packages for which the package manager should not look for updates.
+          Example: '(org org-plus-contrib).")
+      ;; Do not upgrade Org using the package manager if it's set to *not* use the
+      ;; Elpa version of Org.
+      (unless (eq modi/org-version-select 'elpa)
+        (add-to-list 'modi/package-menu-dont-update-packages 'org-plus-contrib))
 
 
 
-  (defun modi/package-menu-remove-excluded-packages (orig-fun &rest args)
-    "Remove the packages listed in `modi/package-menu-dont-update-packages' from
-    the `tabulated-list-entries' variable."
-    (let ((included (-filter
-                     (lambda (entry)
-                       (let ((pkg-name (package-desc-name (car entry))))
-                         (not (member pkg-name modi/package-menu-dont-update-packages))))
-                     tabulated-list-entries)))
-      (setq-local tabulated-list-entries included)
-      (apply orig-fun args)))
-  (advice-add 'package-menu--find-upgrades :around #'modi/package-menu-remove-excluded-packages)
-  ;; (advice-remove 'package-menu--find-upgrades #'modi/package-menu-remove-excluded-packages)
-  (defvar modi/default-lisp-directory "/usr/share/emacs/27.0.50/lisp/"
+      (defun modi/package-menu-remove-excluded-packages (orig-fun &rest args)
+        "Remove the packages listed in `modi/package-menu-dont-update-packages' from
+          the `tabulated-list-entries' variable."
+        (let ((included (-filter
+                         (lambda (entry)
+                           (let ((pkg-name (package-desc-name (car entry))))
+                             (not (member pkg-name modi/package-menu-dont-update-packages))))
+                         tabulated-list-entries)))
+          (setq-local tabulated-list-entries included)
+          (apply orig-fun args)))
+      (advice-add 'package-menu--find-upgrades :around #'modi/package-menu-remove-excluded-packages)
+      ;; (advice-remove 'package-menu--find-upgrades #'modi/package-menu-remove-excluded-packages)
+      (defvar modi/default-lisp-directory "/usr/share/emacs/27.0.50/lisp/"
         "Directory containing lisp files for the Emacs installation.
 
-    This value must match the path to the lisp/ directory of your
-    Emacs installation.  If Emacs is installed using
-    --prefix=\"${PREFIX_DIR}\" this value would typically be
-    \"${PREFIX_DIR}/share/emacs/<VERSION>/lisp/\".")
+          This value must match the path to the lisp/ directory of your
+          Emacs installation.  If Emacs is installed using
+          --prefix=\"${PREFIX_DIR}\" this value would typically be
+          \"${PREFIX_DIR}/share/emacs/<VERSION>/lisp/\".")
 
-  (defvar org-dev-lisp-directory "/home/matt/src/org-mode/emacs/site-lisp/org"
+      (defvar org-dev-lisp-directory "/home/matt/src/org-mode/emacs/site-lisp/org"
         "Directory containing lisp files for dev version of Org.
 
-    This value must match the `lispdir' variable in the Org local.mk.
-    By default the value is \"$prefix/emacs/site-lisp/org\", where
-    `prefix' must match that in local.mk too.")
+          This value must match the `lispdir' variable in the Org local.mk.
+          By default the value is \"$prefix/emacs/site-lisp/org\", where
+          `prefix' must match that in local.mk too.")
 
-  (defvar org-dev-info-directory "/home/matt/src/org-mode/info"
+      (defvar org-dev-info-directory "/home/matt/src/org-mode/info"
         "Directory containing Info manual file for dev version of Org.
-    This value must match the `infodir' variable in the Org local.mk.")
+          This value must match the `infodir' variable in the Org local.mk.")
 
-  (when (and org-dev-lisp-directory
+      (when (and org-dev-lisp-directory
                  org-dev-info-directory)
         (with-eval-after-load 'package
           ;; If `modi/org-version-select' is *not* `emacs', remove the Emacs
@@ -3033,172 +3035,192 @@ A couple of things to note here:
                 (setq Info-directory-list (delete dev-org-info Info-directory-list)))))))
 
 
-  (use-package org
-    :ensure t
-    :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
-    :pin manual
-    ;; :load-path (org-lisp org-contrib)
-    ;; :preface
+      (use-package org
+        :ensure t
+        :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
+        :pin manual
+        ;; :load-path (org-lisp org-contrib)
+        ;; :preface
 
-    ;;:init
-    ;;(setq org-export-backends '(ascii beamer html hugo icalendar md gfm reveal latex odt org))
-    :hook
-    ((org-mode . (lambda () (flyspell-mode 1)))
-     (org-mode . turn-off-auto-fill))
-    :mode ("\\.org" . org-mode)
-    :bind 
-    (("C-c l" . 'org-store-link)
-     ("C-c a" . 'org-agenda))
-    :commands (org-mode org-capture org-agenda )
-    :config
+        ;;:init
+        ;;(setq org-export-backends '(ascii beamer html hugo icalendar md gfm reveal latex odt org))
+        :hook
+        ((org-mode . (lambda () (flyspell-mode 1)))
+         (org-mode . turn-off-auto-fill))
+        :mode ("\\.org" . org-mode)
+        :bind 
+        (("C-c l" . 'org-store-link)
+         ("C-c a" . 'org-agenda))
+        :commands (org-mode org-capture org-agenda )
+        :config
 
-    ;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
-    (setq org-refile-targets
-          (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5)
-                  ("/home/matt/org/.org2blog.el" :maxlevel . 1)
-                  ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
+        ;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
+        (setq org-refile-targets
+              (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5)
+                      ("/home/matt/org/.org2blog.el" :maxlevel . 1)
+                      ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
 
-    (defun add-pcomplete-to-capf ()
-      (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+        (defun add-pcomplete-to-capf ()
+          (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
 
-    (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
-    ;; Targets start with the file name - allows creating level 1 tasks
-    (setq org-refile-use-outline-path (quote file))
+        (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
+        ;; Targets start with the file name - allows creating level 1 tasks
+        (setq org-refile-use-outline-path (quote file))
 
-    ;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
-    (setq org-outline-path-complete-in-steps t)
+        ;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
+        (setq org-outline-path-complete-in-steps t)
 
-    ;; Allow refile to create parent tasks with confirmation
-    (setq org-refile-allow-creating-parent-nodes (quote confirm))
-    (use-package ox
-    :ensure t
-    :load-path "/home/matt/src/org-mode/emacs/site-lisp/org/ox.el"
-    :pin manual
-    )
-    (use-package ox-md
-    :ensure t
-    :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
-    :pin manual
-      :after ox)
-
-    ;; agenda config
-    )
-
-  (use-package org-agenda
-    :after org
-    :config
-    ;; agenda diary stuff
-    (setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
-    (setq org-agenda-include-diary t)
-
-    (setq org-agenda-custom-commands
-          '(("g" . "GTD contexts")
-            ("ge" "email" tags-todo "email/+ACTION")
-            ("gc" "Computer" tags-todo "computer/+ACTION")
-            ("go" "Office" tags-todo "office/+ACTION")
-            ("gp" "Phone" tags-todo "phone/+ACTION")
-            ("gh" "Home" tags-todo "home/+ACTION")
-            ("gr" "Errands" tags-todo "errand/+ACTION")
-            ("E" "EDGI Tasks" tags "edgi")
-            ("G" "GTD Block Agenda"
-             ((tags-todo "phone/+ACTION")
-              (tags-todo "office/+ACTION")
-              (tags-todo "email/+ACTION")
-              (tags-todo "computer/+ACTION")
-              (tags-todo "home/+ACTION")
-              (tags-todo "errand/+ACTION")
-              (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
-             nil                      ;; i.e., no local settings
-             ("~/next-actions.html")) ;; exports block to this file with C-c a e
-            ;; ("T" "Teaching Block Agenda"
-            ;;  ((tags-todo "phone+teaching/+ACTION")
-            ;;   (tags-todo "office+teaching/+ACTION")
-            ;;   (tags-todo "email+teaching/+ACTION")
-            ;;   (tags-todo "computer+teaching/+ACTION")
-            ;;   (tags-todo "home+teaching/+ACTION")
-            ;;   (tags-todo "errand+teaching/+ACTION")
-            ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
-            ;;  nil                      ;; i.e., no local settings
-            ;;  ("~/next-actions.html"))
-            ;; exports block to this file with C-c a e
-            ("H" "GTD Block Agenda"
-             ((tags-todo "+history+phone/+ACTION|BLOCKED")
-              (tags-todo "+history+office/+ACTION|BLOCKED")
-              (tags-todo "+history+email/+ACTION|BLOCKED")
-              (tags-todo "+history+computer/+ACTION|BLOCKED")
-              (tags-todo "+history+home/+ACTION+|BLOCKED")
-              (tags-todo "+history+errand/+ACTION|BLOCKED")
-              (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
-             nil                              ;; i.e., no local settings
-             ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
-            ("W" "WAITING block Agenda"
-             ((tags-todo "phone/+WAITING")
-              (tags-todo "email/+WAITING")
-              (tags-todo "computer/+WAITING")
-              (tags-todo "office/+WAITING")
-              (tags-todo "home/+WAITING")
-              (tags-todo "errand/+WAITING"))
-             nil                      ;; i.e., no local settings
-             ("~/next-actions.html")) ;; exports block to this file with C-c a e
-            ;; ..other commands here
-            ;; ("t" agenda "Teaching Agenda"
-            ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
-            ("p" "Projects" todo "PROJECT")
-            )))
+        ;; Allow refile to create parent tasks with confirmation
+        (setq org-refile-allow-creating-parent-nodes (quote confirm))
 
 
-    ;;;; Org-mode hooks
-    ;; (add-hook 'org-mode-hook
-    ;;   (lambda()
-    ;;     (flyspell-mode 1)))
-    ;; (add-to-list 'auto-mode-alist '("\\.org" . org-mode))
+        )
+      ;; agenda config
+      (use-package org-agenda
+        :after org
+        :config
+        ;; agenda diary stuff
+        (setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
+        (setq org-agenda-include-diary t)
 
-    ;; still need to load org2blog
-    (use-package xml-rpc
-      :load-path "~/src/xml-rpc"
-       :no-require)
-    (use-package org2blog
-      :after (:all xml-rpc (:any org org-plus-contrib))
-      :load-path  ("/home/matt/src/org2blog" "/home/matt/src/xml-rpc"))
+        (setq org-agenda-custom-commands
+              '(("g" . "GTD contexts")
+                ("ge" "email" tags-todo "email/+ACTION")
+                ("gc" "Computer" tags-todo "computer/+ACTION")
+                ("go" "Office" tags-todo "office/+ACTION")
+                ("gp" "Phone" tags-todo "phone/+ACTION")
+                ("gh" "Home" tags-todo "home/+ACTION")
+                ("gr" "Errands" tags-todo "errand/+ACTION")
+                ("E" "EDGI Tasks" tags "edgi")
+                ("G" "GTD Block Agenda"
+                 ((tags-todo "phone/+ACTION")
+                  (tags-todo "office/+ACTION")
+                  (tags-todo "email/+ACTION")
+                  (tags-todo "computer/+ACTION")
+                  (tags-todo "home/+ACTION")
+                  (tags-todo "errand/+ACTION")
+                  (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
+                 nil                      ;; i.e., no local settings
+                 ("~/next-actions.html")) ;; exports block to this file with C-c a e
+                ;; ("T" "Teaching Block Agenda"
+                ;;  ((tags-todo "phone+teaching/+ACTION")
+                ;;   (tags-todo "office+teaching/+ACTION")
+                ;;   (tags-todo "email+teaching/+ACTION")
+                ;;   (tags-todo "computer+teaching/+ACTION")
+                ;;   (tags-todo "home+teaching/+ACTION")
+                ;;   (tags-todo "errand+teaching/+ACTION")
+                ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
+                ;;  nil                      ;; i.e., no local settings
+                ;;  ("~/next-actions.html"))
+                ;; exports block to this file with C-c a e
+                ("H" "GTD Block Agenda"
+                 ((tags-todo "+history+phone/+ACTION|BLOCKED")
+                  (tags-todo "+history+office/+ACTION|BLOCKED")
+                  (tags-todo "+history+email/+ACTION|BLOCKED")
+                  (tags-todo "+history+computer/+ACTION|BLOCKED")
+                  (tags-todo "+history+home/+ACTION+|BLOCKED")
+                  (tags-todo "+history+errand/+ACTION|BLOCKED")
+                  (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
+                 nil                              ;; i.e., no local settings
+                 ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
+                ("W" "WAITING block Agenda"
+                 ((tags-todo "phone/+WAITING")
+                  (tags-todo "email/+WAITING")
+                  (tags-todo "computer/+WAITING")
+                  (tags-todo "office/+WAITING")
+                  (tags-todo "home/+WAITING")
+                  (tags-todo "errand/+WAITING"))
+                 nil                      ;; i.e., no local settings
+                 ("~/next-actions.html")) ;; exports block to this file with C-c a e
+                ;; ..other commands here
+                ;; ("t" agenda "Teaching Agenda"
+                ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
+                ("p" "Projects" todo "PROJECT")
+                )))
 
-    (use-package org2blog-autoloads
-      :after org2blog
-      )
-    ;; this should turhn auto-fill off?
-    ;; (add-hook 'org-mode-hook 'turn-off-auto-fill)
-    ;;org-mouse.el -- an extra
-    (use-package org-mouse
-      :after (:any org org-plus-contrib))
 
-    (use-package ox-odt
-      :after (:any org org-plus-contrib)
-      :defer 10
-      :config
-      (setq org-odt-styles-dir "/home/matt/src/org-mode/etc/styles/")
-      ;; (setq org-odt-schema-dir "/home/matt/.emacs.d/Templates/")
-      (setq org-odt-styles-file "/home/matt/.emacs.d/Templates/New113Syllabus.odt")
-      ;; this needs to be set here, but the fn definition is actually below
-      (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
-    )
+          ;;;; Org-mode hooks
+      ;; (add-hook 'org-mode-hook
+      ;;   (lambda()
+      ;;     (flyspell-mode 1)))
+      ;; (add-to-list 'auto-mode-alist '("\\.org" . org-mode))
 
-    ;;;; markdown export
-    (use-package ox-md
-      :after (:any org org-plus-contrib)
-      ;;:defer 7
-      :config
-      (add-to-list 'org-export-backends 'markdown))
-      ;;(setq org-export-backends '(ascii beamer html hugo icalendar md gfm reveal latex odt org)))
-    ;; (use-package ox-gfm :after (:any org org-plus-contrib))
+      ;; still need to load org2blog
+      (use-package xml-rpc
+        :load-path "~/src/xml-rpc"
+        :no-require)
+      (use-package org2blog
+        :after (:all xml-rpc (:any org org-plus-contrib))
+        :load-path  ("/home/matt/src/org2blog" "/home/matt/src/xml-rpc"))
 
-    (use-package ox-gfm
-      :after (:any org org-plus-contrib)
-      ;;:defer 9
-      (add-to-list 'org-export-backends 'gfm))
+      (use-package org2blog-autoloads
+        :after org2blog
+        )
+      ;; this should turhn auto-fill off?
+      ;; (add-hook 'org-mode-hook 'turn-off-auto-fill)
+      ;;org-mouse.el -- an extra
+      (use-package org-mouse
+        :after (:any org org-plus-contrib))
 
+      (use-package ox-odt
+        :after (:any org org-plus-contrib)
+        :defer 10
+        :config
+        (setq org-odt-styles-dir "/home/matt/src/org-mode/etc/styles/")
+        ;; (setq org-odt-schema-dir "/home/matt/.emacs.d/Templates/")
+        (setq org-odt-styles-file "/home/matt/.emacs.d/Templates/New113Syllabus.odt")
+        ;; this needs to be set here, but the fn definition is actually below
+        (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
+        )
+#+END_SRC
+
+
+separate the exports block to try to ifgure out what the hell.  
+#+BEGIN_SRC emacs-lisp
+      ;; (use-package ox
+      ;;   :ensure t
+      ;;   :load-path "/home/matt/src/org-mode/emacs/site-lisp/org/ox.el"
+      ;;   :pin manual
+      ;;   )
+
+
+      ;;     ;;;; markdown export
+      ;; (use-package ox-md
+      ;;   :after (org)
+      ;;   ;;:defer 7
+      ;;   :config
+      ;;   (add-to-list 'org-export-backends 'md))
+      ;; ;;(setq org-export-backends '(ascii beamer html hugo icalendar md gfm reveal latex odt org)))
+      ;; ;; (use-package ox-gfm :after (:any org org-plus-contrib))
+
+
+      ;; (use-package ox-gfm
+      ;;   :after (org)
+      ;;   ;;:defer 9
+      ;;   (add-to-list 'org-export-backends 'gfm))
+
+    ;; (require 'ox-md)
+    ;; ;;( org-export-register-backend 'md)
+    ;; (use-package ox-md
+    ;; :load-path "~/src/org-mode/emacs/site-lisp/org"
+    ;; :defer nil
+    ;; :after org
+    ;; :config
+
+    ;; )
+
+    ;; (use-package ox-gfm
+    ;; :ensure t
+    ;; :defer nil
+    ;; :after org
+    ;; :config
+    ;; ( org-export-register-backend 'gfm)
+    ;; )
 
 #+END_SRC
 
 #+RESULTS:
+: ox-gfm
 
 ** DONE Using custom id's 
 We want to use custom_id properties in all headlines if poss b/c it's just way better.
@@ -5121,7 +5143,7 @@ This code from John Kitchen & abo-abo makes it a lot easier to copy text directl
 - [[http://kitchingroup.cheme.cmu.edu/blog/2016/06/16/Copy-formatted-org-mode-text-from-Emacs-to-other-applications/#comment-2735698988][john's original post]]
 expanding this to use additional options; could just be gneeralized, though relaly only html copy needs the elaborate copying to a tmp file.   
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :results code
   (defun ora-org-to-html-to-clipboard ()
     "Export region to HTML, and copy it to the clipboard."
     (interactive)
@@ -5167,28 +5189,19 @@ expanding this to use additional options; could just be gneeralized, though rela
       )
     )
 
-(use-package ox-md
-:defer nil
-:after org
-:config
-( org-export-register-backend 'md)
-)
-
-(use-package ox-gfm
-:ensure t
-:defer nil
-:after org
-:config
-( org-export-register-backend 'gfm)
-)
+  (require 'ox-md)
+  (require 'ox-gfm)
+  ;;(org-export-register-backend 'gfm)
+  ;; (with-eval-after-load "ox-md" (org-export-register-backend 'md))
+  ;; (with-eval-after-load "ox-gfm" (org-export-register-backend 'gfm))
 
   (use-package ox-slack
-    :load-path "~/src/ox-slack/ox-slack.el"
+    :load-path "~/src/ox-slack"
     :pin manual
     :preface
     ;; (require 'ox-md)
     ;; (require 'ox-gfm)
-    :after (org ox-md)
+    :after (org )
     ;; :bind
     ;; ("C-c W s" . org-slack-export-to-clibpoard-as-slack)
     )
@@ -5200,7 +5213,9 @@ expanding this to use additional options; could just be gneeralized, though rela
 #+END_SRC
 
 #+RESULTS:
-: t
+#+begin_src emacs-lisp
+nil
+#+end_src
 
 
 ** More of the mixed up stuff
@@ -6492,6 +6507,7 @@ Trying to set up the INdium ide for Javascript dev.
 Requires ~exec-path-from-shell~ in order to find the right node versions
 #+begin_src emacs-lisp
   (use-package exec-path-from-shell
+:ensure t
     :config
     (when (memq window-system '(mac ns x))
       (exec-path-from-shell-initialize)))
@@ -6503,6 +6519,14 @@ Requires ~exec-path-from-shell~ in order to find the right node versions
 
 #+end_src
 
+** mocha
+ds
+trying to run tests inside 
+#+begin_src emacs-lisp
+(use-package mocha
+:ensure t
+)
+#+end_src
 ** Impatient Mode
 Much better for live html previewing than skewer-mode, which is really for javascript.  Pretty simple to set it up: 
 
@@ -6606,12 +6630,19 @@ use github markdown instead of regular
 #+END_SRC
 ** Emacs Refadctor
 #+begin_src emacs-lisp
-(use-package emr
+  ;; (use-package emr
+  ;; :ensure t
+  ;; )
+  (use-package emr
 :ensure t
+    :config
+    (add-hook 'emacs-lisp-mode-hook 'emr-initialize)
+    ;; (bind-key "R" #'emr-show-refactor-menu lisp-evaluation-map)
 )
 #+end_src
 
 #+RESULTS:
+: t
 
 * Open current file with Sudo
 I very often want to reopen a current bufferin sudo. I stalling ~sudo-edit~ has done the trick for me.  
@@ -7072,11 +7103,11 @@ OK mbork, [[http://mbork.pl/2016-02-20_Iedit_mode][I'm convinced]]. Giving this 
 First setup auth sources for magithub
 
 #+begin_src emacs-lisp
-(setq auth-sources '((:source "~/.authinfo.gpg" "~/.authinfo" "~/.netrc")))
+(setq auth-sources '("~/.authinfo.gpg" "~/.authinfo" "~/.netrc"))
 #+end_src
 
 #+RESULTS:
-| :source | ~/.authinfo.gpg | ~/.authinfo | ~/.netrc |
+| ~/.authinfo.gpg | ~/.authinfo | ~/.netrc |
 
 
 trying to get this to work
@@ -7119,14 +7150,14 @@ trying to get this to work
 *** Magit forge
 #+begin_src emacs-lisp :tangle no
 (use-package forge
+:load-path "~/src/magit-forge/lisp"
 :after magit
-:ensure t
+;; :ensure t
 :pin manual
-:load-path "~/src/magit-forge")
+)
 #+end_src
 
 #+RESULTS:
-: t
 
 ** Dired-Ranger
 TThis cool introdution to dired-ranger is really helpful: http://pragmaticemacs.com/emacs/copy-and-paste-files-with-dired-ranger/
@@ -8135,12 +8166,14 @@ Return 'left, 'right, 'both or nil."
 
 ** Cask
 just getting used to this
-#+begin_src emacs-lisp 
-  (require 'cask "~/.cask/cask.el")
-  (cask-initialize)
-  (push (format "/home/%s/.cask/bin/" (user-login-name)) exec-path)
-;; elsa unfortunately notworking...
-;   (remove-hook 'emacs-lisp-mode-hook #'flycheck-elsa-setup)
+
+Maybe having some trouble so... commenting back out.  
+#+begin_src emacs-lisp :tangle no
+;; (require 'cask "~/.cask/cask.el")
+  ;;   (cask-initialize)
+  ;;   (push (format "/home/%s/.cask/bin/" (user-login-name)) exec-path)
+  ;; ;; elsa unfortunately notworking...
+  ;; ;   (remove-hook 'emacs-lisp-mode-hook #'flycheck-elsa-setup)
 
 #+end_src
 
@@ -8172,12 +8205,18 @@ Also returns nil if pid is nil."
 ;; (setq desktop-dirname "/home/matt/.emacs.d/desktop-sessions/")
 (desktop-save-mode 1)
 (message "just before recover-session")
-(recover-session)
+(setq auto-save-list-file-prefix "~/.emacs.d/auto-save-list/.saves-")
+;;(recover-session)
 ;; 
 #+END_SRC
 
 #+RESULTS:
 
+
+* old value of 'after-init-hook
+#+begin_verse
+#[0 "\303\211\235\203 \304\"\301\305!\210\210	\205 \306 \210\307\211\207" [command-line-args desktop-save-mode inhibit-startup-screen "--no-desktop" delete 0 desktop-read t] 4]
+#+end_verse
 * minimal config for testing issues
 I often need to be able to start with =emacs -Q=; but it's a real pain to do then begin the initialization process there.  So here's what I have as a testing file for now:
 
@@ -8203,72 +8242,6 @@ I often need to be able to start with =emacs -Q=; but it's a real pain to do the
   ;; (goto-char 600)
   ;; (org-mime-org-subtree-htmlize)
 #+end_src
-
-#+RESULTS:
-#+begin_example
-
-# Heading 1
-
-
-## Heading 2 with timestamp <span class="timestamp-wrapper"><span class="timestamp">2018-10-23 Tue</span></span>
-
-Heading 2 has some text 
-
--   and a list
--   with two items
-
-,**bold** *italic* <span class="underline">underline</span> 
-
-
-# Second first level heading
-
-
-### lab zero 1
-
-
-
-testing body 
-
--   list
--   li2
-
-<https://nowhere.org>
-
-
-# topics
-
-
-### topic oh oh one
-
-tessting testing 
-
-
-### test regexp
-
-    
-    (replace-regexp-in-string org-reveal-root org-huveal-root "
-    </style>
-    <link rel=\"stylesheet\" href=\"file:///home/matt/src/reveal.js/css/reveal.css\"/>
-    
-    <link rel=\"stylesheet\" href=\"file:///home/matt/src/reveal.js/css/theme/matt.css\" id=\"theme\"/>
-    
-    <link rel=\"stylesheet\" href=\"file:///home/matt/src/org-reveal/local.css\"/>
-    <link rel=\"stylesheet\" href=\"file:///home/matt/src/reveal.js/lib/css/zenburn.css\"/>")
-    org-huveal-root
-
-writea{^3}
-skldjf<sup>3</sup> hello<sup>there</sup> hello down<sub>nil</sub> 
-
-a link [[]]
-
-[[[[[[[[[[[[]]]]]]]]]]]]
-[[[]]]
-
-hello<sub>there</sub> 
-
-hello<sub>there</sub>
-
-#+end_example
 
 Now run emacs:
 #+begin_src sh
