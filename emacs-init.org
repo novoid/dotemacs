@@ -1544,14 +1544,14 @@ Here's a listo f resources to use --for now I'm keeping things very simple.
 Im also putting other forms of expansion here, like abbrev.  THese are the competing functions after all
 
 
-~/Hackin
-Some things that are a little different -- 
+Trying to deal with some use-package issues w/ company by moving stuff from hooks to config, and moving loading of company-emoji into the same place. 
 #+begin_src emacs-lisp 
     (use-package company
       :ensure t
-      :commands (global-company-mode company-mode)
-      :hook
-      (after-init . 'global-company-mode)
+    :after emojify
+        ;;:commands (global-company-mode company-mode)
+        ;; :hook
+        ;;(after-init . 'global-company-mode)
       :config
       (global-company-mode)
       ;; (setq company-tooltip-limit 20)                      ; bigger popup window
@@ -1559,7 +1559,21 @@ Some things that are a little different --
       ;; (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
       ;; (setq company-begin-commands '(self-insert-command)) ; start autocompletion only after typing -- this scres me up, ocmmenging out
       ;;(global-set-key (kbd "C-c /") 'company-files)        ; Force complete file names on "C-c /" key
-
+          (defun mwp-dont-insert-unicode-emoji ()
+            (make-local-variable 'company-emoji-insert-unicode)
+            (setq company-emoji-insert-unicode nil))
+        ;;   :after (emojify company)
+        ;;   :hook
+          (add-hook 'org-mode-hook  'mwp-dont-insert-unicode-emoji)
+          (add-hook 'markdown-mode-hook  'mwp-dont-insert-unicode-emoji)
+          (add-hook 'gfm-mode-hook  'mwp-dont-insert-unicode-emoji)
+          (add-hook 'git-commit-mode-hook  'mwp-dont-insert-unicode-emoji)
+          (add-to-list 'company-backends 'company-emoji)
+        ;;   (markdown-mode . mwp-dont-insert-unicode-emoji)
+        ;;   (gfm-mode . mwp-dont-insert-unicode-emoji)
+        ;;   (git-commit-mode . mwp-dont-insert-unicode-emoji)
+        ;;   :config
+        ;;   (add-to-list 'company-backends 'company-emoji)
           )
 
   (use-package company-quickhelp
@@ -7224,20 +7238,20 @@ I think this is deeply messing w/ ocmpnay mode, os I'm turning completion off fo
     (add-hook 'git-commit-mode-hook 'emojify-mode)
     )
     
-  (use-package company-emoji
-    :ensure t
-    :preface
-    (defun mwp-dont-insert-unicode-emoji ()
-      (make-local-variable 'company-emoji-insert-unicode)
-      (setq company-emoji-insert-unicode nil))
-    :after (emojify company)
-    :hook
-    (org-mode . mwp-dont-insert-unicode-emoji)
-    (markdown-mode . mwp-dont-insert-unicode-emoji)
-    (gfm-mode . mwp-dont-insert-unicode-emoji)
-    (git-commit-mode . mwp-dont-insert-unicode-emoji)
-    :config
-    (add-to-list 'company-backends 'company-emoji))
+  ;; (use-package company-emoji
+  ;;   :ensure t
+  ;;   :preface
+  ;;   (defun mwp-dont-insert-unicode-emoji ()
+  ;;     (make-local-variable 'company-emoji-insert-unicode)
+  ;;     (setq company-emoji-insert-unicode nil))
+  ;;   :after (emojify company)
+  ;;   :hook
+  ;;   (org-mode . mwp-dont-insert-unicode-emoji)
+  ;;   (markdown-mode . mwp-dont-insert-unicode-emoji)
+  ;;   (gfm-mode . mwp-dont-insert-unicode-emoji)
+  ;;   (git-commit-mode . mwp-dont-insert-unicode-emoji)
+  ;;   :config
+  ;;   (add-to-list 'company-backends 'company-emoji))
 #+END_SRC
 
 #+RESULTS:
