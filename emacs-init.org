@@ -3064,13 +3064,19 @@ A couple of things to note here:
         (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
         ;; Targets start with the file name - allows creating level 1 tasks
         (setq org-refile-use-outline-path (quote file))
+
+      ;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
+      (setq org-outline-path-complete-in-steps t)
+
+      ;; Allow refile to create parent tasks with confirmation
+      (setq org-refile-allow-creating-parent-nodes (quote confirm))
       (require 'ox)
       (load  "~/src/org-mode/emacs/site-lisp/org/ox-md")
       (with-eval-after-load "ox-md" 
         (require 'ox-gfm)
         (add-to-list 'org-export-backends 'md)
         (add-to-list 'org-export-backends 'gfm)
-        (load "~/src/ox-slack/ox-slack.elx") ;; (use-package ox-slack
+        (load "~/src/ox-slack/ox-slack.el") ;; (use-package ox-slack
              ;; :load-path "~/src/ox-slack"
              ;; :pin manual
              ;; :defer nil
