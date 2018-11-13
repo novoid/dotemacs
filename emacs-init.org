@@ -213,22 +213,6 @@ These are magnar's "better defaults" -- which I am mostly going to try to get ri
 : t
 
 * A number of Misscellaneous packages
-** Temporarily ensure that a bunch of unnecesasary packages aren't loaded by accident.
-Trying to track down sources of startup lag, so I'm first gonna just automatically defer loading of everythin.  Let's seei f this works!
-
-#+begin_src emacs-lisp :tangle no
-  (let
-      ((all-packs '(org-iv 2048-game ac-capf ac-emmet ac-js2 ac-php ac-php-core afternoon-theme ag ahungry-theme anti-zenburn-theme anzu apache-mode arduino-mode atom-dark-theme atomic-chrome aurel auto-org-md  autumn-light-theme beginend bibretrieve auctex bibslurp bog browse-at-remote browse-kill-ring buffer-move bug-hunter bui cask coffee-mode color-theme-heroku color-theme-railscasts color-theme-sanityinc-solarized color-theme-tango color-theme-tangotango color-theme-zenburn company-emoji company-quickhelp company-tern company-web copy-as-format copyit-pandoc copyit counsel creamsody-theme csv-mode cursor-chg darkburn-theme diminish dired-filter dired-narrow dired-ranger dired-hacks-utils docker-tramp dockerfile-mode dracula-theme dumb-jump easy-kill editorconfig eldoro elfeed-goodies ace-jump-mode elfeed-org elfeed-web elfeed enwc epresent esup evil-mu4e evil exec-path-from-shell expand-region fancy-battery fancy-narrow feature-mode flycheck-color-mode-line flymake-css flymake-jshint flymake-jslint flymake-json flymake-php flymake-python-pyflakes flymake-sass flymake-easy flymd gandalf-theme gist git-gutter git-link git-timemachine gitconfig-mode github-clone github-issues github-modern-theme github-pullrequest gnomenm gnuplot gnuplot-mode go-mode goto-chg gruvbox-theme autothemer guide-key handlebars-mode helm-ag helm-emmet emmet-mode helm-firefox helm-flycheck flycheck helm-git-grep helm-gitignore gitignore-mode helm-org-rifle helm-orgcard helm-projectile helm-recoll helm-rhythmbox helpful elisp-refs dash-functional heroku-theme highlight-symbol hyperbole iedit indium company initchart iodine-theme jquery-doc js-comint js-doc js2-refactor json-mode json-reformat json-snatcher jump-char kv lenlen-theme color-theme-solarized color-theme leuven-theme list-utils litable loop lua-mode macrostep magit-filenotify magit-gh-pulls gh logito magit-gitflow magithub ghub+ apiwrap majapahit-theme markdown-preview-mode markdown-toc marshal material-theme mc-extras minimap mocha-snippets mu4e-alert mu4e-conversation multiple-cursors nimbus-theme nodejs-repl noflet nov esxml nzenburn-theme olivetti org-ac auto-complete-pcmp auto-complete org-bullets org-cliplink org-download org-gcal org-iv impatient-mode org-magit magit magit-popup git-commit ghub org-mime org-msg org-pdfview org-plus-contrib org-pomodoro org-present org-presie eimp framesize org-projectile org-category-capture org-ref key-chord helm-bibtex biblio biblio-core helm helm-core org-wc orgalist origami ov ox-clip htmlize ox-gfm ox-pandoc org ox-twbs package-build pandoc paredit-everywhere paredit parse-csv parsebib pcache pdf-tools persistent-scratch php-auto-yasnippets php-eldoc php-extras php-mode pkgbuild-mode poly-markdown markdown-mode polymode pomodoro popwin powerline ppd-sr-speedbar project-persist-drawer project-persist projectile-speedbar projectile pkg-info epl rainbow-delimiters rainbow-identifiers rainbow-mode sass-mode haml-mode scratch scss-mode sdcv pos-tip popup shell-pop showtip shut-up simplezen skewer-reload-stylesheets skewer-mode js2-mode simple-httpd slack emojify seq alert log4e gntp circe oauth2 smart-mode-line rich-minority smartparens smex smooth-scroll solarized-theme speed-type spinner sr-speedbar sublime-themes sudo-edit swiper ivy systemd tabbar tablist tagedit tao-theme tern tidy toc-org tomatinho toml-mode treemacs ht hydra pfuture ace-window avy f s undo-tree use-package bind-key uuidgen vmd-mode web-beautify web-completion-data web-mode web-server websocket wgrep-ag wgrep with-editor async wrap-region dash wttrin xcscope xkcd xterm-color yaml-mode yasnippet-snippets yasnippet yaxception zeitgeist zen-and-art-theme zenburn-theme zotxt request-deferred request deferred)))
-    (dolist (p all-packs)
-      (use-package p
-        :defer t)))
-#+end_src
-
-
-
-#+RESULTS:
-
-
 ** iMenu
 
 THisi s mostly a buffer listing but I think there are lots of other aspects to it.  
