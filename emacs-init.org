@@ -7167,7 +7167,7 @@ trying to get this to work
 #+RESULTS:
 
 *** Magit forge
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp 
 (use-package forge
 :load-path "~/src/magit-forge/lisp"
 :after magit
