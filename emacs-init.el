@@ -751,10 +751,11 @@ region-end is used."
       ;; Only enable in strictly css-mode, not scss-mode (css-mode-hook
       ;; fires for scss-mode because scss-mode is derived from css-mode)
       (lsp-css-enable)))
-  (add-hook 'css-mode-hook #'my-css-mode-setup)
-  (add-hook 'less-mode-hook #'lsp-less-enable)
-  (add-hook 'sass-mode-hook #'lsp-scss-enable)
-  (add-hook 'scss-mode-hook #'lsp-scss-enable))
+  ;; (add-hook 'css-mode-hook #'my-css-mode-setup)
+  ;; (add-hook 'less-mode-hook #'lsp-less-enable)
+  ;; (add-hook 'sass-mode-hook #'lsp-scss-enable)
+  ;; (add-hook 'scss-mode-hook #'lsp-scss-enable)
+  )
 
 (setq-default bidi-display-reordering nil)
 (use-package so-long
@@ -845,32 +846,34 @@ region-end is used."
   )
 
 ;; don't use this much but it can be helpufl. Unfortunately it's not possible to set .jsbeautifyrc 
-  ;; clobally so tthat restricts the value a bit.
-  (use-package web-beautify
-    :commands (web-beautify-html web-beautify-js web-beautify-css))
-  ;; I seem to be using mhtml-mode now, so getting rid of this now
+    ;; clobally so tthat restricts the value a bit.
+    (use-package web-beautify
+      :commands (web-beautify-html web-beautify-js web-beautify-css))
+    ;; I seem to be using mhtml-mode now, so getting rid of this now
 
-  ;; returning to web-mode for now. 
-  (use-package web-mode
+    ;; returning to web-mode for now. 
+    (use-package web-mode
 
-    :mode ("\\.html\\'" "\\.php\\'")
+      :mode ("\\.html\\'" "\\.php\\'")
+      :bind (:map web-mode-map ("C-c C-v" . browse-url-of-buffer
+      ))
+)
+
+
+  (use-package emmet-mode
+    :after web-mode
+    :hook
+    (web-mode . emmet-mode)
+    (sgml-mode . emmet-mode)
+    (css-mode . emmet-mode)
+    (sass-mode . emmet-mode)
     )
 
-
-(use-package emmet-mode
-  :after web-mode
-  :hook
-  (web-mode . emmet-mode)
-  (sgml-mode . emmet-mode)
-  (css-mode . emmet-mode)
-  (sass-mode . emmet-mode)
-  )
-
-  ;; (use-package company-web-html)                          ; load company mode html backend
-  ;; (eval-after-load 'company-etags
-  ;;   '(progn
-  ;;      (add-to-list 'company-etags-modes 'js2-mode)
-  ;;      (add-to-list 'company-etags-modes 'web-mode)))
+    ;; (use-package company-web-html)                          ; load company mode html backend
+    ;; (eval-after-load 'company-etags
+    ;;   '(progn
+    ;;      (add-to-list 'company-etags-modes 'js2-mode)
+    ;;      (add-to-list 'company-etags-modes 'web-mode)))
 
 (use-package company
   :ensure t
@@ -1021,51 +1024,54 @@ region-end is used."
     ("M-s s" . paredit-splice-sexp)))
 
 (defun paredit-or-smartparens ()
-    "Enable either paredit or smartparens strict mode."
-    (if (member major-mode '(emacs-lisp-mode
-                             lisp-interaction-mode
-                             lisp-mode
-                             scheme-mode
-                             eval-expression-minibuffer-setup))
-        (enable-paredit-mode)
-      (smartparens-strict-mode)))
+      "Enable either paredit or smartparens strict mode."
+      (if (member major-mode '(emacs-lisp-mode
+                               lisp-interaction-mode
+                               lisp-mode
+                               scheme-mode
+                               eval-expression-minibuffer-setup))
+          (enable-paredit-mode)
+        (smartparens-strict-mode)))
 
-  (add-hook 'prog-mode-hook #'paredit-or-smartparens)
-  (add-hook 'text-mode-hook #'electric-pair-local-mode
- )
+    (add-hook 'prog-mode-hook #'paredit-or-smartparens)
+    (add-hook 'text-mode-hook #'electric-pair-local-mode
+   )
+(add-hook 'org-mode-hook #'smartparens-mode)
 
-(use-package elec-pair
-  :config
-  (defun mwp-org-mode-electric-inhibit (c)
-    (and
-     (or (eq ?\< c) (eq ?\[ c ))
-     (eq major-mode 'org-mode)))
-  (advice-add electric-pair-inhibit-predicate :before-until #'mwp-org-mode-electric-inhibit))
-
-
-
-  ;;(remove-hook 'org-mode-hook (lambda () (electric-pair-local-mode -1)))
-  (use-package smartparens
-    :bind
-    (:map smartparens-mode-map
-    ("M-s" . nil)
-    ("M-s s" . sp-splice-sexp))
-
+  (use-package elec-pair
     :config
-    (require 'smartparens-config)
-    (require 'smartparens-javascript)
-    (sp-use-paredit-bindings)
-    ;; I don't quite understand this one
-    (with-no-warnings
-      (defun sp-paredit-like-close-round ()
-        "If the next character is a closing character as according to smartparens skip it, otherwise insert `last-input-event'"
-        (interactive)
-        (let ((pt (point)))
-          (if (and (< pt (point-max))
-                   (sp--char-is-part-of-closing (buffer-substring-no-properties pt (1+ pt))))
-              (forward-char 1)
-            (call-interactively #'self-insert-command))))
-      (define-key smartparens-mode-map (kbd ")") #'sp-paredit-like-close-round)))
+    (defun mwp-org-mode-electric-inhibit (c)
+      (and
+       (or (eq ?\< c) (eq ?\[ c ))
+       (eq major-mode 'org-mode)))
+    (advice-add electric-pair-inhibit-predicate :before-until #'mwp-org-mode-electric-inhibit))
+
+
+
+
+    ;;(remove-hook 'org-mode-hook (lambda () (electric-pair-local-mode -1)))
+    (use-package smartparens
+      :bind
+      (:map smartparens-mode-map
+      ("M-s" . nil)
+      ("M-s s" . sp-splice-sexp))
+
+      :config
+      (require 'smartparens-config)
+      (require 'smartparens-javascript)
+      (require 'smartparens-org)
+      (sp-use-paredit-bindings)
+      ;; I don't quite understand this one
+      (with-no-warnings
+        (defun sp-paredit-like-close-round ()
+          "If the next character is a closing character as according to smartparens skip it, otherwise insert `last-input-event'"
+          (interactive)
+          (let ((pt (point)))
+            (if (and (< pt (point-max))
+                     (sp--char-is-part-of-closing (buffer-substring-no-properties pt (1+ pt))))
+                (forward-char 1)
+              (call-interactively #'self-insert-command))))
+        (define-key smartparens-mode-map (kbd ")") #'sp-paredit-like-close-round)))
 
 ;; trying helpful for now, in the hopes of dropping counsel altogether, since I use helm more. 
 
@@ -2007,12 +2013,13 @@ Single Capitals as you type."
    case, the CUSTOM_ID of the entry is returned."
     (interactive)
     (org-with-point-at pom
-      (let ((id (org-entry-get nil "CUSTOM_ID"))
-            (headline (downcase
+      (let* ((id (org-entry-get nil "CUSTOM_ID"))
+             (hinit (org-get-heading t t))
+             (headline (downcase
                        (replace-regexp-in-string "[\"\*\/\!]" ""
                                                  (replace-regexp-in-string " " "-"
-                                                                           (if (string= "COMMENT "(substring (org-get-heading t t) 0 8)) 
-                                                                               (substring (org-get-heading t t) 8 nil)
+                                                                           (if (and (> (length hinit) 9) (string= "COMMENT " (substring hinit 0 8))) 
+                                                                             (substring hinit  8 nil)
                                                                              (org-get-heading)))))))
         (cond
          ((and id (stringp id) (string-match "\\S-" id))
@@ -3188,6 +3195,14 @@ see http://swish-e.org/docs/swish-search.html
 
 nil
 
+(defun mwp/html2org-clipboard ()
+  "Convert clipboard contents from HTML to Org and then paste (yank)."
+  (interactive)
+  (kill-new (shell-command-to-string "xclip -o -t TARGETS | grep -q text/html && (xclip -o -t text/html | pandoc -f html -t json | pandoc -f json -t org) || xclip -o"))
+  (yank))
+
+(global-set-key (kbd "C-M-y") 'mwp/html2org-clipboard)
+
 ;; ibuffer
 (use-package ibuffer
   :config
@@ -3891,6 +3906,12 @@ left _b_  selection  _f_ right \rarr          | Org table mark field |
      :filter (org-at-table-p)
      ("S-SPC" . hydra-org-table-mark-field/body))))
 
+(use-package ob-html-chrome
+  :ensure t)
+
+(use-package ob-browser
+  :ensure t)
+
 (use-package scimax-utils
   :load-path "~/src/scimax"
   :pin manual
@@ -4506,7 +4527,7 @@ Wildwater actions
   :config (magithub-feature-autoinject t))
 
 (use-package magit
-  :load-path "/usr/src/magit/lisp"
+  :load-path "/home/matt/src/magit/lisp"
   :pin manual
   :commands magit-status
   :bind
