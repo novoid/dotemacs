@@ -17,7 +17,18 @@ this is stuff pulled from the old ~appearance.el~ and perhaps other places as we
 ** ACTION Old "Better Defaults" settings
 These are magnar's "better defaults" -- which I am mostly going to try to get rid of
 
+*Edit <2018-11-27 Tue>:* turning subword mode off... 
 #+begin_src emacs-lisp
+;; enforce utf-8
+;; from https://www.masteringemacs.org/article/working-coding-systems-unicode-emacs
+;; http://ergoemacs.org/emacs/emacs_encoding_decoding_faq.html
+(set-language-environment "UTF-8")
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(setq-default buffer-file-coding-system 'utf-8)
+(setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
   ;; better menu names
   (use-package uniquify
     :defer 3
@@ -38,7 +49,7 @@ These are magnar's "better defaults" -- which I am mostly going to try to get ri
   ;;;; show line and column number in mode line
     (setq column-number-mode t)
   ;;;; display line number in left column
-    (linum-mode nil)
+    (linum-mode -1)
     ;; Highlight matching parentheses when the point is on them.
 
     ;; hsow buffer name in window title
@@ -151,8 +162,8 @@ These are magnar's "better defaults" -- which I am mostly going to try to get ri
 
 
   ;; Easily navigate sillycased words
-  (global-subword-mode 1)
-
+  ;; (global-subword-mode 1)
+  (defvar subword-mode nil)
   ;; Don't break lines for me, please
   (setq-default truncate-lines t)
 
@@ -1528,12 +1539,480 @@ dele
 #+RESULTS:
 
 
+** WAITING a few Utilities                                          :review:
++I do have "webstuff" factored out as a separate library above, I notice. But I would rather have everything here, so I will lazily put this one little thing here, stolen from+
+http://blog.binchen.org/posts/code-completion-for-htmljscss-in-emacs.html 
+
+Includes htmlize, expand-region, undo-tree, flycheck
+
+My html setup is FUUUCCKED so I should revisit this when I can.  
+#+BEGIN_SRC emacs-lisp
+    ;; (require) your ELPA packages, configure them as normal
+
+    ;; C-= to expand selection by semantic unit
+    ;; https://github.com/magnars/expand-region.el
+    (use-package expand-region
+      :commands er/expand-region)
+
+    ;; replaced below with the fantastic iedit-mode, much more powerful.
+    ;;(use-package highlight-symbol )
+
+    ;; essential for all html exports
+    (use-package htmlize
+      :commands (htmlize-region htmlize-buffer htmlize-file htmlize-many-files htmlize-many-files-dired))
+
+
+    ;; I don't actually use this much
+    ;; and it appears ot cause errors, so squashing for now!
+    ;; (use-package markdown-mode )
+    ;; multiple cursors extras
+    ;; not using right now
+    ;; (use-package mc-extras )
+
+
+
+    ;; this has become super important -- allows me to go back to any previous state of buffer
+    (use-package undo-tree
+      :commands undo-tree-visualize)
+
+
+    ;; modern replacement for flymake
+    ;; flycheck is dependent on external tools. Not set up properly yet
+    ;; http://www.flycheck.org/manual/latest/Quickstart.html#Quickstart
+    ;; This really needs its own lesson, it's fantastic!
+    (use-package flycheck
+      :hook
+      (after-init . global-flycheck-mode))
+    ;; (add-hook 'after-init-hook #'global-flycheck-mode)
+
+#+END_SRC
+
+
+
+* Web Development 
+This section is a pretty serious mess.  I need to figure out how and what I want to do with this stuff.
+
+** Requirements
+- code completion in js, html, and css
+  - [X] html :: emmet mode does everything I need, though I am not always adept at using it.
+  - [ ] css :: company has a built-in css completion mode which works ok.  [[https://www.reddit.com/r/emacs/comments/9bcgbt/good_css_autocompletion_setup/][reddit suggests]] using [[https://github.com/emacs-lsp/lsp-mode/][lsp-mode]] with [[https://github.com/emacs-lsp/lsp-css][lsp-css]].  There are doubtless advantage to using this  in part b/c it would synchronize my experience with that of my students. There are also ac sources for bootstrap and similar framworks, though I havne't investigated them
+  - javascript :: javascipt autocompletion is harder; using tern or tide probably make the most sense.  Here's [[https://emacs.cafe/emacs/javascript/setup/2017/05/09/emacs-setup-javascript-2.html#setting-up-tern--company-mode-for-auto-completion][an emacs cafe post about tern]].  Here are [[https://github.com/ananthakumaran/tide][instructions for using tide]]. another [[https://www.reddit.com/r/emacs/comments/7w0ox0/tide_or_tern/][reddit thread]] about these choices.
+- linting/error-checking in all three is done with flycheck. I need to set up eslint!!
+  - html ::
+  - javascript  :: currently using jshint which is fine but needs to be configured, so might as well use eslint I guess.  *EDIT: I have this set up but my rules need some fixing!*
+  - css :: probalby flychedk is good enough. 
+
+- debugging/IDE stuff in javascript. There's a lot to this and I ugess as a shitty coder I don't know how many of these features are important to me.  
+  - js2-refactor :: I have this installed but don't understand it. There's a lot to learn from that.
+  - xref-js2 :: not using this at all, but a way to jump to definition in hjs files; cf [[https://emacs.cafe/emacs/javascript/setup/2017/04/23/emacs-setup-javascript.html][emacs cafe]]. Also it semes like tide certainly provides this also, and I think tern as well.  
+  - company-tern :: thjis ocmpletion framework works ok for me. It also does ab8nch of hinting etc.  Upsteream is orphaned though & so tide may be a better long-term choice.
+  - REPL and debugging :: Indium is the most featureful and works on browser-relevant code, as well as electorn apps or whatever.  nodejs-repl is simple and easy to set up.  Skewer is a bit of a mess.   
+
+There are some nice setup sections [[https://github.com/CSRaghunandan/.emacs.d/blob/master/setup-files/setup-js.el][for js]] and [[https://github.com/CSRaghunandan/.emacs.d/blob/master/setup-files/setup-web-mode.el][for web mode]] here. THey use a combination of tide and lsp.
+  
+*** ACTION investigate eslint-fix modes 
+- https://github.com/editorconfig/editorconfig-emacs
+- https://github.com/aaronjensen/eslintd-fix
+- https://github.com/mantoni/eslint_d.js
+- https://github.com/codesuki/eslint-fix 
+
+looks like eslint_d-fix wil loverride the js2 settings which is kinda nice.  
+
+** General JS stuff 
+#+BEGIN_SRC emacs-lisp
+    ;;;; js2-mode
+  ;; js stuff
+  (use-package js2-mode
+    :commands js2-mode
+    :mode  "\\.js\\'"
+    :config
+    (use-package jquery-doc)
+    (require 'js-doc)
+    (add-hook 'js2-mode-hook
+              #'(lambda ()
+                  (define-key js2-mode-map "\C-ci" 'js-doc-insert-function-doc)
+                  (define-key js2-mode-map "@" 'js-doc-insert-tag)))
+    (define-key js2-mode-map (kbd "C-RET") 'js2-line-break)
+    (setq js-doc-mail-address "matt.price@utoronto.ca")
+    (setq  js-doc-author (format "Matt Price <%s>" js-doc-mail-address))
+    (setq   js-doc-url "matt.hackinghistory.ca")
+    (setq   js-doc-license "GPL 3.0")
+    (add-hook 'js2-mode-hook
+        (defun my-js2-mode-setup ()
+          (flycheck-mode t)
+          (when (executable-find "eslint")
+            (flycheck-select-checker 'javascript-eslint))))
+    (require 'eslintd-fix)
+    (add-hook 'js2-mode-hook 'eslintd-fix-mode)
+  )
+
+  (use-package json-mode )
+#+END_SRC
+
+#+RESULTS:
+
+* ACTION Javascript Code Completion
+Here are some things related to javascript, including tern and then hopefully swewer, etc. 
+
+- tern :: company-mode backend for tern also.  http://ternjs.net/ . Might want to move this tide instead.  a lot of stuff to learn though. both are here, tide is commented out. 
+
+Some experimental code for javascript langserver, as described here: https://github.com/emacs-lsp/lsp-javascript -- this seems to work pretty well actually.  
+
+- [[https://github.com/ananthakumaran/tide][tide ]] requires tsconfig.json or jsconfig.json, which I don't use. So... maybe don't use for now.. A lot of cool features though.
+ 
+*** Tide and Term
+#+BEGIN_SRC emacs-lisp
+    ;; (use-package tide
+    ;;   :ensure t
+    ;;   :after (typescript-mode company flycheck)
+    ;;   :hook ((typescript-mode . tide-setup)
+    ;;          (js2-mode . tide-setup)
+    ;;          (typescript-mode . tide-hl-identifier-mode)
+    ;;          (before-save . tide-format-before-save)
+    ;;          ))
+
+    (use-package company-tern
+      :ensure t
+      :after company 
+      :config
+      (add-to-list 'company-backends 'company-tern)
+      ;; (setq company-tern-property-marker " <p>")
+      ;; (setq company-tern-meta-as-single-line t)
+      ) 
+#+END_SRC
+
+#+RESULTS:
+: t
+
+
+*** LSP
+only for JS right now but should probably set up for HTML and CSS at least.  
+
+
+there are similar lsp packages for other languages (html, css, others) that I have installed but not yet turned on!!
+
+Also lots of options ,cf. [[https://github.com/emacs-lsp/lsp-mode][lower half of the lsp-mode rREADME]] and [[https://github.com/emacs-lsp/lsp-ui][lsp-ui]]'s description of various config variables.    Also note the existence of an alternative project, [[https://github.com/joaotavora/eglot][eglot]], which shells outrather than doing stuff internally, and is maybe a little faster?
+
+Many advanced features I do not understand, in particular "peeking" which seems like an incredibly useful tool.  
+
+#+begin_src emacs-lisp
+(use-package lsp-ui
+:config
+(add-hook 'lsp-mode-hook 'lsp-ui-mode))
+#+end_src
+
+#+RESULTS:
+: t
+
+Javascript 
+#+begin_src emacs-lisp
+  (use-package  lsp-javascript-typescript
+    :config
+    (defun my-company-transformer (candidates)
+      (let ((completion-ignore-case t))
+        (all-completions (company-grab-symbol) candidates)))
+
+    (defun my-js-hook nil
+      (make-local-variable 'company-transformers)
+      (push 'my-company-transformer company-transformers))
+
+    (add-hook 'js-mode-hook 'my-js-hook)
+    (add-hook 'js2-mode-hook #'lsp-javascript-typescript-enable)
+    (add-hook 'typescript-mode-hook #'lsp-javascript-typescript-enable) ;; for typescript support
+    (add-hook 'js3-mode-hook #'lsp-javascript-typescript-enable) ;; for js3-mode support
+    ;; (add-hook 'json-mode-hook #'lsp-javascript-typescript-disable) ;;this breaks json mode which is already so slow!!
+    (add-hook 'rjsx-mode #'lsp-javascript-typescript-enable)) ;; for rjsx-mode support
+
+#+end_src
+
+
+Tried to do the same thing with html but ended up with 
+
+#+begin_verse
+Error from the Language Server: Unknown text document file:///home/matt/Dropbox/Work/History/DigitalHistory/Assignments/00-git/index.html (Unknown Error Code)
+
+#+end_verse
+
+sooo... maybe that'sn to gonna work. 
+
+
+#+begin_src emacs-lisp
+(use-package lsp-html
+:config
+(add-hook 'html-mode-hook #'lsp-html-enable))
+#+end_src
+#+RESULTS:
+: t
+
+
+now try for css. This is also a little difficult, hard to tell if it's working. [[https://github.com/vscode-langservers/vscode-css-languageserver][here is the github repo]].  
+
+this is now deprecated! [[https://github.com/emacs-lsp/lsp-css#deprecated][see the package docs]]
+#+begin_src emacs-lisp
+;; (use-package lsp-css
+;;   :config
+;;   (defun my-css-mode-setup ()
+;;     (when (eq major-mode 'css-mode)
+;;       ;; Only enable in strictly css-mode, not scss-mode (css-mode-hook
+;;       ;; fires for scss-mode because scss-mode is derived from css-mode)
+;;       (lsp-css-enable)))
+;;   ;; (add-hook 'css-mode-hook #'my-css-mode-setup)
+  ;; (add-hook 'less-mode-hook #'lsp-less-enable)
+  ;; (add-hook 'sass-mode-hook #'lsp-scss-enable)
+  ;; (add-hook 'scss-mode-hook #'lsp-scss-enable)
+  )
+
+(add-hook 'less-mode-hook #'lsp)
+(add-hook 'sass-mode-hook #'lsp)
+(add-hook 'scss-mode-hook #'lsp)
+#+end_src
+
+#+RESULTS:
+
+*** Dealing with JSON and minimfied js/css 
+THere's a well-documented and severe slowdown when Emacs loads files with very long lines.  There aren't any great solutionsyet, but here are a few pieces of solution:
+- Emacs 27 now offers the option to load a file "literally", in fundamental mode. TThis should slow things up
+- the buffer-local variable ~bidi-display-reordering~ checks for RTL text in a LTR language & vice-versa.  Disabling this by default means that it can be reordered just in the appropriate cases.
+- loading files in fundamental mode can help with slowdown. this can be done with ~M-x~ ~find-file-literally~
+- disabling "smooth=-scrolling mode" may help too; try adding this to ~so-long-minor-modes~?
+- [[https://www.reddit.com/r/emacs/search?q=long+lines&restrict_sr=on&utm_source=reddit&utm_medium=usertext&utm_name=emacs&utm_content=t1_e8d5d5j][reddit search for long lines in emacs]]
+- [[https://debbugs.gnu.org/cgi/bugreport.cgi?bug=13675][longstanding bug report]]
+- dealing w/ long lines in term modes (which I don't use) [[https://www.reddit.com/r/emacs/comments/9v4w5w/a_workaround_for_long_lines_in_emacs_term_modes/]]
+- [[https://lists.gnu.org/archive/html/emacs-devel/2018-10/msg00470.html][emacs-devel discussion about how to deal w/ this going forward]]
+- [[https://lists.gnu.org/archive/html/emacs-devel/2018-10/msg00507.html][important note about this problem in org-mode buffers]]
+- [[https://www.reddit.com/r/emacs/comments/33djht/navigating_large_json_documents/][navigation hints]] for json buffers; cf [[https://github.com/Sterlingg/json-snatcher][json-snatcher]]
+- [[https://www.reddit.com/r/emacs/comments/7wezb4/how_can_i_make_line_rendering_faster/][disable line-move-visual]]
+- [[https://github.com/m00natic/vlfi][view large files mode]] -- this is not really the common problem for me.
+- [[https://stackoverflow.com/questions/18316665/how-to-improve-emacs-performance-when-view-large-file][complex over-optimized but cool solution]]
+- [[https://github.com/bbatsov/crux][interesting pointer to crusxomode and crux-kill-other-buffers]]
+
+
+THere are lots of discussions of this: 
+- [[https://emacs.stackexchange.com/questions/5545/how-to-prevent-slow-down-when-an-inferior-processes-generates-long-lines][technical discussion of fixing this in comint buffers]]
+- [[https://emacs.stackexchange.com/questions/598/how-do-i-prevent-extremely-long-lines-making-emacs-slow][piping json through python before loading]]
+- [[https://old.reddit.com/r/emacs/comments/9qtpak/what_would_it_take_to_make_emacs_perform_well_on/][reddit flamage]]
+- 
+#+begin_src emacs-lisp
+  (setq-default bidi-display-reordering nil)
+  (use-package so-long
+    ;; no config or anything yet, still getting used to this
+    :load-path "~/src/solong"
+    :pin manual)
+  (use-package bln-mode
+    :after hydra
+    :hook
+    (so-long-mode . bln-mode)
+    :config
+    (defhydra hydra-bln ()      "Binary line navigation mode"
+      ("j" bln-backward-half "Backward in line")
+      ("k" bln-forward-half "Forward in line")
+      ("u" bln-backward-half-v "Backward in window")
+      ("i" bln-forward-half-v "Forward in window")
+      ("h" bln-backward-half-b "Backward in buffer")
+      ("l" bln-forward-half-b "Forward in buffer"))
+    (define-key bln-mode-map (kbd "M-j") 'hydra-bln/body))
+#+end_src
+
+#+RESULTS:
+| bln-mode |
+
+** Node-repl, Indium, expec-path-from-shell, etc. 
+I had a really tough time getting the exec path for indium, but this all seems to be settled now, which is great (!!!) :smile:. 
+
+However, I still am not really able to use it very easily/effectively.  
+
+SO here's an outline of what you do.  
+
+[[https://indium.readthedocs.io/en/latest/code-evaluation.html][Indium docs]] are extensive but a little out of date.  Seems like here's what you do: 
+- activate ~indium-iunteraction-mode~ (on by default)
+- ~C-h m~ tesll you hou to do stuff but seems like mostly ~C-x C-e~ eva llast node, and ~C-M-x~ eval-defun are useful ,ass are ~C-c M-:~ and ~C-c M-i~, both for inspection.  Tehre's also a debugger but I don't quite understand it.  
+
+
+[[https://github.com/abicky/nodejs-repl.el][nodejs-repl]] is a lot easier to get set up but doesn't provide as much functionality.  E.g., doesn't seem to be a debugger included.  NVM is maybe an issue here as elsewhere, too. Nodejs-repl is installed, but I havne't configured it yet (oops).   
+
+Indium requires ~exec-path-from-shell~ in order to find the right node versions.
+#+begin_src emacs-lisp
+  (use-package exec-path-from-shell
+:ensure t
+    :config
+    (when (memq window-system '(mac ns x))
+      (exec-path-from-shell-initialize)))
+
+  (use-package indium
+    :ensure t
+    :config
+    ;;(indium-launch-node)
+(add-hook 'js-mode-hook #'indium-interaction-mode))
+
+#+end_src
+
+#+RESULTS:
+: t
+
+** mocha
+ds
+trying to run tests inside of emacs. We'l lsee how it goes! 
+#+begin_src emacs-lisp
+(use-package mocha
+:ensure t
+)
+#+end_src
+
+#+RESULTS:
+
+** Impatient Mode
+Much better for live html previewing than skewer-mode, which is really for javascript.  Pretty simple to set it up, and starts up a process on https://localhost:8888 .
+
+#+BEGIN_SRC emacs-lisp
+    (use-package impatient-mode
+      :commands impatient-mode
+      :hook
+      ((html-mode . impatient-mode)
+       (css-mode . impatient-mode)
+       (mhtml-mode . impatient-mode)
+       (js2-mode . impatient-mode)
+       (web-mode . impatient-mode)
+       )
+      :config
+      (setq imp-default-user-filters
+            '((html-mode . nil)
+              (web-mode . nil)
+              (mhtml-mode . nil)))
+      (httpd-start)
+
+      ;; (browse-url "http://localhost:8888/imp/")
+)
+#+END_SRC
+
+#+RESULTS:
+| emmet-mode | impatient-mode |
+
+Then browse to the relevant buffer URL (which will be [[http://localhost:8080/imp/]] + file-name, and watch it live-update.  
+** Emmet mode & Yasnippet
+I've been having some trouble with emmet & yasnippet. I think parto f the reason is that something was resetting yas-snippet-dirs -- I don't know how that's happening  Trying this from [[http://emacs.stackexchange.com/questions/20716/conflict-between-emmet-mode-and-yasnippet-same-trigger-key][stackexchange]]:
+
+There i a whole lot of stuff to think abouth ere!!!
+
+Hippie expand is a mess, and completes with stupid html expansion that is a real drag. I'm not sure when it's ever useful so i'm going to get rid of it.  Note that this might fuck up my expansion order, so should check that out.
+
+Not using yasnippet very much right now but unwilling to get rid of it.  has some uses in js e.g. for defining functions etc.  
+
+Emmet is of course the bomb.      
+#+BEGIN_SRC emacs-lisp
+    (use-package emmet-mode
+      :commands emmet-mode
+      :init
+      (add-hook 'css-mode-hook 'emmet-mode)
+      (add-hook 'sgml-mode-hook 'emmet-mode)
+      :config
+      (setq-default emmet-move-cursor-between-quote t)
+      (unbind-key "<C-return>" emmet-mode-keymap)
+
+      ;; (unbind-key "C-M-<left>" emmet-mode-keymap)
+      ;; (unbind-key "C-M-<right>" emmet-mode-keymap)
+      )
+
+  ;; (use-package hippie-exp
+  ;;   :ensure nil
+  ;;   :defer t
+  ;;   :bind ("<C-return>" . hippie-expand)
+  ;;   :config
+  ;;   (setq-default hippie-expand-try-functions-list
+  ;;                 '(yas-hippie-try-expand emmet-expand-line)))
+  (use-package yasnippet
+    :defer t
+    :init
+    (add-hook 'js-mode-hook 'yas-minor-mode)
+    (add-hook 'sgml-mode-hook 'yas-minor-mode)
+    :config
+    (setq-default yas-snippet-dirs '("~/.emacs.d/snippets"))
+    (yas-reload-all)
+    (define-key yas-minor-mode-map (kbd "C-c y") #'yas-expand)
+
+    ;; (unbind-key "TAB" yas-minor-mode-map)
+    ;; (unbind-key "<tab>" yas-minor-mode-map)
+    )
+#+END_SRC
+
+#+RESULTS:
+: t
+
+** STARTED Web Utilities: web-beautify, web-mode,emmet-mode
+All that stuff above is a bunch of other stufff! Now we have some web-related programming stuff here.  
+Notice that Emmet mode has been set twice oops!
+
+
+#+BEGIN_SRC emacs-lisp
+
+
+    ;; don't use this much but it can be helpufl. Unfortunately it's not possible to set .jsbeautifyrc 
+    ;; clobally so tthat restricts the value a bit.
+    (use-package web-beautify
+      :commands (web-beautify-html web-beautify-js web-beautify-css))
+    ;; I seem to be using mhtml-mode now, so getting rid of this now
+
+    ;; returning to web-mode for now. 
+    (use-package web-mode
+
+      :mode ("\\.html\\'" "\\.php\\'")
+      :bind (:map web-mode-map ("C-c C-v" . browse-url-of-buffer
+      ))
+)
+
+
+  (use-package emmet-mode
+    :after web-mode
+    :hook
+    (web-mode . emmet-mode)
+    (sgml-mode . emmet-mode)
+    (css-mode . emmet-mode)
+    (sass-mode . emmet-mode)
+    )
+
+    ;; (use-package company-web-html)                          ; load company mode html backend
+    ;; (eval-after-load 'company-etags
+    ;;   '(progn
+    ;;      (add-to-list 'company-etags-modes 'js2-mode)
+    ;;      (add-to-list 'company-etags-modes 'web-mode)))
+
+#+END_SRC
+
+#+RESULTS:
+| emmet-mode | lsp-scss-enable |
+
+
+** temp
+Here is a new fund from the UofT Provost for new or existing Access programs:   
+
+https://wp.provost.utoronto.ca/memos-provost-utoronto-ca/call-for-proposals-access-programs-university-fund-pdadc-34/?utm_source=wysija&utm_medium=email&utm_campaign=20181116_WeeklyDigest
+
+ Fund Overview
+
+
+The University of Toronto has a long-standing commitment to outreach and access – currently there are over 30 access programs across the institution. The University is committed to ensuring that students from communities that are underrepresented in universities see and experience U of T as a place where they belong and can thrive. The purpose of this fund is to provide financial resources to help local units develop new and enhance existing programs dedicated to providing opportunities and support for students who, without intervention, would not access or succeed in post-secondary education. https://wp.provost.utoronto.ca/memos-provost-utoronto-ca/call-for-proposals-access-programs-university-fund-pdadc-34/?utm_source=wysija&utm_medium=email&utm_campaign=20181116_WeeklyDigest 
+
+Funding Streams
+
+
+The Access Programs University Fund (APUF) supports two levels of grant activities: https://wp.provost.utoronto.ca/memos-provost-utoronto-ca/call-for-proposals-access-programs-university-fund-pdadc-34/?utm_source=wysija&utm_medium=email&utm_campaign=20181116_WeeklyDigest 
+
+Seed ($5,000-$25,000) 
+*	 Expand/Sustain/Build ($15,000-$100,000)
+
+This two-tiered system is intended to provide opportunities for creating outreach opportunities and pathways to post-secondary education for underrepresented groups by either developing new projects or scaling existing projects. Grants in both tiers are provided for a maximum of 2 years. Timeline
+
+
+The 2018-19 Call for Proposals is now available on the Office of the Vice-President  https://wp.provost.utoronto.ca/provost/awards-funding/apuf/ & Provost’s website. Applications for the two streams will be accepted as follows:
+
+*	Seed Grants will be accepted on a rolling basis;
+*	Expand/Sustain/Build Grants will be accepted until January 11, 2019.
+
 * Completion, Expansion, Autocorrect, and similar automation
 THis section loads & modifies various tools for completing, expanding, correcting, and otherwise easing user input.  THere are many tools for these purposes in theEmacs ecosystem, and sometimes they conflictwith each other. I've tired to collect the ones I use here, in this secion, to rationalize the process.  
 ** Completion and Autocorrect -- Company Mode
 Completion & expansion are complicated subjects, with many options in Emacs! It can be very difficult to navigate, and I've installed a lot of versions of many packages etc.  So, I'm hoping to get my shit together now, by expunging earlier attempts and at least initiating things here.  
 
-I've decided that the most actively-developed, featureful, yet still fairly stable completion framework is company-nmode.  That means I'm getting rid of ac-mode and it may mena that I stop using yanippet, though I'm not sure.  THere are a couple of places where getting all the backends to play nice is difficult; sometimes I think in org-mode, and also osmetimes in html.  So... we're going to see how this all goes.  
+I've decided that the most actively-developed, featureful, yet still fairly stable completion framework is company-nmode.  That means I'm getting rid of ac-mode and it may mean that I stop using yanippet, though I'm not sure.  THere are a couple of places where getting all the backends to play nice is difficult; sometimes I think in org-mode, and also osmetimes in html.  So... we're going to see how this all goes.  
 
 I also imagine there may be some complexity to configuring company-mode backends; I'm not dealing with much of that as I start today <2018-10-19 Fri>. Noting here this cool post about [[https://emacs.stackexchange.com/questions/21171/company-mode-completion-for-org-keywords][defining a simple backend for completion of org-mode keywords]]. 
 
@@ -1546,19 +2025,19 @@ Im also putting other forms of expansion here, like abbrev.  THese are the compe
 
 Trying to deal with some use-package issues w/ company by moving stuff from hooks to config, and moving loading of company-emoji into the same place. 
 #+begin_src emacs-lisp 
-    (use-package company
-      :ensure t
+  (use-package company
+    :ensure t
     :after emojify
         ;;:commands (global-company-mode company-mode)
         ;; :hook
         ;;(after-init . 'global-company-mode)
-      :config
-      (global-company-mode)
-      ;; (setq company-tooltip-limit 20)                      ; bigger popup window
-      ;; (setq company-tooltip-align-annotations 't)          ; align annotations to the right tooltip border
-      ;; (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
-      ;; (setq company-begin-commands '(self-insert-command)) ; start autocompletion only after typing -- this scres me up, ocmmenging out
-      ;;(global-set-key (kbd "C-c /") 'company-files)        ; Force complete file names on "C-c /" key
+        :config
+        (global-company-mode)
+        ;; (setq company-tooltip-limit 20)                      ; bigger popup window
+        ;; (setq company-tooltip-align-annotations 't)          ; align annotations to the right tooltip border
+        ;; (setq company-idle-delay .3)                         ; decrease delay before autocompletion popup shows
+        ;; (setq company-begin-commands '(self-insert-command)) ; start autocompletion only after typing -- this scres me up, ocmmenging out
+        ;;(global-set-key (kbd "C-c /") 'company-files)        ; Force complete file names on "C-c /" key
           (defun mwp-dont-insert-unicode-emoji ()
             (make-local-variable 'company-emoji-insert-unicode)
             (setq company-emoji-insert-unicode nil))
@@ -1574,32 +2053,32 @@ Trying to deal with some use-package issues w/ company by moving stuff from hook
         ;;   (git-commit-mode . mwp-dont-insert-unicode-emoji)
         ;;   :config
         ;;   (add-to-list 'company-backends 'company-emoji)
-          )
+            )
 
-  (use-package company-quickhelp
-        :ensure t
-        :after company
-        :init 
+    (use-package company-quickhelp
+          :ensure t
+          :after company
+          :init 
 
-        :config
-        (company-quickhelp-mode)
-        :custom
-        (company-quickhelp-color-background "#b0b0b0")
-        (company-quickhelp-color-foreground "#232333")
+          :config
+          (company-quickhelp-mode)
+          :custom
+          (company-quickhelp-color-background "#b0b0b0")
+          (company-quickhelp-color-foreground "#232333")
 
-  )
-    ;; (use-package company-web-html
-    ;;   :after company
-    ;;   :bind
-    ;;   (("C-'" . company-web-html)
-    ;;   ("C-c C-/" . company-files)
-    ;;   )
-    ;;   :config
-    ;;   ;; not sure I should keep these, which are taken from
-    ;;   ;; https://github.com/osv/company-web and was written at least a year ago
-    ;;   ;;  ;; (setq company-minimum-prefix-length 0)            ; WARNING, probably you will get perfomance issue if min len is 0!
+    )
+      ;; (use-package company-web-html
+      ;;   :after company
+      ;;   :bind
+      ;;   (("C-'" . company-web-html)
+      ;;   ("C-c C-/" . company-files)
+      ;;   )
+      ;;   :config
+      ;;   ;; not sure I should keep these, which are taken from
+      ;;   ;; https://github.com/osv/company-web and was written at least a year ago
+      ;;   ;;  ;; (setq company-minimum-prefix-length 0)            ; WARNING, probably you will get perfomance issue if min len is 0!
 
-    ;;   )
+      ;;   )
 #+end_src
 
 #+RESULTS:
@@ -1700,38 +2179,42 @@ helpme
 *** org-tempo
 old easy templates have been replaced by org-tempo, and then after *that* they wree sort of duplicated with a new workflow. I like the old one and for now I'm using it, but I'm reverting to the old alisst variable, which is used by both forntends.  I may eventually just sunset this in favour of a more generic completion framework, who knows.  
 #+begin_src emacs-lisp
-  (use-package org-tempo
-    :after (:any org org-plus-contrib)
-    :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
-    :preface 
-    (customize-set-variable 'org-tempo-keywords-alist nil)
-    (customize-set-variable 'org-structure-template-alist '(("a" . "export ascii")
-                                         ("c" . "center")
-                                         ("C" . "comment")
-                                         ("E" . "example")
-                                         ("e" . "src emacs-lisp")
-                                         ("h" . "export html")
-                                         ("l" . "export latex")
-                                         ("q" . "quote")
-                                         ("s" . "src")
-                                         ("v" . "verse")
-                                         ("i" . "index")
-                                         ("j" . "src js")
-                                         ("c" . "src css")
-                                         ("n" . "notes")
-                                         ("h" . "src html")))
-    :config
-    ;; (setq org-tempo-keywords-alist '(("L" . "latex")
-    ;;                                  ("H" . "html")
-    ;;                                  ("A" . "ascii")
-    ;;                                  ("i" . "index")
-    ;;                                  ("j" . "src js")
-    ;;                                  ("c" . "src css")
-    ;;                                  ("" . "src emacs-lisp")
-    ;;                                  ("h" . "src html")))
-    )
+    (let ((org-tempo-keywords-alist nil))
+    (use-package org-tempo
+      :after (org)
+      :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
+      :preface 
+      (setq org-tempo-keywords-alist nil)
+      (customize-set-variable 'org-structure-template-alist '(("a" . "export ascii")
+                                           ;; ("c" . "center")
+                                           ("C" . "comment")
+                                           ("E" . "example")
+                                           ("e" . "src emacs-lisp")
+                                           ("H" . "export html")
+                                           ("l" . "export latex")
+                                           ("q" . "quote")
+                                           ("s" . "src")
+                                           ("v" . "verse")
+                                           ("i" . "index")
+                                           ("j" . "src js")
+                                           ("c" . "src css")
+                                           ("n" . "notes")
+                                           ("h" . "src html")))
+      :init
+      (setq org-tempo-keywords-alist nil)
+  
+      :config
+      ;; (setq org-tempo-keywords-alist '(("L" . "latex")
+      ;;                                  ("H" . "html")
+      ;;                                  ("A" . "ascii")
+      ;;                                  ("i" . "index")
+      ;;                                  ("j" . "src js")
+      ;;                                  ("c" . "src css")
+      ;;                                  ("" . "src emacs-lisp")
+      ;;                                  ("h" . "src html")))
+      ))
 
-  ;;
+    ;;
 #+end_src
 
 #+RESULTS:
@@ -1790,6 +2273,7 @@ A few notes about smartparens, which I havne't used much of yet:
     (add-hook 'prog-mode-hook #'paredit-or-smartparens)
     (add-hook 'text-mode-hook #'electric-pair-local-mode
    )
+(add-hook 'org-mode-hook #'smartparens-mode)
 
   (use-package elec-pair
     :config
@@ -1798,6 +2282,7 @@ A few notes about smartparens, which I havne't used much of yet:
        (or (eq ?\< c) (eq ?\[ c ))
        (eq major-mode 'org-mode)))
     (advice-add electric-pair-inhibit-predicate :before-until #'mwp-org-mode-electric-inhibit))
+
 
 
 
@@ -1811,6 +2296,7 @@ A few notes about smartparens, which I havne't used much of yet:
       :config
       (require 'smartparens-config)
       (require 'smartparens-javascript)
+      (require 'smartparens-org)
       (sp-use-paredit-bindings)
       ;; I don't quite understand this one
       (with-no-warnings
@@ -1976,148 +2462,6 @@ What is this "indent yanked code" doing here? belongs elsewhere!
   ;;                       (find-variable thing)))))
 #+END_SRC
 
-*** WAITING Web stuff                                              :review:
-+I do have "webstuff" factored out as a separate library above, I notice. But I would rather have everything here, so I will lazily put this one little thing here, stolen from+
-http://blog.binchen.org/posts/code-completion-for-htmljscss-in-emacs.html 
-
-My html setup is FUUUCCKED so I should revisit this when I can.  
-#+BEGIN_SRC emacs-lisp
-    ;; (require) your ELPA packages, configure them as normal
-
-    ;; C-= to expand selection by semantic unit
-    ;; https://github.com/magnars/expand-region.el
-    (use-package expand-region
-      :commands er/expand-region)
-
-    ;; replaced below with the fantastic iedit-mode, much more powerful.
-    ;;(use-package highlight-symbol )
-
-    ;; essential for all html exports
-    (use-package htmlize
-      :commands (htmlize-region htmlize-buffer htmlize-file htmlize-many-files htmlize-many-files-dired))
-
-
-    ;; I don't actually use this much
-    ;; and it appears ot cause errors, so squashing for now!
-    ;; (use-package markdown-mode )
-    ;; multiple cursors extras
-    ;; not using right now
-    ;; (use-package mc-extras )
-
-
-
-    ;; this has become super important -- allows me to go back to any previous state of buffer
-    (use-package undo-tree
-      :commands undo-tree-visualize)
-
-
-    ;; modern replacement for flymake
-    ;; flycheck is dependent on external tools. Not set up properly yet
-    ;; http://www.flycheck.org/manual/latest/Quickstart.html#Quickstart
-    ;; This really needs its own lesson, it's fantastic!
-    (use-package flycheck
-      :hook
-      (after-init . global-flycheck-mode))
-    ;; (add-hook 'after-init-hook #'global-flycheck-mode)
-
-#+END_SRC
-
-
-
-*** Actual web stuff.
-All that stuff above is a bunch of other stufff! Now we have some web-related programming stuff here.  
-
-
-#+BEGIN_SRC emacs-lisp
-
-
-    ;; don't use this much but it can be helpufl. Unfortunately it's not possible to set .jsbeautifyrc 
-    ;; clobally so tthat restricts the value a bit.
-    (use-package web-beautify
-      :commands (web-beautify-html web-beautify-js web-beautify-css))
-    ;; I seem to be using mhtml-mode now, so getting rid of this now
-
-    ;; returning to web-mode for now. 
-    (use-package web-mode
-
-      :mode ("\\.html\\'" "\\.php\\'")
-      )
-
-
-  (use-package emmet-mode
-    :after web-mode
-    :hook
-    (web-mode . emmet-mode)
-    (sgml-mode . emmet-mode)
-    (css-mode . emmet-mode)
-    (sass-mode . emmet-mode)
-    )
-
-    ;; (use-package company-web-html)                          ; load company mode html backend
-    ;; (eval-after-load 'company-etags
-    ;;   '(progn
-    ;;      (add-to-list 'company-etags-modes 'js2-mode)
-    ;;      (add-to-list 'company-etags-modes 'web-mode)))
-
-#+END_SRC
-
-#+RESULTS:
-| web-mode | js2-mode | prog-mode | c-mode | objc-mode | c++-mode | java-mode | jde-mode | pascal-mode | perl-mode | python-mode |
-
-
-*** Javascript
-Here are some things related to javascript, including tern and then hopefully swewer, etc. 
-
-- tern :: company-mode backend for tern also.  http://ternjs.net/ . Might want to move this tide instead.  a lot of stuff to learn though. both are here, tide is commented out.  
-#+BEGIN_SRC emacs-lisp
-      ;;;; js2-mode
-    ;; js stuff
-    (use-package js2-mode
-      :commands js2-mode
-      :mode  "\\.js\\'"
-      :config
-      (use-package jquery-doc)
-      (use-package js-doc )
-    )
-
-    (use-package json-mode )
-
-      ;;(autoload 'js2-mode "js2" nil t)
-      (add-to-list 'auto-mode-alist '("\\.scss$" . sass-mode))
-      (add-to-list 'auto-mode-alist '("\\.php$" . web-mode))
-      (use-package yasnippet)
-      ;; now I'll need to decide where to add yasnippet to modes.  Currently disabled --text follows this line
-
-      ;; (yas-global-mode 1)
-      (add-hook 'js-mode-hook #'smartparens-mode)  
-      ;; (add-hook 'js2-mode-hook 'ac-js2-mode)
-
-      ;; (setq ac-js2-evaluate-calls t)
-
-  ;; (use-package tide
-  ;;   :ensure t
-  ;;   :after (typescript-mode company flycheck)
-  ;;   :hook ((typescript-mode . tide-setup)
-  ;;          (js2-mode . tide-setup)
-  ;;          (typescript-mode . tide-hl-identifier-mode)
-  ;;          (before-save . tide-format-before-save)
-  ;;          ))
-
-  (use-package company-tern
-    :ensure t
-    :after company
-    :config
-    (add-to-list 'company-backends 'company-tern)
-    ;; (setq company-tern-property-marker " <p>")
-    ;; (setq company-tern-meta-as-single-line t)
-    ) 
-#+END_SRC
-
-#+RESULTS:
-: t
-
-
-** 
 * Search
 
 I use isearch quite a bit, but it has some limitations.  [[https://www.masteringemacs.org/article/searching-buffers-occur-mode][Emacs occur-mode]] finds all occurrences of a string or pattern in the current buffer. I use it a lot, and have just started using [[https://github.com/fourier/loccur][loccur]], which performs the same search but doesn't require navigation out of the buffer, simply narrowing to the matching lines & allowing you to navigate to the one you want, then start editing again with ~[Return]~. THere are other versions, like [[https://www.emacswiki.org/emacs/SearchBuffers][moccur]], etc., for searching multiple buffers & so forth. I believe I have some old modes loaded that work i nthis area, but I'm not sure what they are :-( and hopefully they aren't making any trouble for me. )
@@ -2267,7 +2611,7 @@ I now use this a lot. Modified <2018-10-16 Tue> to start making backups.  cf. [[
 
 ** WAITING iswitchp mode            *NOT TANGLED*                   :review:
 I don't really use this, but I really liked the idea at one point so not deleting this.I'm untangling this for now, because there are a number of alternatives also here in the config files. 
-#+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp  
 ;;;; iswitchb-mode
 ;; I want to be able to conmute between a split and a single window (sort of "C-x 1" for the one on focus)
 (iswitchb-mode 1)
@@ -2767,7 +3111,7 @@ github]]
 :PROPERTIES:
 :EXPORT_FILE_NAME: double-caps-correction
 :END:
-
+The  the
 Stolen from [[http://emacs.stackexchange.com/questions/13970/fixing-double-capitals-as-i-type/13975#13975][here]] and also Elndless Parentheses
 #+BEGIN_SRC emacs-lisp
 (defun dcaps-to-scaps ()
@@ -2780,9 +3124,11 @@ Stolen from [[http://emacs.stackexchange.com/questions/13970/fixing-double-capit
                 (= -3 (skip-syntax-backward "w")))
               (let (case-fold-search)
                 (looking-at "\\b[[:upper:]]\\{2\\}[[:lower:]]"))
-              (capitalize-word 1)))))
+              (let ((words (if subword-mode 2 1))) (capitalize-word words))))))
 
-(add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local)
+;; (add-hook 'pre-abbrev-expand-hook #'dcaps-to-scaps nil 'local)
+;; (add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local)
+;; (remove-hook 'post-self-insert-hook #'dcaps-to-scaps 'local)
 
 (define-minor-mode dubcaps-mode
   "Toggle `dubcaps-mode'.  Converts words in DOuble CApitals to
@@ -2790,15 +3136,20 @@ Single Capitals as you type."
   :init-value nil
   :lighter (" DC")
   (if dubcaps-mode
-      (add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local)
-    (remove-hook 'post-self-insert-hook #'dcaps-to-scaps 'local)))
+      (progn
+        (add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local)
+        ;; (add-hook 'pre-abbrev-expand-hook #'dcaps-to-scaps nil 'local)
+)
+    (remove-hook 'post-self-insert-hook #'dcaps-to-scaps 'local)
+    ;; (remove-hook 'pre-abbrev-expand-hook #'dcaps-to-scaps 'local)
+    ))
 
  (add-hook 'text-mode-hook #'dubcaps-mode)
     
 #+END_SRC
 
 #+RESULTS:
-| dubcaps-mode | turn-on-visual-line-mode | electric-pair-mode | text-mode-hook-identify |
+| dubcaps-mode | turn-on-visual-line-mode | electric-pair-local-mode | text-mode-hook-identify |
 
 *** indent buffer!
 stolen from [[http://emacsredux.com/blog/2013/03/27/indent-region-or-buffer/][Emacs Redux]]
@@ -2925,8 +3276,7 @@ Mostly this just laods the diminish package and adds some stuff to it
 #+RESULTS:
 | lambda | (&optional arg) | Keyboard macro. | (interactive p) | (kmacro-exec-ring-item '([42 42 32 return 124 32 79 114 103 97 110 105 122 97 116 105 111 110 32 124 32 124 32 backspace tab 67 108 97 114 105 116 121 32 111 102 32 84 104 101 115 105 115 tab tab 80 114 101 115 101 110 116 97 116 105 111 110 32 111 102 32 69 118 105 100 101 110 99 101 32 124 32 124 backspace backspace backspace backspace tab tab 71 114 97 109 109 97 114 32 97 110 100 32 83 112 101 108 108 105 110 103 tab tab 83 116 121 108 101 tab tab 67 105 116 97 116 105 111 110 115 tab tab 70 117 114 116 104 101 114 32 67 111 109 109 101 110 116 115 tab tab 71 114 97 100 101 tab up up up up up up up up 32] 0 %d) arg) |
 
-
-* 
+ 
 * Organize my life
 The very extensive org-mode configuration.  whew.   
 ** STARTED Loading, hooks, minor modes
@@ -2936,134 +3286,136 @@ A couple of things to note here:
 - sets a large number of variables
 
 #+BEGIN_SRC emacs-lisp
-      (defvar modi/org-version-select 'dev
-        "Variable to choose the version of Org to be loaded.
-          Valid values are `dev', `elpa' and `emacs'.
+    (defvar modi/org-version-select 'dev
+      "Variable to choose the version of Org to be loaded.
+        Valid values are `dev', `elpa' and `emacs'.
 
-          When set to `dev', the development version of Org built locally
-          is loaded.
-          When set to `elpa', Org is installed and loaded from Org Elpa.
-          When set to `emacs', the Org version shipped with Emacs is used.
+        When set to `dev', the development version of Org built locally
+        is loaded.
+        When set to `elpa', Org is installed and loaded from Org Elpa.
+        When set to `emacs', the Org version shipped with Emacs is used.
 
-          The value is defaulted to `elpa' as few things in this config
-          need Org version to be at least 9.x.")
-      ;; Mark packages to *not* to be updated
-      ;; http://emacs.stackexchange.com/a/9342/115
-      (defvar modi/package-menu-dont-update-packages '(org)
-        "List of packages for which the package manager should not look for updates.
-          Example: '(org org-plus-contrib).")
-      ;; Do not upgrade Org using the package manager if it's set to *not* use the
-      ;; Elpa version of Org.
-      (unless (eq modi/org-version-select 'elpa)
-        (add-to-list 'modi/package-menu-dont-update-packages 'org-plus-contrib))
-
-
-
-      (defun modi/package-menu-remove-excluded-packages (orig-fun &rest args)
-        "Remove the packages listed in `modi/package-menu-dont-update-packages' from
-          the `tabulated-list-entries' variable."
-        (let ((included (-filter
-                         (lambda (entry)
-                           (let ((pkg-name (package-desc-name (car entry))))
-                             (not (member pkg-name modi/package-menu-dont-update-packages))))
-                         tabulated-list-entries)))
-          (setq-local tabulated-list-entries included)
-          (apply orig-fun args)))
-      (advice-add 'package-menu--find-upgrades :around #'modi/package-menu-remove-excluded-packages)
-      ;; (advice-remove 'package-menu--find-upgrades #'modi/package-menu-remove-excluded-packages)
-      (defvar modi/default-lisp-directory "/usr/share/emacs/27.0.50/lisp/"
-        "Directory containing lisp files for the Emacs installation.
-
-          This value must match the path to the lisp/ directory of your
-          Emacs installation.  If Emacs is installed using
-          --prefix=\"${PREFIX_DIR}\" this value would typically be
-          \"${PREFIX_DIR}/share/emacs/<VERSION>/lisp/\".")
-
-      (defvar org-dev-lisp-directory "/home/matt/src/org-mode/emacs/site-lisp/org"
-        "Directory containing lisp files for dev version of Org.
-
-          This value must match the `lispdir' variable in the Org local.mk.
-          By default the value is \"$prefix/emacs/site-lisp/org\", where
-          `prefix' must match that in local.mk too.")
-
-      (defvar org-dev-info-directory "/home/matt/src/org-mode/info"
-        "Directory containing Info manual file for dev version of Org.
-          This value must match the `infodir' variable in the Org local.mk.")
-
-      (when (and org-dev-lisp-directory
-                 org-dev-info-directory)
-        (with-eval-after-load 'package
-          ;; If `modi/org-version-select' is *not* `emacs', remove the Emacs
-          ;; version of Org from the `load-path'.
-          (unless (eq modi/org-version-select 'emacs)
-            ;; Remove Org that ships with Emacs from the `load-path'.
-            (let ((default-org-path (expand-file-name "org" modi/default-lisp-directory)))
-              (setq load-path (delete default-org-path load-path))))
-
-          ;; If `modi/org-version-select' is *not* `elpa', remove the Elpa
-          ;; version of Org from the `load-path'.
-
-          (unless (eq modi/org-version-select 'elpa)
-            (dolist (org-elpa-install-path (directory-files-recursively
-                                            package-user-dir
-                                            "\\`org\\(-plus-contrib\\)*-[0-9.]+\\'"
-                                            :include-directories))
-              (setq load-path (delete org-elpa-install-path load-path))
-              ;; Also ensure that the associated path is removed from Info
-              ;; search list.
-              (setq Info-directory-list (delete org-elpa-install-path Info-directory-list))))
-
-          (let ((dev-org-path (directory-file-name org-dev-lisp-directory))
-                (dev-org-info (directory-file-name org-dev-info-directory)))
-            (if (eq modi/org-version-select 'dev)
-                (progn
-                  (add-to-list 'load-path dev-org-path)
-                  ;; It's possible that `org-dev-info-directory' is set to an
-                  ;; unconventional value, in which case, it will not be
-                  ;; automatically added to `Info-directory-alist'. So to ensure
-                  ;; that the correct Org Info is used, add it to
-                  ;; `Info-directory-alist' manually.
-                  (add-to-list 'Info-directory-list dev-org-info))
-              ;; If `modi/org-version-select' is *not* `dev', remove the
-              ;; development version of Org from the `load-path'.
-              (setq load-path (delete dev-org-path load-path))
-              (with-eval-after-load 'info
-                ;; Also ensure that the associated path is removed from Info search
-                ;; list.
-                (setq Info-directory-list (delete dev-org-info Info-directory-list)))))))
+        The value is defaulted to `elpa' as few things in this config
+        need Org version to be at least 9.x.")
+    ;; Mark packages to *not* to be updated
+    ;; http://emacs.stackexchange.com/a/9342/115
+    (defvar modi/package-menu-dont-update-packages '(org)
+      "List of packages for which the package manager should not look for updates.
+        Example: '(org org-plus-contrib).")
+    ;; Do not upgrade Org using the package manager if it's set to *not* use the
+    ;; Elpa version of Org.
+    (unless (eq modi/org-version-select 'elpa)
+      (add-to-list 'modi/package-menu-dont-update-packages 'org-plus-contrib))
 
 
-      (use-package org
-        :ensure t
-        :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
-        :pin manual
-        ;; :load-path (org-lisp org-contrib)
-        ;; :preface
 
-        ;;:init
-        ;;(setq org-export-backends '(ascii beamer html hugo icalendar md gfm reveal latex odt org))
-        :hook
-        ((org-mode . (lambda () (flyspell-mode 1)))
-         (org-mode . turn-off-auto-fill))
-        :mode ("\\.org" . org-mode)
-        :bind 
-        (("C-c l" . 'org-store-link)
-         ("C-c a" . 'org-agenda))
-        :commands (org-mode org-capture org-agenda )
-        :config
+    (defun modi/package-menu-remove-excluded-packages (orig-fun &rest args)
+      "Remove the packages listed in `modi/package-menu-dont-update-packages' from
+        the `tabulated-list-entries' variable."
+      (let ((included (-filter
+                       (lambda (entry)
+                         (let ((pkg-name (package-desc-name (car entry))))
+                           (not (member pkg-name modi/package-menu-dont-update-packages))))
+                       tabulated-list-entries)))
+        (setq-local tabulated-list-entries included)
+        (apply orig-fun args)))
+    (advice-add 'package-menu--find-upgrades :around #'modi/package-menu-remove-excluded-packages)
+    ;; (advice-remove 'package-menu--find-upgrades #'modi/package-menu-remove-excluded-packages)
+    (defvar modi/default-lisp-directory "/usr/share/emacs/27.0.50/lisp/"
+      "Directory containing lisp files for the Emacs installation.
 
-        ;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
-        (setq org-refile-targets
-              (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5)
-                      ("/home/matt/org/.org2blog.el" :maxlevel . 1)
-                      ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
+        This value must match the path to the lisp/ directory of your
+        Emacs installation.  If Emacs is installed using
+        --prefix=\"${PREFIX_DIR}\" this value would typically be
+        \"${PREFIX_DIR}/share/emacs/<VERSION>/lisp/\".")
 
-        (defun add-pcomplete-to-capf ()
-          (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+    (defvar org-dev-lisp-directory "/home/matt/src/org-mode/emacs/site-lisp/org"
+      "Directory containing lisp files for dev version of Org.
 
-        (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
-        ;; Targets start with the file name - allows creating level 1 tasks
-        (setq org-refile-use-outline-path (quote file))
+        This value must match the `lispdir' variable in the Org local.mk.
+        By default the value is \"$prefix/emacs/site-lisp/org\", where
+        `prefix' must match that in local.mk too.")
+
+    (defvar org-dev-info-directory "/home/matt/src/org-mode/info"
+      "Directory containing Info manual file for dev version of Org.
+        This value must match the `infodir' variable in the Org local.mk.")
+
+    (when (and org-dev-lisp-directory
+               org-dev-info-directory)
+      (with-eval-after-load 'package
+        ;; If `modi/org-version-select' is *not* `emacs', remove the Emacs
+        ;; version of Org from the `load-path'.
+        (unless (eq modi/org-version-select 'emacs)
+          ;; Remove Org that ships with Emacs from the `load-path'.
+          (let ((default-org-path (expand-file-name "org" modi/default-lisp-directory)))
+            (setq load-path (delete default-org-path load-path))))
+
+        ;; If `modi/org-version-select' is *not* `elpa', remove the Elpa
+        ;; version of Org from the `load-path'.
+
+        (unless (eq modi/org-version-select 'elpa)
+          (dolist (org-elpa-install-path (directory-files-recursively
+                                          package-user-dir
+                                          "\\`org\\(-plus-contrib\\)*-[0-9.]+\\'"
+                                          :include-directories))
+            (setq load-path (delete org-elpa-install-path load-path))
+            ;; Also ensure that the associated path is removed from Info
+            ;; search list.
+            (setq Info-directory-list (delete org-elpa-install-path Info-directory-list))))
+
+        (let ((dev-org-path (directory-file-name org-dev-lisp-directory))
+              (dev-org-info (directory-file-name org-dev-info-directory)))
+          (if (eq modi/org-version-select 'dev)
+              (progn
+                (add-to-list 'load-path dev-org-path)
+                ;; It's possible that `org-dev-info-directory' is set to an
+                ;; unconventional value, in which case, it will not be
+                ;; automatically added to `Info-directory-alist'. So to ensure
+                ;; that the correct Org Info is used, add it to
+                ;; `Info-directory-alist' manually.
+                (add-to-list 'Info-directory-list dev-org-info))
+            ;; If `modi/org-version-select' is *not* `dev', remove the
+            ;; development version of Org from the `load-path'.
+            (setq load-path (delete dev-org-path load-path))
+            (with-eval-after-load 'info
+              ;; Also ensure that the associated path is removed from Info search
+              ;; list.
+              (setq Info-directory-list (delete dev-org-info Info-directory-list)))))))
+
+
+    (use-package org
+      :ensure t
+      :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
+      :pin manual
+      ;; :load-path (org-lisp org-contrib)
+      :preface
+      (setq org-tempo-keywords-alist nil)
+      ;;:init
+      ;;(setq org-export-backends '(ascii beamer html hugo icalendar md gfm reveal latex odt org))
+      :hook
+      ((org-mode . (lambda () (flyspell-mode 1)))
+       (org-mode . turn-off-auto-fill))
+      :mode ("\\.org" . org-mode)
+      :bind 
+      (("C-c l" . 'org-store-link)
+       ("C-c a" . 'org-agenda))
+      :commands (org-mode org-capture org-agenda )
+      :config
+      (message "at the beginning of config section oforg-mode use-package")
+      (display-warning 'org-mode "at the beginning of config section oforg-mode use-package" :debug)
+
+      ;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
+      (setq org-refile-targets
+            (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5)
+                    ("/home/matt/org/.org2blog.el" :maxlevel . 1)
+                    ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
+
+      (defun add-pcomplete-to-capf ()
+        (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+
+      (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
+      ;; Targets start with the file name - allows creating level 1 tasks
+      (setq org-refile-use-outline-path (quote file))
 
       ;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
       (setq org-outline-path-complete-in-steps t)
@@ -3088,112 +3440,108 @@ A couple of things to note here:
              ;; ;; ("C-c W s" . org-slack-export-to-clibpoard-as-slack)
              ;; )
   )
-        ;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
-        (setq org-outline-path-complete-in-steps t)
 
-        ;; Allow refile to create parent tasks with confirmation
-        (setq org-refile-allow-creating-parent-nodes (quote confirm))
+      )
+    ;; agenda config
+    (use-package org-agenda
+      :after org
+      :config
+      ;; agenda diary stuff
+      (setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
+      (setq org-agenda-include-diary t)
 
-
-        )
-      ;; agenda config
-      (use-package org-agenda
-        :after org
-        :config
-        ;; agenda diary stuff
-        (setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
-        (setq org-agenda-include-diary t)
-
-        (setq org-agenda-custom-commands
-              '(("g" . "GTD contexts")
-                ("ge" "email" tags-todo "email/+ACTION")
-                ("gc" "Computer" tags-todo "computer/+ACTION")
-                ("go" "Office" tags-todo "office/+ACTION")
-                ("gp" "Phone" tags-todo "phone/+ACTION")
-                ("gh" "Home" tags-todo "home/+ACTION")
-                ("gr" "Errands" tags-todo "errand/+ACTION")
-                ("E" "EDGI Tasks" tags "edgi")
-                ("G" "GTD Block Agenda"
-                 ((tags-todo "phone/+ACTION")
-                  (tags-todo "office/+ACTION")
-                  (tags-todo "email/+ACTION")
-                  (tags-todo "computer/+ACTION")
-                  (tags-todo "home/+ACTION")
-                  (tags-todo "errand/+ACTION")
-                  (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
-                 nil                      ;; i.e., no local settings
-                 ("~/next-actions.html")) ;; exports block to this file with C-c a e
-                ;; ("T" "Teaching Block Agenda"
-                ;;  ((tags-todo "phone+teaching/+ACTION")
-                ;;   (tags-todo "office+teaching/+ACTION")
-                ;;   (tags-todo "email+teaching/+ACTION")
-                ;;   (tags-todo "computer+teaching/+ACTION")
-                ;;   (tags-todo "home+teaching/+ACTION")
-                ;;   (tags-todo "errand+teaching/+ACTION")
-                ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
-                ;;  nil                      ;; i.e., no local settings
-                ;;  ("~/next-actions.html"))
-                ;; exports block to this file with C-c a e
-                ("H" "GTD Block Agenda"
-                 ((tags-todo "+history+phone/+ACTION|BLOCKED")
-                  (tags-todo "+history+office/+ACTION|BLOCKED")
-                  (tags-todo "+history+email/+ACTION|BLOCKED")
-                  (tags-todo "+history+computer/+ACTION|BLOCKED")
-                  (tags-todo "+history+home/+ACTION+|BLOCKED")
-                  (tags-todo "+history+errand/+ACTION|BLOCKED")
-                  (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
-                 nil                              ;; i.e., no local settings
-                 ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
-                ("W" "WAITING block Agenda"
-                 ((tags-todo "phone/+WAITING")
-                  (tags-todo "email/+WAITING")
-                  (tags-todo "computer/+WAITING")
-                  (tags-todo "office/+WAITING")
-                  (tags-todo "home/+WAITING")
-                  (tags-todo "errand/+WAITING"))
-                 nil                      ;; i.e., no local settings
-                 ("~/next-actions.html")) ;; exports block to this file with C-c a e
-                ;; ..other commands here
-                ;; ("t" agenda "Teaching Agenda"
-                ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
-                ("p" "Projects" todo "PROJECT")
-                )))
+      (setq org-agenda-custom-commands
+            '(("g" . "GTD contexts")
+              ("ge" "email" tags-todo "email/+ACTION")
+              ("gc" "Computer" tags-todo "computer/+ACTION")
+              ("go" "Office" tags-todo "office/+ACTION")
+              ("gp" "Phone" tags-todo "phone/+ACTION")
+              ("gh" "Home" tags-todo "home/+ACTION")
+              ("gr" "Errands" tags-todo "errand/+ACTION")
+              ("E" "EDGI Tasks" tags "edgi")
+              ("G" "GTD Block Agenda"
+               ((tags-todo "phone/+ACTION")
+                (tags-todo "office/+ACTION")
+                (tags-todo "email/+ACTION")
+                (tags-todo "computer/+ACTION")
+                (tags-todo "home/+ACTION")
+                (tags-todo "errand/+ACTION")
+                (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
+               nil                      ;; i.e., no local settings
+               ("~/next-actions.html")) ;; exports block to this file with C-c a e
+              ;; ("T" "Teaching Block Agenda"
+              ;;  ((tags-todo "phone+teaching/+ACTION")
+              ;;   (tags-todo "office+teaching/+ACTION")
+              ;;   (tags-todo "email+teaching/+ACTION")
+              ;;   (tags-todo "computer+teaching/+ACTION")
+              ;;   (tags-todo "home+teaching/+ACTION")
+              ;;   (tags-todo "errand+teaching/+ACTION")
+              ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
+              ;;  nil                      ;; i.e., no local settings
+              ;;  ("~/next-actions.html"))
+              ;; exports block to this file with C-c a e
+              ("H" "GTD Block Agenda"
+               ((tags-todo "+history+phone/+ACTION|BLOCKED")
+                (tags-todo "+history+office/+ACTION|BLOCKED")
+                (tags-todo "+history+email/+ACTION|BLOCKED")
+                (tags-todo "+history+computer/+ACTION|BLOCKED")
+                (tags-todo "+history+home/+ACTION+|BLOCKED")
+                (tags-todo "+history+errand/+ACTION|BLOCKED")
+                (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
+               nil                              ;; i.e., no local settings
+               ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
+              ("W" "WAITING block Agenda"
+               ((tags-todo "phone/+WAITING")
+                (tags-todo "email/+WAITING")
+                (tags-todo "computer/+WAITING")
+                (tags-todo "office/+WAITING")
+                (tags-todo "home/+WAITING")
+                (tags-todo "errand/+WAITING"))
+               nil                      ;; i.e., no local settings
+               ("~/next-actions.html")) ;; exports block to this file with C-c a e
+              ;; ..other commands here
+              ;; ("t" agenda "Teaching Agenda"
+              ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
+              ("p" "Projects" todo "PROJECT")
+              )))
 
 
-          ;;;; Org-mode hooks
-      ;; (add-hook 'org-mode-hook
-      ;;   (lambda()
-      ;;     (flyspell-mode 1)))
-      ;; (add-to-list 'auto-mode-alist '("\\.org" . org-mode))
+        ;;;; Org-mode hooks
+    ;; (add-hook 'org-mode-hook
+    ;;   (lambda()
+    ;;     (flyspell-mode 1)))
+    ;; (add-to-list 'auto-mode-alist '("\\.org" . org-mode))
 
-      ;; still need to load org2blog
-      (use-package xml-rpc
-        :load-path "~/src/xml-rpc"
-        :no-require)
-      (use-package org2blog
-        :after (:all xml-rpc (:any org org-plus-contrib))
-        :load-path  ("/home/matt/src/org2blog" "/home/matt/src/xml-rpc"))
+    ;; still need to load org2blog
+    (use-package xml-rpc
+      :load-path "~/src/xml-rpc"
+      :no-require)
+    (use-package org2blog
+      :after (:all xml-rpc (:any org org-plus-contrib))
+      :load-path  ("/home/matt/src/org2blog" "/home/matt/src/xml-rpc"))
 
-      (use-package org2blog-autoloads
-        :after org2blog
-        )
-      ;; this should turhn auto-fill off?
-      ;; (add-hook 'org-mode-hook 'turn-off-auto-fill)
-      ;;org-mouse.el -- an extra
-      (use-package org-mouse
-        :after (:any org org-plus-contrib))
+    (use-package org2blog-autoloads
+      :after org2blog
+      )
+    ;; this should turhn auto-fill off?
+    ;; (add-hook 'org-mode-hook 'turn-off-auto-fill)
+    ;;org-mouse.el -- an extra
+    (use-package org-mouse
+      :after (:any org org-plus-contrib))
 
-      (use-package ox-odt
-        :after (:any org org-plus-contrib)
-        :defer 10
-        :config
-        (setq org-odt-styles-dir "/home/matt/src/org-mode/etc/styles/")
-        ;; (setq org-odt-schema-dir "/home/matt/.emacs.d/Templates/")
-        (setq org-odt-styles-file "/home/matt/.emacs.d/Templates/New113Syllabus.odt")
-        ;; this needs to be set here, but the fn definition is actually below
-        (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
-        )
+    (use-package ox-odt
+      :after (:any org org-plus-contrib)
+      :defer 10
+      :config
+      (setq org-odt-styles-dir "/home/matt/src/org-mode/etc/styles/")
+      ;; (setq org-odt-schema-dir "/home/matt/.emacs.d/Templates/")
+      (setq org-odt-styles-file "/home/matt/.emacs.d/Templates/New113Syllabus.odt")
+      ;; this needs to be set here, but the fn definition is actually below
+      (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
+      )
 #+END_SRC
+
+#+RESULTS:
 
 
 separate the exports block to try to ifgure out what the hell.  
@@ -3248,40 +3596,41 @@ We want to use custom_id properties in all headlines if poss b/c it's just way b
 Here's a partial solution, stolen from [[https://writequit.org/articles/emacs-org-mode-generate-ids.html#the-solution][writequit.org]] and not really fully satisfying to me since the id's are opaque:
 
 #+BEGIN_SRC emacs-lisp
-  (use-package org-id
-    :after org
-    :config
-    (setq org-id-link-to-org-use-id 'create-if-interactive-and-no-custom-id)
-    (defun eos/org-custom-id-get (&optional pom create prefix)
-      "Get the CUSTOM_ID property of the entry at point-or-marker POM.
-     If POM is nil, refer to the entry at point. If the entry does
-     not have an CUSTOM_ID, the function returns nil. However, when
-     CREATE is non nil, create a CUSTOM_ID if none is present
-     already. PREFIX will be passed through to `org-id-new'. In any
-     case, the CUSTOM_ID of the entry is returned."
-      (interactive)
-      (org-with-point-at pom
-        (let ((id (org-entry-get nil "CUSTOM_ID"))
-              (headline (downcase
-                         (replace-regexp-in-string "[\"\*\/\!]" ""
-                                                   (replace-regexp-in-string " " "-"
-                                                                             (if (string= "COMMENT "(substring (org-get-heading t t) 0 8)) 
-                                                                                 (substring (org-get-heading t t) 8 nil)
-                                                                               (org-get-heading)))))))
-          (cond
-           ((and id (stringp id) (string-match "\\S-" id))
-            id)
-           (create
-            (setq id (concat headline "-" (substring (org-id-new 'none) 0 4)))
-            (org-entry-put pom "CUSTOM_ID" id)
-            (org-id-add-location id (buffer-file-name (buffer-base-buffer)))
-            id)))))
+(use-package org-id
+  :after org
+  :config
+  (setq org-id-link-to-org-use-id 'create-if-interactive-and-no-custom-id)
+  (defun eos/org-custom-id-get (&optional pom create prefix)
+    "Get the CUSTOM_ID property of the entry at point-or-marker POM.
+   If POM is nil, refer to the entry at point. If the entry does
+   not have an CUSTOM_ID, the function returns nil. However, when
+   CREATE is non nil, create a CUSTOM_ID if none is present
+   already. PREFIX will be passed through to `org-id-new'. In any
+   case, the CUSTOM_ID of the entry is returned."
+    (interactive)
+    (org-with-point-at pom
+      (let* ((id (org-entry-get nil "CUSTOM_ID"))
+             (hinit (org-get-heading t t))
+             (headline (downcase
+                       (replace-regexp-in-string "[\"\*\/\!]" ""
+                                                 (replace-regexp-in-string " " "-"
+                                                                           (if (and (> (length hinit) 9) (string= "COMMENT " (substring hinit 0 8))) 
+                                                                             (substring hinit  8 nil)
+                                                                             (org-get-heading)))))))
+        (cond
+         ((and id (stringp id) (string-match "\\S-" id))
+          id)
+         (create
+          (setq id (concat headline "-" (substring (org-id-new 'none) 0 4)))
+          (org-entry-put pom "CUSTOM_ID" id)
+          (org-id-add-location id (buffer-file-name (buffer-base-buffer)))
+          id)))))
 
-    (defun eos/org-add-ids-to-headlines-in-file ()
-      "Add CUSTOM_ID properties to all headlines in the
-     current file which do not already have one."
-      (interactive)
-      (org-map-entries (lambda () (eos/org-custom-id-get (point) 'create)))))
+  (defun eos/org-add-ids-to-headlines-in-file ()
+    "Add CUSTOM_ID properties to all headlines in the
+   current file which do not already have one."
+    (interactive)
+    (org-map-entries (lambda () (eos/org-custom-id-get (point) 'create)))))
 #+END_SRC
 
 #+RESULTS:
@@ -3394,53 +3743,63 @@ Changed <2018-10-16 Tue> incorporate capture templates into ~use-package~ invoca
 *** General
 Some general options and fixes
 #+BEGIN_SRC emacs-lisp
-    ;;;; export options for org-mode
-    (setq org-export-with-section-numbers nil
-          org-export-with-toc nil
-          org-export-preserve-breaks nil
-          org-export-email-info nil
-    )
-    ;;;; Timestamps in Exports
-    ;; removing annoying brackets from timestamp on html export
-    ;; with org-mode set to defer, this has to be added to the use-package :config declaration above 
-    ;; (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
-    (defun matt-org-export-filter-timestamp-function (timestamp backend info)
-      "removes relevant brackets from a timestamp"
-      (pcase backend
-        ((or 'html 'wp 'odt 'reveal)
-         (replace-regexp-in-string "&[lg]t;" "" timestamp))
-    
-          ))
-  (defun org-export-filter-timestamp-remove-brackets (timestamp backend info)
-    "removes relevant brackets from a timestamp"
-    (cond
-     ((org-export-derived-backend-p backend 'latex)
-      (replace-regexp-in-string "[<>]\\|[][]" "" timestamp))
-     ((org-export-derived-backend-p backend 'html)
-      (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp))))
+  ;;;; export options for org-mode
+(setq org-export-with-section-numbers nil
+      org-export-with-toc nil
+      org-export-preserve-breaks nil
+      org-export-email-info nil
+      )
+  ;;;; Timestamps in Exports
+;; removing annoying brackets from timestamp on html export
+;; with org-mode set to defer, this has to be added to the use-package :config declaration above 
+;; (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
+(defun matt-org-export-filter-timestamp-function (timestamp backend info)
+  "removes relevant brackets from a timestamp"
+    (if (org-export-derived-backend-p backend 'html 'odt )
+      (replace-regexp-in-string "&[lg]t;" "" timestamp)
+    (replace-regexp-in-string "&[lg]t;\\|[<>]" "" timestamp))
+  ;; (pcase backend
+  ;;   ((or 'html 'wp 'odt 'reveal 'latex 'hugo 'huveal 'blackfriday 'md 'gfm )
+  ;;    )
 
-  (eval-after-load 'ox '(add-to-list
-                         'org-export-filter-timestamp-functions
-                         'org-export-filter-timestamp-remove-brackets))
-      ;; (when (or  (org-export-derived-backend-p backend 'html)(org-export-derived-backend-p backend 'odt)) 
-      ;;   ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
-      ;;   ;; (replace-regexp-in-string "[][]" "" timestamp)
-      ;;   (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp)
-      ;;   ;; (replace-regexp-in-string "&lt;" "" timestamp))
-  
+  ;;   )
+  )
 
-    ;; removing annoying brackets from timestamp on html export
-    ;; (add-to-list 'org-export-filter-paragraph-functions 'matt-org-export-filter-paragraph-function)
-    ;; (defun matt-org-export-filter-paragraph-function (paragraph backend info)
-    ;;   "removes comments from export"
-    ;;   (when (org-export-derived-backend-p backend 'html) 
-    ;;     ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
-    ;;     (replace-regexp-in-string "^#\+.*$" "" paragraph)
-    ;;     ;; (replace-regexp-in-string "&lt;" "" paragraph)
-    ;; ))
+
+(defun org-export-filter-timestamp-remove-brackets (timestamp backend info)
+  "removes relevant brackets from a timestamp"
+  (cond
+   ((org-export-derived-backend-p backend 'latex)
+    (replace-regexp-in-string "[<>]\\|[][]" "" timestamp))
+   ((or (org-export-derived-backend-p backend 'html) (org-export-derived-backend-p backend 'odt))
+    (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp))))
+
+(eval-after-load 'ox '(add-to-list
+                       'org-export-filter-timestamp-functions
+                       'org-export-filter-timestamp-remove-brackets))
+;; (when (or  (org-export-derived-backend-p backend 'html)(org-export-derived-backend-p backend 'odt)) 
+;;   ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
+;;   ;; (replace-regexp-in-string "[][]" "" timestamp)
+;;   (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp)
+;;   ;; (replace-regexp-in-string "&lt;" "" timestamp))
+
+
+;; removing annoying brackets from timestamp on html export
+;; (add-to-list 'org-export-filter-paragraph-functions 'matt-org-export-filter-paragraph-function)
+;; (defun matt-org-export-filter-paragraph-function (paragraph backend info)
+;;   "removes comments from export"
+;;   (when (org-export-derived-backend-p backend 'html) 
+;;     ;; unfortunatley I can't make emacs regexps work yet.  sigh.  
+;;     (replace-regexp-in-string "^#\+.*$" "" paragraph)
+;;     ;; (replace-regexp-in-string "&lt;" "" paragraph)
+;; ))
 
 
 #+END_SRC
+
+#+RESULTS:
+| matt-org-export-filter-timestamp-function | org-export-filter-timestamp-remove-brackets |
+
 *** Creating and Publishing Presentations with Org-reveal
 :PROPERTIES:
 :ID:       o2b:cef9afbb-5bec-4b01-a32a-783315ffc727
@@ -4823,6 +5182,12 @@ I'm not sure which of these solutions I use more. Do I actually use both
     (setq org-crypt-key nil))
 #+END_SRC
 ** ACTION Org timestamp defuns
+:PROPERTIES:
+:GRADE:    1
+:END:
+
+I am currently using ~get-ts+7-inc=ov~, which is ocmpatible with my macro previwing code, below. However... a much more rational way to do this would be to just initalize a variable with 2 or 3 dates and count forwards from there. It's actually a far preferable and more robust system, and way way way way simpler than what I've written.  But mine works for now so leaving in palce.  
+
 These are a bit of a mess, need to be rationalized & perhaps packaged. 
 #+BEGIN_SRC emacs-lisp
 
@@ -4868,7 +5233,7 @@ These are a bit of a mess, need to be rationalized & perhaps packaged.
                 (message (number-to-string  (match-end 0)))
                 ;; now we kill the old time stamp, and insert the new one
                 (set-mark (match-beginning 0))
-          
+
                 ;; (beginning-of-line)
                 (delete-region (match-beginning 0) (match-end 0))
                 (insert new-ts)
@@ -4910,14 +5275,139 @@ than the previous timestamp in the buffer. No error checking or anything yet."
                   (org-re-timestamp 'all))
                  (match-string 0)))
           (result nil))
-    
+
       (format-time-string "<%Y-%m-%d %a>"
                           (time-add
                            (date-to-time base-date) (days-to-time (1+ 7)))) ))
+
+
+
+(defun get-ts+7 (&optional weekly-times)
+  "Return a string of the form <%Y-%m-d %a> where the date
+elements are 7 days later than the (n - WEEKLY-TIMES timestamp)
+in the buffer. That is, if WEEKLY-TIMES is nil or 1, return a
+date one week later than the *PREVIOUS* timestamp. If
+WEEKLY-TIMES is 2, return a time one week later than the
+,*SECOND-TO-LAST* timestamp above the previous location.
+
+If there are not enough timestamps, right now it returns the last
+found timestamp. "
+  (interactive)
+  (setq weekly-times (or weekly-times 1))
+  (defun ts-search ()
+    (save-match-data 
+      (goto-char (re-search-backward
+                  (org-re-timestamp 'all) nil t))
+      (let ((thismatch  (match-string 0)))
+        (message "match: %s" thismatch)
+        thismatch)))
+  (let* (r
+         (base-date (save-excursion
+                     (cl-dotimes (time weekly-times r)
+                       (condition-case nil
+                           (progn (setq  r (or (ts-search) r))
+                                  (message "r is %s" r))
+                         (error
+                          (message "Drat, there were %s timestamps, using the last one I found."
+                                   (if (= 0 time) "no" time))
+                          (return r))))))
+
+        (result nil))
+    (message "base-time is %s" base-date)
+    (if base-date
+        (format-time-string "<%Y-%m-%d %a>"
+                            (time-add
+                             (date-to-time base-date) (days-to-time (1+ 7))))
+      "NO PREVIOUS TIMESTAMP") ))
+
+(defun ts-search-both ()
+  (save-match-data
+    (let* ((bufts
+            (save-match-data
+              (set-match-data nil)
+              (save-excursion 
+                (re-search-backward
+                 (org-re-timestamp 'all) nil t)
+                (if (match-beginning 0)
+                    `(,(match-beginning 0) ,(match-string 0))
+                  nil))))
+           (ovts (save-match-data (save-excursion  (ts-search-ov)))))
+      (cond
+       ((and bufts ovts)
+        (if (> (car bufts) (car ovts))
+            (goto-char (car bufts))
+            (cadr bufts)
+          (cadr ovts)))
+       (bufts
+        (goto-char (car bufts))
+        (cadr bufts))
+       (ovts
+        (goto-char (car ovts))
+        (cadr ovts))
+       (t
+        (goto-char (point-min)) nil)
+       )
+      )))
+
+(defun ts-search-ov ()
+  (let* ((ovend   (previous-single-char-property-change (point) 'macro-ov-p))
+         (ovs (overlays-at ovend))
+         (m  (cl-loop for o in ovs
+                      if (string-match (org-re-timestamp 'all) (overlay-get o 'before-string))
+                      ;;(goto-char (overlay-start o))
+                      return (match-string 0 (overlay-get o 'before-string)))))
+    (cond
+     (m `(,(point) ,m))
+     ((>= (point-min) ovend )
+      (goto-char ovend)
+      nil)
+     (t
+      (goto-char ovend)
+      (ts-search-ov))
+      )))
+
+(defun get-ts+7-inc-ov (&optional weekly-times)
+  "Return a string of the form <%Y-%m-d %a> where the date
+elements are 7 days later than the (n - WEEKLY-TIMES timestamp)
+in the buffer. That is, if WEEKLY-TIMES is nil or 1, return a
+date one week later than the *PREVIOUS* timestamp. If
+WEEKLY-TIMES is 2, return a time one week later than the
+,*SECOND-TO-LAST* timestamp above the previous location.
+
+If there are not enough timestamps, right now it returns the last
+found timestamp. "
+  (interactive)
+  (setq weekly-times (or weekly-times 1))
   
+  (let* (r
+         (base-date (save-excursion
+                     (cl-dotimes (time weekly-times r)
+                       (condition-case nil
+                           (let ((s (ts-search-both)))
+                             (if s
+                                 (setq r s)
+                               (message "Drat, there were %s timestamps, using the last one I found."
+                                        (if (= 0 time) "no" time))
+                               (return r)))
+                         
+                         ;; (error
+                         ;;  (message "Drat, there were %s timestamps, using the last one I found."
+                         ;;           (if (= 0 time) "no" time))
+                         ;;  (return r))
+                         ))))
 
-
+        (result nil))
+    (message "base-time is %s" base-date)
+    (if base-date
+        (format-time-string "<%Y-%m-%d %a>"
+                            (time-add
+                             (date-to-time base-date) (days-to-time (1+ 7))))
+      "NO PREVIOUS TIMESTAMP") ))
 #+END_SRC
+
+#+RESULTS:
+: get-ts+7-inc-ov
+
 
 here's another version:
 
@@ -4950,6 +5440,148 @@ last timestamp found in the buffer."
     ))
 
 #+END_SRC
+*** Improved version using stored list value
+This nees to go i n the #loca_variables section at the bottom of a file though
+#+begin_src emacs-lisp
+
+(defun mwp-get-ts+7 (initial-list-symbol &optional weekly-times)
+  "Return a timestamp 7 days later than the WEEKLY-TIMES-th element of INITIAL-LIST-SYMBOL.
+Then add that new date to the value of the list."
+  (setq weekly-times (or weekly-times 1))
+  (let* ((initial-list (symbol-value initial-list-symbol))
+         (base-date (nth (1- weekly-times) initial-list) )
+         (new-date (format-time-string  "<%Y-%m-%d %a>" ;; "<%b. %d>"    ;; 
+                                       (time-add
+                                        (date-to-time base-date) (days-to-time (1+ 7))))))
+    (add-to-list initial-list-symbol  new-date )
+    ;;(format-time-string "%b . %d" new-date)
+    new-date
+    ;; (if base-date
+    ;;     (format-time-string "<%Y-%m-%d %a>"
+    ;;                         (time-add
+    ;;                          (date-to-time base-date) (days-to-time (1+ 7))))
+    ;;   "NO PREVIOUS TIMESTAMP")
+    ))
+#+end_src
+
+#+RESULTS:
+: mwp-get-ts+7
+
+** Evaluate export macros and show results in buffer
+
+Someimtes I really want to see the results of an export macro while I'm working. This makes that possible.  
+
+#+begin_src emacs-lisp
+
+(defun mwp-show-macros ()
+  (interactive)
+  (remove-overlays (point-min) (point-max) 'macro-ov-p t)
+  (hack-local-variables)
+  ;; (message "mwp-classtimes-calibrate: %s" mwp-classtimes-calibrate)
+  ;; (message "file-local vars: %s" file-local-variables-alist)
+  (save-excursion
+    (goto-char (point-min))
+    ;; keeping this properties/keywordsstuff b/c I don't quite understand it
+    (let* ((keywords nil)
+           (properties-regexp (format "\\`EXPORT_%s\\+?\\'"
+				      (regexp-opt keywords)))
+	   record)
+      (while (re-search-forward "{{{[-A-Za-z0-9_]" nil t)
+        (unless (save-match-data (org-in-commented-heading-p))
+          (let* ((datum (save-match-data (org-element-context)))
+	         (type (org-element-type datum))
+	         (macro
+	          (cond
+		   ((eq type 'macro) datum)
+		   ;; In parsed keywords and associated node
+		   ;; properties, force macro recognition.
+		   ((or (and (eq type 'keyword)
+			     (member (org-element-property :key datum) keywords))
+		        (and (eq type 'node-property)
+			     (string-match-p properties-regexp
+					     (org-element-property :key datum))))
+		    (save-excursion
+		      (goto-char (match-beginning 0))
+		      (org-element-macro-parser))))))
+	    (when macro
+	      (let* ((key (org-element-property :key macro))
+		     (value (org-macro-expand macro org-macro-templates))
+                     (value-ts (ignore-errors
+                                 (apply 'encode-time (org-fix-decoded-time
+                                                      (org-parse-time-string value)))))
+		     (begin (org-element-property :begin macro))
+                     (end (save-excursion
+                            (goto-char (org-element-property :end macro))
+		            (skip-chars-backward " \t")
+		            (point)))
+		     (signature (list begin
+				      macro
+				      (org-element-property :args macro))))
+	        ;; Avoid circular dependencies by checking if the same
+	        ;; macro with the same arguments is expanded at the
+	        ;; same position twice.
+                (when value-ts
+                  (setq value (format-time-string
+                               (substring (car org-time-stamp-custom-formats) 1 -1) value-ts)))
+	        (cond ((member signature record)
+		       (error "Circular macro expansion: %s" key))
+		      (value
+		       (push signature record)
+		       (let ((ov (make-overlay begin end)))
+                         (overlay-put ov 'invisible t)
+                         (overlay-put ov 'evaporate t)
+                         (overlay-put ov 'macro-ov-p t)
+		         (overlay-put ov 'before-string value )))
+		      ;; Special "results" macro: if it is not defined,
+		      ;; simply leave it as-is.  It will be expanded in
+		      ;; a second phase.
+		      ((equal key "results"))
+		      (t
+		       ;; (error "Undefined Org macro: %s; aborting"
+		       ;;        (org-element-property :key macro))
+                       )))))))))
+  (org-macro--counter-initialize)
+  (setq-local mwp-macro-overlays t)
+  (hack-local-variables)
+  ;;(run-hooks 'mwp-show-macros-final-hook)
+  
+  )
+
+
+(defvar-local mwp-show-macros-final-hook nil )
+
+(defun mwp-hide-macros ()
+  (interactive)
+  (remove-overlays (point-min) (point-max) 'macro-ov-p t)
+  (setq-local mwp-macro-overlays nil)
+  )
+
+(defun mwp-toggle-macros ()
+  (interactive)
+  (if mwp-macro-overlays
+      (mwp-hide-macros)
+    (mwp-show-macros)) )
+
+(defvar-local mwp-macro-overlays nil)
+
+(defun mwp-macro-advice (&optional a b c d e f &rest g)
+  "If hsowing macros, update after doing some things."
+  (when mwp-macro-overlays
+    (mwp-show-macros)
+    ))
+
+;; (advice-add 'org-move-subtree-down :after mwp-macro-advice)
+
+(advice-add 'org-move-subtree-down :after  'mwp-macro-advice)
+(advice-add 'org-insert-heading :after  'mwp-macro-advice)
+;; (advice-remove 'org-insert-heading   'mwp-macro-advice)
+;; (advice-remove 'org-clean-visibility-after-subtree-move  'mwp-macro-advice)
+#+end_src
+
+#+RESULTS:
+
+#+RESULTS:
+| quote | hack-local-variables |
 
 ** Helm and Org
 Not sure what I wanted here. There's a whole bunch of stuff here about helm..
@@ -5164,6 +5796,22 @@ This code from John Kitchen & abo-abo makes it a lot easier to copy text directl
 - [[http://kitchingroup.cheme.cmu.edu/blog/2016/06/16/Copy-formatted-org-mode-text-from-Emacs-to-other-applications/#comment-2735698988][john's original post]]
 expanding this to use additional options; could just be gneeralized, though relaly only html copy needs the elaborate copying to a tmp file.   
 
+#+begin_src emacs-lisp
+(use-package ox-slack
+      :load-path "~/src/ox-slack"
+      :pin manual
+      :defer nil
+      ;; :preface
+      ;; (require 'ox-md)
+      ;; (require 'ox-gfm)
+      ;; :after (org )
+      ;; :bind
+      ;; ("C-c W s" . org-slack-export-to-clibpoard-as-slack)
+      )
+#+end_src
+
+#+RESULTS:
+
 #+BEGIN_SRC emacs-lisp :results code
   (defun ora-org-to-html-to-clipboard ()
     "Export region to HTML, and copy it to the clipboard."
@@ -5236,6 +5884,24 @@ expanding this to use additional options; could just be gneeralized, though rela
 nil
 #+end_src
 
+** Inverse: HTML from browser to org-mode using xclip and pandoc
+It's also tedious to copy html from the browser to org. usually I just want to copy some text, not use a complex capture template (since I never integrated org-capture into my regular workflow). 
+
+there's stuff like [[https://github.com/alphapapa/org-protocol-capture-html][this org-protocol code from plphapapa]] but I don't find it easy to use.  
+
+Instead stealing code form [[https://emacs.stackexchange.com/questions/12121/org-mode-parsing-rich-html-directly-when-pasting][stack overflow]] and binding to "C-M-y", at least for now. Pandoc inserts a lot of extraneous crap but still this is OK for now! Not usre that the JSON really helps me much, but hard to say. 
+#+begin_src emacs-lisp
+(defun mwp/html2org-clipboard ()
+  "Convert clipboard contents from HTML to Org and then paste (yank)."
+  (interactive)
+  (kill-new (shell-command-to-string "xclip -o -t TARGETS | grep -q text/html && (xclip -o -t text/html | pandoc -f html -t json | pandoc -f json -t org) || xclip -o"))
+  (yank))
+
+(global-set-key (kbd "C-M-y") 'mwp/html2org-clipboard)
+#+end_src
+ 
+#+RESULTS:
+: mwp/html2org-clipboard
 
 ** More of the mixed up stuff
 
@@ -5491,7 +6157,7 @@ Similarly, the initial greeting is generated from the current headline value -- 
         files)))
 #+END_SRC
 (setq starttls-extra-arguments '("--priority" "NORMAL:%COMPAT"))
-*** Adding Attachments with Drag & Drop                            :ATTACH:
+*** Attachment Improvemnts: drag & drop; allow existing            :ATTACH:
 :PROPERTIES:
 :Attachments: minimal.el
 :ID:       7c9d8afa-0b2d-4be6-94b4-b586b4ea3bd7
@@ -5503,64 +6169,104 @@ After I make inline comments, I fill out a grading template and attach the paper
 Anyway: unfortunately the following code doesn't work right, so *don't just cut and paste this code!).  I *ought* to be able to bind the drag and drop action to a function -- even several functions -- and, if conditions are right, attach the dragged file to the current org header.  John Kitchin describes this method [[http://kitchingroup.cheme.cmu.edu/blog/2015/07/10/Drag-images-and-files-onto-org-mode-and-insert-a-link-to-them/][here]]. But I do the following instead, which is also broken right now:
 
 Start by loading org-download, which downloads dragged images as attachments and inserts a link. (yay). THen a modification which fixes handling of file links allowing me to drag-n-drop files links onto org as attachments. Unfortunately, I can't get org-attach to process the URI's properly.  Darn it.  
+
+*EDIT <2018-11-27 Tue>:* modify org-attach-attach to allow existing symbolic links, which fixes the errors I'm getting on attachment whenever I repeat a download or similar.  
 #+BEGIN_SRC emacs-lisp
-  (use-package org-download)
-  (use-package org-attach)
-  ;; extending the dnd functionality
-  ;; but doesn't actually work... 
-  (defun mwp-org-file-link-dnd (uri action)
-      "When in `org-mode' and URI points to local file, 
-    add as attachment and also add a link. Otherwise, 
-    pass URI and Action back to dnd dispatch"
-      (let ((img-regexp "\\(png$\\|jp[e]?g$\\)")
-            (newuri (replace-regexp-in-string "file:///" "/" uri)))
-        (cond ((eq major-mode 'org-mode)
-               (message "Hi! newuri: %s " (file-relative-name newuri))
-               (cond ((string-match img-regexp newuri)
-                      (insert "#+ATTR_ORG: :width 300\n")
-                      (insert (concat  "#+CAPTION: " (read-input "Caption: ") "\n"))
-                      (insert (format "[[%s]]" uri))
-                      (org-display-inline-images t t))
-                     (t 
-                      (org-attach-new newuri)
-                      (insert (format "[[%s]]" uri))))
-               )
-              (t
-               (let ((dnd-protocol-alist
-                      (rassq-delete-all
-                       'mwp-org-file-link-dnd
-                       (copy-alist dnd-protocol-alist))))
-                 (dnd-handle-one-url nil action uri)))
-              )))
+(use-package org-download)
+(use-package org-attach
+  :config
+  (defun org-attach-attach (file &optional visit-dir method)
+  "Move/copy/link FILE into the attachment directory of the current task.
+If VISIT-DIR is non-nil, visit the directory with dired.
+METHOD may be `cp', `mv', `ln', `lns' or `url' default taken from
+`org-attach-method'."
+  (interactive
+   (list
+    (read-file-name "File to keep as an attachment:"
+                    (or (progn
+                          (require 'dired-aux)
+                          (dired-dwim-target-directory))
+                        default-directory))
+    current-prefix-arg
+    nil))
+  (setq method (or method org-attach-method))
+  (let ((basename (file-name-nondirectory file)))
+    (when (and org-attach-file-list-property (not org-attach-inherited))
+      (org-entry-add-to-multivalued-property
+       (point) org-attach-file-list-property basename))
+    (let* ((attach-dir (org-attach-dir t))
+           (fname (expand-file-name basename attach-dir)))
+      (cond
+       ((eq method 'mv) (rename-file file fname))
+       ((eq method 'cp) (copy-file file fname))
+       ((eq method 'ln) (add-name-to-file file fname))
+       ((eq method 'lns) (make-symbolic-link file fname t))
+       ((eq method 'url) (url-copy-file file fname)))
+      (when org-attach-commit
+        (org-attach-commit))
+      (org-attach-tag)
+      (cond ((eq org-attach-store-link-p 'attached)
+             (org-attach-store-link fname))
+            ((eq org-attach-store-link-p t)
+             (org-attach-store-link file)))
+      (if visit-dir
+          (dired attach-dir)
+        (message "File %S is now a task attachment." basename))))))
+;; extending the dnd functionality
+;; but doesn't actually work... 
+(defun mwp-org-file-link-dnd (uri action)
+    "When in `org-mode' and URI points to local file, 
+  add as attachment and also add a link. Otherwise, 
+  pass URI and Action back to dnd dispatch"
+    (let ((img-regexp "\\(png$\\|jp[e]?g$\\)")
+          (newuri (replace-regexp-in-string "file:///" "/" uri)))
+      (cond ((eq major-mode 'org-mode)
+             (message "Hi! newuri: %s " (file-relative-name newuri))
+             (cond ((string-match img-regexp newuri)
+                    (insert "#+ATTR_ORG: :width 300\n")
+                    (insert (concat  "#+CAPTION: " (read-input "Caption: ") "\n"))
+                    (insert (format "[[%s]]" uri))
+                    (org-display-inline-images t t))
+                   (t 
+                    (org-attach-new newuri)
+                    (insert (format "[[%s]]" uri))))
+             )
+            (t
+             (let ((dnd-protocol-alist
+                    (rassq-delete-all
+                     'mwp-org-file-link-dnd
+                     (copy-alist dnd-protocol-alist))))
+               (dnd-handle-one-url nil action uri)))
+            )))
 
-    ;; add a new function that DOESN'T open the attachment!
-  (defun org-attach-new-dont-open (file)
-      "Create a new attachment FILE for the current task.
-    The attachment is created as an Emacs buffer."
-      (interactive "sCreate attachment named: ")
-      (when (and org-attach-file-list-property (not org-attach-inherited))
-        (org-entry-add-to-multivalued-property
-         (point) org-attach-file-list-property file))
-      )
+  ;; add a new function that DOESN'T open the attachment!
+(defun org-attach-new-dont-open (file)
+    "Create a new attachment FILE for the current task.
+  The attachment is created as an Emacs buffer."
+    (interactive "sCreate attachment named: ")
+    (when (and org-attach-file-list-property (not org-attach-inherited))
+      (org-entry-add-to-multivalued-property
+       (point) org-attach-file-list-property file))
+    )
 
-  (defun mwp-org-file-link-enable ()
-      "Enable file drag and drop attachments."
-      (unless (eq (cdr (assoc "^\\(file\\)://" dnd-protocol-alist))
-                  'mwp-org-file-link-dnd)
-        (setq dnd-protocol-alist
-              `(("^\\(file\\)://" . mwp-org-file-link-dnd) ,@dnd-protocol-alist))))
-
-  (defun mwp-org-file-link-disable ()
+(defun mwp-org-file-link-enable ()
     "Enable file drag and drop attachments."
-    (if (eq (cdr (assoc "^\\(file\\)://" dnd-protocol-alist))
+    (unless (eq (cdr (assoc "^\\(file\\)://" dnd-protocol-alist))
                 'mwp-org-file-link-dnd)
-        (rassq-delete-all
-         'mwp-org-file-link-dnd
-         dnd-protocol-alist)
-    
-      ))
+      (setq dnd-protocol-alist
+            `(("^\\(file\\)://" . mwp-org-file-link-dnd) ,@dnd-protocol-alist))))
 
-  (mwp-org-file-link-enable)
+(defun mwp-org-file-link-disable ()
+  "Enable file drag and drop attachments."
+  (if (eq (cdr (assoc "^\\(file\\)://" dnd-protocol-alist))
+              'mwp-org-file-link-dnd)
+      (rassq-delete-all
+       'mwp-org-file-link-dnd
+       dnd-protocol-alist)
+
+    ))
+
+(mwp-org-file-link-enable)
 
 #+END_SRC
 
@@ -5597,7 +6303,7 @@ John Kitchin uses a custom link type, "attachfile", for a ocupleo f things, and 
 
 *NOTE:* This post has been modified as of <2015-11-22 Sun> -- the new code is a little cleaner, and I think the discussion a little fuller. 
 
-Almost all of my job-related reading is now done on a screen.  There are still disadvantages -- I find it much harder to concentrate when reading online -- but in other ways it is markedly more convenient.  
+Almost all of my job-elated reading is now done on a screen.  There are still disadvantages -- I find it much harder to concentrate when reading online -- but in other ways it is markedly more convenient.  
 
 In particular, it is now much easier to assemble quotations from sources; and now that I've found [[https://github.com/politza/pdf-tools][PDF Tools]], it has become even easier.  I've just  started to use it to extract annotations from my PDF's, and it works much better than the lousy command-line hack I was using previously.  
 
@@ -5924,32 +6630,8 @@ All of this works great for me, and simplifies things quite a bit.
 And then simply add an entry to ~elfeed-search-face-alist~. You can do this via ~Customize~, or follow [[https://github.com/skeeto/elfeed#custom-tag-faces][the instructions in the README]], which instruct you to ~(push '(starred elfeed-search-starred-title-face) elfeed-search-face-alist)~.  
 ** Grading todo
 I've moved this stuff into its own org file: 
-
-#+BEGIN_SRC emacs-lisp
-  (load-file "/home/matt/src/org-grading/org-grading.el")
-  (use-package org-grading
-    :load-path "/home/matt/src/org-grading"
-    :after (:any org org-plus-contrib)
-    :config
-  
-    (define-key org-mode-map (kbd "C-c C-'") 'org-grading-pass)
-    (define-key org-mode-map (kbd "C-c C-g a") 'org-grading-attach)
-    (define-key org-mode-map (kbd "C-c C-\"") 'org-grading-chit)
-    )
-(load-file "/home/matt/src/org-grading/org-lms.el")
-(use-package org-lms
-:load-path "/home/matt/src/org-grading"
-:pin manual
-;; :ensure t
-:after (any org org-plus-contrib)
-:commands (org-lms-setup org-lms-get-courseid)
-:config 
-;; nothing yet
-)
-  ;; (require 'org-tempo)
-#+END_SRC
-
 #+RESULTS:
+: t
 
 
 ** Grading Keybindings
@@ -5958,9 +6640,25 @@ I've moved this stuff into its own org file:
 :END:
 since I don't use the minor mode, adding keybindings here.  Should be added to org-mode using ~use-package~ but I don't understandi t well enough yet.
 #+begin_src emacs-lisp
+(use-package org-grading
+  :load-path "/home/matt/src/org-grading"
+  :after (:any org org-plus-contrib)
+  :config )
+
+(use-package org-lms
+  :load-path "/home/matt/src/org-grading"
+  :pin manual
+  ;; :ensure t
+  :after org
+  ;; :commands (org-lms-setup org-lms-get-courseid)
+  :config 
+  (setq org-lms-baseurl "https://q.utoronto.ca/api/v1/")
+  (setq org-lms-token (password-store-get "q.utoronto.ca")) )
+
+#+end_src
+-- leftover stuff: 
   (eval-after-load 'org
     '(define-key org-mode-map (kbd "M-o") 'o-g-open-attachment-or-repo))
-#+end_src
 
 #+RESULTS:
 : o-g-open-attachment-or-repo
@@ -5977,6 +6675,7 @@ since I don't use the minor mode, adding keybindings here.  Should be added to o
 #+RESULTS:
 : ((\.doc\' . /usr/bin/libreoffice %s) (\.docx\' . /usr/bin/libreoffice %s) (\.pdf::\([[:digit:]]+\)\' . org-pdfview-open) (\.pdf\' . org-pdfview-open) (auto-mode . emacs) (\.mm\' . default) (\.x?html?\' . firefox %s) (\.pdf\' . default) (\.odt\' . /usr/bin/libreoffice %s))
 
+** Allow org attach
 ** tables of contents
 this is useful for github:
 https://github.com/snosov1/toc-org
@@ -6046,6 +6745,202 @@ Stolen rom [[https://cestlaz.github.io/posts/using-emacs-26-gcal/][Mike Zamansky
 : t
 
 Now I have to also add a capture template 
+
+
+** Something weird: Splitting src blocks
+I don't know if this is a good idea but I often want to split the src bloc kand create a new heading.  So how aobu this:
+
+#+begin_src emacs-lisp
+  (defun org-meta-return (&optional arg)
+    "Insert a new heading or wrap a region in a table.
+  Calls `org-insert-heading', `org-insert-item' or
+  `org-table-wrap-region', depending on context.  When called with
+  an argument, unconditionally call `org-insert-heading'."
+    (interactive "P")
+    (org-check-before-invisible-edit 'insert)
+    (or (run-hook-with-args-until-success 'org-metareturn-hook)
+        (call-interactively (cond (arg #'org-insert-heading)
+                                  ((org-at-table-p) #'org-table-wrap-region)
+                                  ((org-in-item-p) #'org-insert-item)
+                                  ((org-in-src-block-p)
+                                   (lambda ()
+                                     (interactive)
+                                     (org-babel-demarcate-block)
+                                     (org-insert-heading)))
+                                  (t #'org-insert-heading)))))
+#+end_src
+
+#+RESULTS:
+: org-meta-return
+
+** Lightly modify org-edit-src-exit for my preferences
+
+I have switched to editing src blocks in the very same window when I activate with ~C-c i~, and if I change the window configuration when I am working, I don't want it to go back to what it was before I starte dworking ( I can do that manually thank you very much). 
+
+*note* this wil lbe obsolete if my recent patch is accepted, so I added a setq for my new variable which wil lbe just great. 
+#+begin_src emacs-lisp
+(use-package org 
+  :config
+  (setq org-src-restore-window-config nil)
+  (defun org-edit-src-exit ()
+    "Kill current sub-editing buffer and return to source buffer."
+    (interactive)
+    (unless (org-src-edit-buffer-p) (error "Not in a sub-editing buffer"))
+    (let* ((beg org-src--beg-marker)
+	   (end org-src--end-marker)
+	   (write-back org-src--allow-write-back)
+	   (remote org-src--remote)
+	   (coordinates (and (not remote)
+			     (org-src--coordinates (point) 1 (point-max))))
+	   (code (and write-back (org-src--contents-for-write-back))))
+      (set-buffer-modified-p nil)
+      ;; Switch to source buffer.  Kill sub-editing buffer.
+      (let ((edit-buffer (current-buffer))
+	    (source-buffer (marker-buffer beg)))
+        (unless source-buffer (error "Source buffer disappeared.  Aborting"))
+        (org-src-switch-to-buffer source-buffer 'exit)
+        (kill-buffer edit-buffer))
+      ;; Insert modified code.  Ensure it ends with a newline character.
+      (org-with-wide-buffer
+       (when (and write-back (not (equal (buffer-substring beg end) code)))
+         (undo-boundary)
+         (goto-char beg)
+         (delete-region beg end)
+         (let ((expecting-bol (bolp)))
+	   (insert code)
+	   (when (and expecting-bol (not (bolp))) (insert "\n")))))
+      ;; If we are to return to source buffer, put point at an
+      ;; appropriate location.  In particular, if block is hidden, move
+      ;; to the beginning of the block opening line.
+      (unless remote
+        (goto-char beg)
+        (cond
+         ;; Block is hidden; move at start of block.
+         ((cl-some (lambda (o) (eq (overlay-get o 'invisible) 'org-hide-block))
+		   (overlays-at (point)))
+	  (beginning-of-line 0))
+         (write-back (org-src--goto-coordinates coordinates beg end))))
+      ;; Clean up left-over markers and restore window configuration.
+      (set-marker beg nil)
+      (set-marker end nil)
+      (unless (eq 'current-window org-src-window-setup)
+        (when org-src--saved-temp-window-config
+          (set-window-configuration org-src--saved-temp-window-config)
+          (setq org-src--saved-temp-window-config nil)))))
+          (setq org-src-window-setup 'current-window))
+#+end_src
+
+#+RESULTS:
+: t
+
+** Local Vars, and endless/org-eob
+
+IfI do rewrite my timestamp-finding code, I will likely use a local variable to store a list of the erelvant file.  [[http://endlessparentheses.com/org-mode-subtrees-and-file-local-variables.html][this post from endless parenteheses has a nice touch for managing end of buffer with local variables. Modified very lightly b/c I call mine "Variables", not "Fotter"
+#+begin_src emacs-lisp
+(use-package org
+:config
+(defun endless/org-eob ()
+  "Move to end of content, then end of buffer."
+  (interactive)
+  (unless (use-region-p)
+    (push-mark))
+  (if (looking-at-p "\n\\* COMMENT Footer")
+      (goto-char (point-max))
+    (goto-char (point-min))
+    (if (search-forward "\n* COMMENT Footer"
+                        nil 'noerror)
+        (goto-char (match-beginning 0))
+      (goto-char (point-max)))))
+(define-key org-mode-map [remap end-of-buffer]
+  #'endless/org-eob))
+#+end_src
+
+
+** Deal with flycheck ckechdoc madness in org src buffers
+TThis has been driving me crazy - -giving [[https://emacs.stackexchange.com/questions/16766/how-to-turn-off-emacs-lisp-checkdoc-of-flycheck-when-edit-source-block-in-org][this solution form stackoverflow]] a go now:
+#+begin_src emacs-lisp
+(defun disable-flycheck-in-org-src-block ()
+  (setq-local flycheck-disabled-checkers '(emacs-lisp-checkdoc)))
+
+(add-hook 'org-src-mode-hook 'disable-flycheck-in-org-src-block)
+(remove-hook 'org-src-mode-hook 'disable-fylcheck-in-org-src-block)
+#+end_src
+
+#+RESULTS:
+| disable-flycheck-in-org-src-block | org-src-babel-configure-edit-buffer | org-src-mode-configure-edit-buffer |
+
+** Improved marking in org-table
+Stolen from [[https://www.reddit.com/r/emacs/comments/74ruu0/how_to_copy_the_contents_of_a_single_cell_in_org/][this excellent reddit post]] by Kaushal
+
+#+begin_src emacs-lisp
+(use-package org-table
+  :defer t
+  :config
+  (progn
+;;;; Table Field Marking
+    (defun org-table-mark-field ()
+      "Mark the current table field."
+      (interactive)
+      ;; Do not try to jump to the beginning of field if the point is already there
+      (when (not (looking-back "|[[:blank:]]?"))
+        (org-table-beginning-of-field 1))
+      (set-mark-command nil)
+      (org-table-end-of-field 1))
+
+    (defhydra hydra-org-table-mark-field
+      (:body-pre (org-table-mark-field)
+       :color red
+       :hint nil)
+      " ^^      ^up^     ^^
+   ^^      _p_     ^^
+left _b_  selection  _f_ right \rarr          | Org table mark field |
+   ^^      _n_     ^^
+   ^^      ^down^     ^^ "
+      ("x" exchange-point-and-mark "exchange point/mark")
+      ("f" (lambda (arg)
+             (interactive "p")
+             (when (eq 1 arg)
+               (setq arg 2))
+             (org-table-end-of-field arg)))
+      ("b" (lambda (arg)
+             (interactive "p")
+             (when (eq 1 arg)
+               (setq arg 2))
+             (org-table-beginning-of-field arg)))
+      ("n" next-line)
+      ("p" previous-line)
+      ("q" nil "cancel" :color blue))
+
+    (bind-keys
+     :map org-mode-map
+     :filter (org-at-table-p)
+     ("S-SPC" . hydra-org-table-mark-field/body))))
+#+end_src
+
+#+RESULTS:
+: t
+
+** creating shcreenshots of rendered html
+[[https://github.com/krisajenkins/ob-browser][ob-browser]] allows quick snapshots of rendered html. probably makes most sense with noweb-style linked blocks or something like that. I'm not so good at that stuff.
+
+See also [[https://www.reddit.com/r/emacs/comments/ac5dtn/announcing_obhtmlchrome/][reddit]] and the similar [[https://github.com/krisajenkins/ob-browser][ob-browser]]
+#+begin_src emacs-lisp
+(use-package ob-html-chrome
+  :ensure t)
+
+(use-package ob-browser
+  :ensure t)
+
+#+end_src
+
+
+#+begin_src browser :out ~/test.png
+<h1>hello</h1>
+<i>wow</i>
+#+end_src
+
+#+RESULTS:
+[[file:~/test.png]]
 
 * STARTED Scimax
 
@@ -6504,119 +7399,6 @@ I think it would be interesting to have hydras for some of my courses, e.g.:
     ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
     ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
 #+end_src
-* Web Development 
-
-** Skewewr mode
-Just trying to get it to work.  
-
-Disabling for now since it's a bit buggy maybe
-#+BEGIN_SRC emacs-lisp
-;;(skewer-setup)
-;;(use-package skewer-reload-stylesheets)
-;;(add-hook 'css-mode-hook 'skewer-reload-stylesheets-start-editing)
-#+END_SRC
-
-#+RESULTS:
-| skewer-reload-stylesheets-start-editing | skewer-css-mode | ac-css-mode-setup | er/add-css-mode-expansions |
-
-
-** Indium and exec path
-Trying to set up the INdium ide for Javascript dev. 
-
-Requires ~exec-path-from-shell~ in order to find the right node versions
-#+begin_src emacs-lisp
-  (use-package exec-path-from-shell
-:ensure t
-    :config
-    (when (memq window-system '(mac ns x))
-      (exec-path-from-shell-initialize)))
-
-  (use-package indium
-    :ensure t
-    :config
-    (indium-run-node))
-
-#+end_src
-
-** mocha
-ds
-trying to run tests inside 
-#+begin_src emacs-lisp
-(use-package mocha
-:ensure t
-)
-#+end_src
-** Impatient Mode
-Much better for live html previewing than skewer-mode, which is really for javascript.  Pretty simple to set it up: 
-
-#+BEGIN_SRC emacs-lisp
-  ;; (require 'impatient-mode)
-
-    (use-package impatient-mode
-      :commands impatient-mode
-      :hook
-      ((html-mode . impatient-mode)
-       (css-mode . impatient-mode)
-       (mhtml-mode . impatient-mode)
-       (js2-mode . impatient-mode)
-       (web-mode . impatient-mode)
-       )
-      :config
-      (setq imp-default-user-filters
-            '((html-mode . nil)
-              (web-mode . nil)
-              (mhtml-mode . nil)))
-      (httpd-start)
-      (browse-url "http://localhost:8888/imp/"))
-#+END_SRC
-
-#+RESULTS:
-| emmet-mode | impatient-mode |
-
-Then browse to the relevant buffer URL (which will be [[http://localhost:8080/imp/]] + file-name, and watch it live-update.  
-** Emmet mode & Yasnippet
-I've been having some trouble with emmet & yasnippet. I think parto f the reason is that something was resetting yas-snippet-dirs -- I don't know how that's happening  Trying this from [[http://emacs.stackexchange.com/questions/20716/conflict-between-emmet-mode-and-yasnippet-same-trigger-key][stackexchange]]:
-
-There i a whole lot of stuff to think abouth ere!!!
-#+BEGIN_SRC emacs-lisp
-    (use-package emmet-mode
-      :commands emmet-mode
-      :init
-      (add-hook 'css-mode-hook 'emmet-mode)
-      (add-hook 'sgml-mode-hook 'emmet-mode)
-      :config
-      (setq-default emmet-move-cursor-between-quote t)
-      (unbind-key "<C-return>" emmet-mode-keymap)
-
-      ;; (unbind-key "C-M-<left>" emmet-mode-keymap)
-      ;; (unbind-key "C-M-<right>" emmet-mode-keymap)
-      )
-
-  (use-package hippie-exp
-    :ensure nil
-    :defer t
-    :bind ("<C-return>" . hippie-expand)
-    :config
-    (setq-default hippie-expand-try-functions-list
-                  '(yas-hippie-try-expand emmet-expand-line)))
-  (use-package yasnippet
-    :defer t
-    :init
-    (add-hook 'js-mode-hook 'yas-minor-mode)
-    (add-hook 'sgml-mode-hook 'yas-minor-mode)
-    :config
-    (setq-default yas-snippet-dirs '("~/.emacs.d/snippets"))
-    (yas-reload-all)
-    (define-key yas-minor-mode-map (kbd "C-c y") #'yas-expand)
-
-    ;; (unbind-key "TAB" yas-minor-mode-map)
-    ;; (unbind-key "<tab>" yas-minor-mode-map)
-    )
-#+END_SRC
-
-#+RESULTS:
-: t
-
 * Projects
 I don't have a really good system for delaing with projects. There's projectile, and there's speedbar, both of which kind of helpful... but for now I'm going to just experiment with projectile. 
 
@@ -6624,6 +7406,32 @@ I don't have a really good system for delaing with projects. There's projectile,
 (projectile-global-mode)
 (helm-projectile-on)
 #+END_SRC
+* Non-org text modes
+** Improved markdown
+Markdown sucks bompared to org but needsto bsued constantly. Partial solutin: add someorg-like keybindings to make text movements easier:
+
+add "edit-indirect" for better sourc doe editing!
+
+cf docs: https://leanpub.com/markdown-mode/read
+
+#+begin_src emacs-lisp
+(define-minor-mode mwp-bindings-mode
+  "Some new bindings, at first justfor markdown mode."
+  :lighter "mwp"
+  :keymap(let ((map (make-sparse-keymap)))
+            (define-key map (kbd "<M-right>") 'markdown-demote)
+            (define-key map (kbd "<M-left>") 'markdown-promote)
+            (define-key map (kbd "<M-up>") 'markdown-move-up)
+            (define-key map (kbd "<M-down>") 'markdown-move-down)
+            map) )
+
+(add-hook 'markdown-mode 'mwp-bindings-mode)
+
+#+end_src
+
+#+RESULTS:
+| mwp-bindings |
+
 * Miscellaneous programming
 ** Get minor modes in the minibuffer
 This is stolen from http://emacsredux.com/blog/2016/03/02/pimp-my-minibuffer/
@@ -6666,7 +7474,7 @@ use github markdown instead of regular
 * Open current file with Sudo
 I very often want to reopen a current bufferin sudo. I stalling ~sudo-edit~ has done the trick for me.  
 
-* Unused
+* WON'T DO Unused 
 #+BEGIN_SRC emacs-lisp :tangle no
   ;; This is how Magnar manages his packages.  I'm not there yet.  soon I hope.  
   ;; Setup packages
@@ -7117,67 +7925,6 @@ OK mbork, [[http://mbork.pl/2016-02-20_Iedit_mode][I'm convinced]]. Giving this 
 #+END_SRC
 
 
-** magit and magithub
-
-First setup auth sources for magithub
-
-#+begin_src emacs-lisp
-(setq auth-sources '("~/.authinfo.gpg" "~/.authinfo" "~/.netrc"))
-#+end_src
-
-#+RESULTS:
-| ~/.authinfo.gpg | ~/.authinfo | ~/.netrc |
-
-
-trying to get this to work
-#+BEGIN_SRC emacs-lisp
-  (use-package magithub
-    :after magit
-    :ensure t
-    :config (magithub-feature-autoinject t))
-
-  (use-package magit
-    :commands magit-status
-    :bind
-    ("C-x g" . magit-status)
-    :config
-    (setq
-     magit-diff-use-overlays nil
-     magit-repolist-columns
-     '(("Name" 25 magit-repolist-column-ident nil)
-       ("Version" 25 magit-repolist-column-version nil)
-       ("L<U" 3 magit-repolist-column-unpulled-from-upstream
-        ((:right-align t)))
-       ("L>U" 3 magit-repolist-column-unpushed-to-upstream
-        ((:right-align t)))
-       ("D" 4 magit-repolist-column-dirty nil)
-       ("Path" 99 magit-repolist-column-path nil))
-     magit-repository-directories '(("~/src/" . 2)))
-    )
-
-
-  (use-package magit-gitflow
-    :after magit
-    :hook
-    (magit-mode . turn-on-magit-gitflow))
-  ;; (require 'magit-gitflow)
-  ;; (add-hook 'magit-mode-hook 'turn-on-magit-gitflow)
-#+END_SRC
-
-#+RESULTS:
-
-*** Magit forge
-#+begin_src emacs-lisp 
-(use-package forge
-:load-path "~/src/magit-forge/lisp"
-:after magit
-;; :ensure t
-:pin manual
-)
-#+end_src
-
-#+RESULTS:
-
 ** Dired-Ranger
 TThis cool introdution to dired-ranger is really helpful: http://pragmaticemacs.com/emacs/copy-and-paste-files-with-dired-ranger/
 #+BEGIN_SRC emacs-lisp
@@ -7241,7 +7988,7 @@ I think this is deeply messing w/ ocmpnay mode, os I'm turning completion off fo
     (add-hook 'markdown-mode-hook 'emojify-mode)
     (add-hook 'git-commit-mode-hook 'emojify-mode)
     )
-    
+
   ;; (use-package company-emoji
   ;;   :ensure t
   ;;   :preface
@@ -7318,6 +8065,98 @@ To quickly acces a shell from a file:
 #+END_SRC
 
 #+RESULTS:
+* magit and magithub
+** manually set ghub
+
+#+begin_src emacs-lisp
+(use-package ghub
+:load-path "~/src/ghub"
+:pin manual
+)
+#+end_src
+
+#+RESULTS:
+
+** Initial setup
+First setup auth sources for magithub
+
+#+begin_src emacs-lisp
+(setq auth-sources '("~/.authinfo.gpg" "~/.authinfo" "~/.netrc"))
+#+end_src
+
+#+RESULTS:
+| ~/.authinfo.gpg | ~/.authinfo | ~/.netrc |
+
+
+try to use dev version
+#+BEGIN_SRC emacs-lisp
+(with-eval-after-load 'package
+        
+
+        (unless nil
+          (dolist (magit-elpa-install-path (directory-files-recursively
+                                          package-user-dir
+                                          "\\`magit-[0-9.]+\\'"
+                                          :include-directories))
+            (setq load-path (delete magit-elpa-install-path load-path))
+            ;; Also ensure that the associated path is removed from Info
+            ;; search list.
+            ))
+
+        )
+#+END_SRC
+
+use magit, magithub
+#+BEGIN_SRC emacs-lisp
+  (use-package magithub
+    :after magit
+    :ensure t
+    :config (magithub-feature-autoinject t))
+
+  (use-package magit
+    :load-path "/home/matt/src/magit/lisp"
+    :pin manual
+    :commands magit-status
+    :bind
+    ("C-x g" . magit-status)
+    :config
+    (setq
+     magit-diff-use-overlays nil
+     magit-repolist-columns
+     '(("Name" 25 magit-repolist-column-ident nil)
+       ("Version" 25 magit-repolist-column-version nil)
+       ("L<U" 3 magit-repolist-column-unpulled-from-upstream
+        ((:right-align t)))
+       ("L>U" 3 magit-repolist-column-unpushed-to-upstream
+        ((:right-align t)))
+       ("D" 4 magit-repolist-column-dirty nil)
+       ("Path" 99 magit-repolist-column-path nil))
+     magit-repository-directories '(("~/src/" . 2)))
+    )
+
+
+  (use-package magit-gitflow
+    :after magit
+    :hook
+    (magit-mode . turn-on-magit-gitflow))
+  ;; (require 'magit-gitflow)
+  ;; (add-hook 'magit-mode-hook 'turn-on-magit-gitflow)
+#+END_SRC
+
+#+RESULTS:
+
+** Magit forge
+#+begin_src emacs-lisp 
+(use-package forge
+:load-path "~/src/magit-forge/lisp"
+:after magit
+;; :ensure t
+:pin manual
+)
+#+end_src
+
+#+RESULTS:
+
 * Old Customizations -- moving out of cusotmize
 
 #+begin_src emacs-lisp :tangle no
@@ -8225,11 +9064,50 @@ Also returns nil if pid is nil."
 (desktop-save-mode 1)
 (message "just before recover-session")
 (setq auto-save-list-file-prefix "~/.emacs.d/auto-save-list/.saves-")
-;;(recover-session)
+
+(defun recover-session ()
+  "Recover auto save files from a previous Emacs session.
+This command first displays a Dired buffer showing you the
+previous sessions that you could recover from.
+To choose one, move point to the proper line and then type C-c C-c.
+Then you'll be asked about a number of files to recover."
+  (interactive)
+  (if (null auto-save-list-file-prefix)
+      (error "You set `auto-save-list-file-prefix' to disable making session files"))
+  (let ((dir (file-name-directory auto-save-list-file-prefix))
+        (nd (file-name-nondirectory auto-save-list-file-prefix)))
+    (unless (file-directory-p dir)
+      (make-directory dir t))
+    (unless (directory-files dir nil
+                             (if (string= "" nd)
+                                 directory-files-no-dot-files-regexp
+                               (concat "\\`" (regexp-quote nd)))
+			     t)
+      (error "No previous sessions to recover")))
+  (let ((ls-lisp-support-shell-wildcards t))
+    (dired (file-name-directory  auto-save-list-file-prefix)
+	   (concat dired-listing-switches " -t")))
+  (use-local-map (nconc (make-sparse-keymap) (current-local-map)))
+  (define-key (current-local-map) "\C-c\C-c" 'recover-session-finish)
+  (save-excursion
+    (goto-char (point-min))
+    (or (looking-at " Move to the session you want to recover,")
+	(let ((inhibit-read-only t))
+	  ;; Each line starts with a space
+	  ;; so that Font Lock mode won't highlight the first character.
+	  (insert " To recover a session, move to it and type C-c C-c.\n"
+		  (substitute-command-keys
+		   " To delete a session file, type \
+\\[dired-flag-file-deletion] on its line to flag
+ the file for deletion, then \\[dired-do-flagged-delete] to \
+delete flagged files.\n\n"))))))
+
+(recover-session)
 ;; 
 #+END_SRC
 
 #+RESULTS:
+: recover-session
 
 
 * old value of 'after-init-hook
