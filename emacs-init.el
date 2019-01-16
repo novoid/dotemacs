@@ -719,43 +719,53 @@ region-end is used."
   ;; (setq company-tern-meta-as-single-line t)
   )
 
-(use-package lsp-ui
-:config
-(add-hook 'lsp-mode-hook 'lsp-ui-mode))
-
-(use-package  lsp-javascript-typescript
+(use-package lsp-mode
+  :commands lsp
   :config
-  (defun my-company-transformer (candidates)
-    (let ((completion-ignore-case t))
-      (all-completions (company-grab-symbol) candidates)))
+(require 'lsp-clients)
+(add-hook 'js2-mode-hook 'lsp)
+  )
 
-  (defun my-js-hook nil
-    (make-local-variable 'company-transformers)
-    (push 'my-company-transformer company-transformers))
+(use-package lsp-ui :commands lsp-ui-mode)
+(use-package company-lsp :commands company-lsp)
 
-  (add-hook 'js-mode-hook 'my-js-hook)
-  (add-hook 'js2-mode-hook #'lsp-javascript-typescript-enable)
-  (add-hook 'typescript-mode-hook #'lsp-javascript-typescript-enable) ;; for typescript support
-  (add-hook 'js3-mode-hook #'lsp-javascript-typescript-enable) ;; for js3-mode support
-  ;; (add-hook 'json-mode-hook #'lsp-javascript-typescript-disable) ;;this breaks json mode which is already so slow!!
-  (add-hook 'rjsx-mode #'lsp-javascript-typescript-enable)) ;; for rjsx-mode support
+;; (use-package  lsp-javascript-typescript
+;;   :config
+;;   (defun my-company-transformer (candidates)
+;;     (let ((completion-ignore-case t))
+;;       (all-completions (company-grab-symbol) candidates)))
+
+;;   (defun my-js-hook nil
+;;     (make-local-variable 'company-transformers)
+;;     (push 'my-company-transformer company-transformers))
+
+;;   (add-hook 'js-mode-hook 'my-js-hook)
+;;   (add-hook 'js2-mode-hook #'lsp-javascript-typescript-enable)
+;;   (add-hook 'typescript-mode-hook #'lsp-javascript-typescript-enable) ;; for typescript support
+;;   (add-hook 'js3-mode-hook #'lsp-javascript-typescript-enable) ;; for js3-mode support
+;;   ;; (add-hook 'json-mode-hook #'lsp-javascript-typescript-disable) ;;this breaks json mode which is already so slow!!
+;;   (add-hook 'rjsx-mode #'lsp-javascript-typescript-enable)) ;; for rjsx-mode support
 
 (use-package lsp-html
 :config
-(add-hook 'html-mode-hook #'lsp-html-enable))
+(add-hook 'html-mode-hook #'lsp))
 
-(use-package lsp-css
-  :config
-  (defun my-css-mode-setup ()
-    (when (eq major-mode 'css-mode)
-      ;; Only enable in strictly css-mode, not scss-mode (css-mode-hook
-      ;; fires for scss-mode because scss-mode is derived from css-mode)
-      (lsp-css-enable)))
-  ;; (add-hook 'css-mode-hook #'my-css-mode-setup)
+;; (use-package lsp-css
+;;   :config
+;;   (defun my-css-mode-setup ()
+;;     (when (eq major-mode 'css-mode)
+;;       ;; Only enable in strictly css-mode, not scss-mode (css-mode-hook
+;;       ;; fires for scss-mode because scss-mode is derived from css-mode)
+;;       (lsp-css-enable)))
+;;   ;; (add-hook 'css-mode-hook #'my-css-mode-setup)
   ;; (add-hook 'less-mode-hook #'lsp-less-enable)
   ;; (add-hook 'sass-mode-hook #'lsp-scss-enable)
   ;; (add-hook 'scss-mode-hook #'lsp-scss-enable)
-  )
+;;  )
+
+(add-hook 'less-mode-hook #'lsp)
+(add-hook 'sass-mode-hook #'lsp)
+(add-hook 'scss-mode-hook #'lsp)
 
 (setq-default bidi-display-reordering nil)
 (use-package so-long
@@ -1031,12 +1041,12 @@ region-end is used."
                                scheme-mode
                                eval-expression-minibuffer-setup))
           (enable-paredit-mode)
-        (smartparens-strict-mode)))
+        (smartparens-mode)))
 
     (add-hook 'prog-mode-hook #'paredit-or-smartparens)
     (add-hook 'text-mode-hook #'electric-pair-local-mode
    )
-(add-hook 'org-mode-hook #'smartparens-mode)
+;; (add-hook 'org-mode-hook #'smartparens-mode)
 
   (use-package elec-pair
     :config
@@ -3912,6 +3922,25 @@ left _b_  selection  _f_ right \rarr          | Org table mark field |
 (use-package ob-browser
   :ensure t)
 
+(defun org-html--format-image (source attributes info)
+  "Return \"img\" tag with given SOURCE and ATTRIBUTES.
+SOURCE is a string specifying the location of the image.
+ATTRIBUTES is a plist, as returned by
+`org-export-read-attribute'.  INFO is a plist used as
+a communication channel."
+  ;; (org-html--svg-image source attributes info)
+  (org-html-close-tag
+   "img"
+   (org-html--make-attribute-string
+    (org-combine-plists
+     (list :src source
+	   :alt (if (string-match-p "^ltxpng/" source)
+		    (org-html-encode-plain-text
+		     (org-find-text-property-in-string 'org-latex-src source))
+		  (file-name-nondirectory source)))
+     attributes))
+   info))
+
 (use-package scimax-utils
   :load-path "~/src/scimax"
   :pin manual
@@ -4501,15 +4530,15 @@ Wildwater actions
 
 (use-package ghub
 :load-path "~/src/ghub"
-:pin manual
-)
+:ensure t
+:pin manual)
 
 (setq auth-sources '("~/.authinfo.gpg" "~/.authinfo" "~/.netrc"))
 
 (with-eval-after-load 'package
         
 
-        (unless nil
+        (unless t
           (dolist (magit-elpa-install-path (directory-files-recursively
                                           package-user-dir
                                           "\\`magit-[0-9.]+\\'"
@@ -4530,6 +4559,7 @@ Wildwater actions
   :load-path "/home/matt/src/magit/lisp"
   :pin manual
   :commands magit-status
+  :ensure t
   :bind
   ("C-x g" . magit-status)
   :config
@@ -4544,7 +4574,8 @@ Wildwater actions
       ((:right-align t)))
      ("D" 4 magit-repolist-column-dirty nil)
      ("Path" 99 magit-repolist-column-path nil))
-   magit-repository-directories '(("~/src/" . 2)))
+   magit-repository-directories '(("~/src/" . 2))
+   git-commit-major-mode 'markdown-mode)
   )
 
 
