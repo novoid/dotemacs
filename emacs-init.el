@@ -4531,7 +4531,8 @@ Wildwater actions
 (use-package ghub
 :load-path "~/src/ghub"
 :ensure t
-:pin manual)
+;; :pin manual
+)
 
 (setq auth-sources '("~/.authinfo.gpg" "~/.authinfo" "~/.netrc"))
 
@@ -4557,7 +4558,7 @@ Wildwater actions
 
 (use-package magit
   :load-path "/home/matt/src/magit/lisp"
-  :pin manual
+  ;;:pin manual
   :commands magit-status
   :ensure t
   :bind
@@ -4590,7 +4591,7 @@ Wildwater actions
 :load-path "~/src/magit-forge/lisp"
 :after magit
 ;; :ensure t
-:pin manual
+;;:pin manual
 )
 
 ;; (defun enab-theme (theme) 

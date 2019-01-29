@@ -1701,6 +1701,7 @@ Many advanced features I do not understand, in particular "peeking" which seems 
   :commands lsp
   :config
 (require 'lsp-clients)
+(setq lsp-auto-guess-root t)
 (add-hook 'js2-mode-hook 'lsp)
   )
 
@@ -1711,7 +1712,7 @@ Many advanced features I do not understand, in particular "peeking" which seems 
 
 #+RESULTS:
 
-Javascript 
+
 #+begin_src emacs-lisp
 ;; (use-package  lsp-javascript-typescript
 ;;   :config
@@ -2343,6 +2344,7 @@ A few notes about smartparens, which I havne't used much of yet:
        ;; (use-package helm-firefox
        ;; :config 
        ;; (setq helm-firefox-default-directory "~/.mozilla/firefox/14pyoh5l.dev-edition-default/"))
+(setq debug-on-quit nil)
 #+end_src
 * Help Systems
 ** Docstrings for functions, variables, keybindings, etc. 
@@ -5924,7 +5926,10 @@ this is a mess and a lot should be dropped.
                    ("dired" (mode . dired-mode))
                    ("java" (mode . java-mode))
                    ("org" (mode . org-mode))
-                   ("elisp" (mode . elisp-mode))
+                   ("JS" (or (mode . js2-mode) (mode . json-mode)))
+                   ("web" (or (mode . web-mode) (mode . html-mode) (mode . css-mode)))
+                   ("mu4e" (name . "\*mu4e\*"))
+                   ("elisp" (mode . emacs-lisp-mode))
                    ("xml" (mode . nxml-mode))))))    
 
     (setq ibuffer-show-empty-filter-groups nil)
@@ -5932,6 +5937,7 @@ this is a mess and a lot should be dropped.
     (add-hook 'ibuffer-mode-hook 
               (lambda () 
                 (ibuffer-switch-to-saved-filter-groups "default")
+                (ibuffer-auto-mode 1)
                 (ibuffer-filter-by-filename ".")))) ;; to show only dired and files buffers
 
 
@@ -6008,6 +6014,10 @@ this is a mess and a lot should be dropped.
      ))
 
 #+END_SRC
+
+#+RESULTS:
+: mwp-org-insert-link
+
 ** WAITING Mailing subtrees with Attachments                        :review:
 :PROPERTIES:
 :ID:       o2b:f2904bd7-c966-4c5a-91c6-6cad0b0f22ef
@@ -7219,7 +7229,7 @@ I'm going to try to start with replacing the default dispatcher with something e
       ("t" hydra-ox-text/body "Export to Plain Text" :exit t)
       ("q" nil "quit"))
 
-    (define-key org-mode-map (kbd "C-c C-,") 'hydra-ox/body)
+      (define-key org-mode-map (kbd "C-c C-,") 'hydra-ox/body)
 
     (provide 'hydra-ox)
 
@@ -7396,50 +7406,92 @@ I think it would be interesting to have hydras for some of my courses, e.g.:
   - etc
 
 #+begin_src emacs-lisp
-  (defhydra hydra-ww (:color blue :columns 3)
-    "
-  Wildwater actions
-  ================
+(defhydra hydra-ww (:color blue :columns 3)
   "
-    ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
-    ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
-    ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
+Wildwater actions
+================
+"
+  ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
+  ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
+  ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
 
 
-  (defhydra hydra-dh (:color blue :columns 3)
-    "
-  Wildwater actions
-  ================
+(defhydra hydra-dh (:color blue :columns 2)
   "
-    ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
-    ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
-    ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
+Digital History Grading actions
+================
+"
+  ("f" (dh-find-files) "Open Files")
+  ("v" (dh-view) "Browse files")
+  ("i" (dh-prep) "Install (prep) repo")
+  ("p" (dh-visit-pr) "Browse PR")
+  ("s" (dh-status) "Open in Magit"))
 
-  (defhydra hydra-hh (:color blue :columns 3)
-    "
-  Wildwater actions
-  ================
+(defhydra hydra-hh (:color blue :columns 3)
   "
-    ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
-    ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
-    ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
+Wildwater actions
+================
+"
+  ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
+  ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
+  ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
 
-  (defhydra hydra-modernity (:color blue :columns 3)
-    "
-  Wildwater actions
-  ================
+(defhydra hydra-modernity (:color blue :columns 3)
   "
-    ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
-    ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
-    ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
+Modernity actions
+================
+"
+  ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
+  ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
+  ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
+
+(define-key org-mode-map (kbd "C-c D") 'hydra-dh/body)
 #+end_src
+
+#+RESULTS:
+: hydra-dh/body
+
 * Projects
 I don't have a really good system for delaing with projects. There's projectile, and there's speedbar, both of which kind of helpful... but for now I'm going to just experiment with projectile. 
 
 #+BEGIN_SRC emacs-lisp
-(projectile-global-mode)
+
+(use-package projectile 
+:after hydra
+:config 
+(projectile-global-mode +1)
 (helm-projectile-on)
+(setq projectile-indexing-method 'alien)
+(projectile-register-project-type 'npm '("package.json")
+                  :compile "npm install"
+                  :test "npm test"
+                  :run "npm start"
+                  :test-suffix ".spec")
+(define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
+(define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+(defhydra hydra-projectile (:color teal
+			    :columns 4)
+  "Projectile"
+  ("f"   projectile-find-file                "Find File")
+  ("r"   projectile-recentf                  "Recent Files")
+  ("z"   projectile-cache-current-file       "Cache Current File")
+  ("x"   projectile-remove-known-project     "Remove Known Project")
+  
+  ("d"   projectile-find-dir                 "Find Directory")
+  ("b"   projectile-switch-to-buffer         "Switch to Buffer")
+  ("c"   projectile-invalidate-cache         "Clear Cache")
+  ("X"   projectile-cleanup-known-projects   "Cleanup Known Projects")
+  
+  ("o"   projectile-multi-occur              "Multi Occur")
+  ("s"   projectile-switch-project           "Switch Project")
+  ("k"   projectile-kill-buffers             "Kill Buffers")
+  ("q"   nil "Cancel" :color blue))
+)
 #+END_SRC
+
+#+RESULTS:
+: t
+
 * Non-org text modes
 ** Improved markdown
 Markdown sucks bompared to org but needsto bsued constantly. Partial solutin: add someorg-like keybindings to make text movements easier:
@@ -8104,9 +8156,10 @@ To quickly acces a shell from a file:
 
 #+begin_src emacs-lisp
 (use-package ghub
-:load-path "~/src/ghub"
+;; :load-path "~/src/ghub"
 :ensure t
-;; :pin manual)
+;; :pin manual
+)
 #+end_src
 
 #+RESULTS:
@@ -8148,7 +8201,7 @@ use magit, magithub
     :config (magithub-feature-autoinject t))
 
   (use-package magit
-    :load-path "/home/matt/src/magit/lisp"
+    ;;:load-path "/home/matt/src/magit/lisp"
     ;;:pin manual
     :commands magit-status
     :ensure t
@@ -8185,7 +8238,7 @@ use magit, magithub
 ** Magit forge
 #+begin_src emacs-lisp 
 (use-package forge
-:load-path "~/src/magit-forge/lisp"
+;; :load-path "~/src/magit-forge/lisp"
 :after magit
 ;; :ensure t
 ;;:pin manual
@@ -8193,6 +8246,8 @@ use magit, magithub
 #+end_src
 
 #+RESULTS:
+
+
 
 * Old Customizations -- moving out of cusotmize
 
