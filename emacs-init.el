@@ -4533,7 +4533,7 @@ Wildwater actions
   (shell-pop--set-shell-type 'shell-pop-shell-type shell-pop-shell-type))
 
 (use-package ghub
-:load-path "~/src/ghub"
+;; :load-path "~/src/ghub"
 :ensure t
 ;; :pin manual
 )
@@ -4561,7 +4561,7 @@ Wildwater actions
   :config (magithub-feature-autoinject t))
 
 (use-package magit
-  :load-path "/home/matt/src/magit/lisp"
+  ;;:load-path "/home/matt/src/magit/lisp"
   ;;:pin manual
   :commands magit-status
   :ensure t
@@ -4592,7 +4592,7 @@ Wildwater actions
 ;; (add-hook 'magit-mode-hook 'turn-on-magit-gitflow)
 
 (use-package forge
-:load-path "~/src/magit-forge/lisp"
+;; :load-path "~/src/magit-forge/lisp"
 :after magit
 ;; :ensure t
 ;;:pin manual
