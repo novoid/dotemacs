@@ -3235,6 +3235,7 @@ nil
   (add-hook 'ibuffer-mode-hook 
             (lambda () 
               (ibuffer-switch-to-saved-filter-groups "default")
+              (ibuffer-auto-mode 1)
               (ibuffer-filter-by-filename ".")))) ;; to show only dired and files buffers
 
 
