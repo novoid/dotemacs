@@ -4527,7 +4527,7 @@ I'll just quickly describe my setup here in case anyone else finds it useful
 
 **** Huveal
 I have this silly little exporter that exports files as reveal to the hugo directory.  Get it this way. But ignore it for now while debugging org-mime!
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp 
 (use-package ox-huveal 
   :load-path "~/src/huveal"
   :after (:all org-mode ox-hugo ox-reveal)
