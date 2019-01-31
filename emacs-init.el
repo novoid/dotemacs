@@ -4161,7 +4161,7 @@ a communication channel."
     ("t" hydra-ox-text/body "Export to Plain Text" :exit t)
     ("q" nil "quit"))
 
-  (define-key org-mode-map (kbd "C-c C-,") 'hydra-ox/body)
+    (define-key org-mode-map (kbd "C-c C-,") 'hydra-ox/body)
 
   (provide 'hydra-ox)
 
@@ -4298,14 +4298,16 @@ Wildwater actions
   ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
 
 
-(defhydra hydra-dh (:color blue :columns 3)
+(defhydra hydra-dh (:color blue :columns 2)
   "
-Wildwater actions
+Digital History Grading actions
 ================
 "
-  ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
-  ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
-  ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
+  ("f" (dh-find-files) "Open Files")
+  ("v" (dh-view) "Browse files")
+  ("i" (dh-prep) "Install (prep) repo")
+  ("p" (dh-visit-pr) "Browse PR")
+  ("s" (dh-status) "Open in Magit"))
 
 (defhydra hydra-hh (:color blue :columns 3)
   "
@@ -4318,15 +4320,46 @@ Wildwater actions
 
 (defhydra hydra-modernity (:color blue :columns 3)
   "
-Wildwater actions
+Modernity actions
 ================
 "
   ("s" (find-file "~/Wildwater/ww1-syllabus.org") "Syllabus")
   ("g" (find-file "~/Wildwater/Grades/Comments.org") "Grades")
   ("n" (find-file "~/Wildwater/Slides-and-notes.org") "Notes"))
 
-(projectile-global-mode)
+(define-key org-mode-map (kbd "C-c D") 'hydra-dh/body)
+
+(use-package projectile 
+:after hydra
+:config 
+(projectile-global-mode +1)
 (helm-projectile-on)
+(setq projectile-indexing-method 'alien)
+(projectile-register-project-type 'npm '("package.json")
+                  :compile "npm install"
+                  :test "npm test"
+                  :run "npm start"
+                  :test-suffix ".spec")
+(define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
+(define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+(defhydra hydra-projectile (:color teal
+			    :columns 4)
+  "Projectile"
+  ("f"   projectile-find-file                "Find File")
+  ("r"   projectile-recentf                  "Recent Files")
+  ("z"   projectile-cache-current-file       "Cache Current File")
+  ("x"   projectile-remove-known-project     "Remove Known Project")
+  
+  ("d"   projectile-find-dir                 "Find Directory")
+  ("b"   projectile-switch-to-buffer         "Switch to Buffer")
+  ("c"   projectile-invalidate-cache         "Clear Cache")
+  ("X"   projectile-cleanup-known-projects   "Cleanup Known Projects")
+  
+  ("o"   projectile-multi-occur              "Multi Occur")
+  ("s"   projectile-switch-project           "Switch Project")
+  ("k"   projectile-kill-buffers             "Kill Buffers")
+  ("q"   nil "Cancel" :color blue))
+)
 
 (define-minor-mode mwp-bindings-mode
   "Some new bindings, at first justfor markdown mode."
