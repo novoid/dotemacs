@@ -1863,7 +1863,27 @@ trying to run tests inside of emacs. We'l lsee how it goes!
 #+begin_src emacs-lisp
 (use-package mocha
 :ensure t
+
 )
+
+(define-minor-mode mocha-mode
+  "Tiny mode to add keybindings for running mocha"
+  :group mocha-mode
+  :global nil
+  :lighter mocha
+  ;; :after-hook () ;; add hook to turn on debugging function, see mocha docs
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "C-c m") 'mocha-test)
+            (define-key map (kbd "C-c f") 'mocha-test)
+            (define-key map (kbd "C-c C-m") 'mocha-test)
+            map))
+
+(define-key mocha-mode-map (kbd "C-c m") 'mocha-test-at-point)
+(define-key mocha-mode-map (kbd "C-M-x") 'mocha-test-at-point)
+(define-key mocha-mode-map (kbd "C-c C-m") 'mocha-test-at-point)
+
+
+mocha-mode-map
 #+end_src
 
 #+RESULTS:
@@ -8195,41 +8215,41 @@ try to use dev version
 
 use magit, magithub
 #+BEGIN_SRC emacs-lisp
-  (use-package magithub
-    :after magit
-    :ensure t
-    :config (magithub-feature-autoinject t))
+(use-package magithub
+  :after magit
+  :ensure t
+  :config (magithub-feature-autoinject t))
 
-  (use-package magit
-    ;;:load-path "/home/matt/src/magit/lisp"
-    ;;:pin manual
-    :commands magit-status
-    :ensure t
-    :bind
-    ("C-x g" . magit-status)
-    :config
-    (setq
-     magit-diff-use-overlays nil
-     magit-repolist-columns
-     '(("Name" 25 magit-repolist-column-ident nil)
-       ("Version" 25 magit-repolist-column-version nil)
-       ("L<U" 3 magit-repolist-column-unpulled-from-upstream
-        ((:right-align t)))
-       ("L>U" 3 magit-repolist-column-unpushed-to-upstream
-        ((:right-align t)))
-       ("D" 4 magit-repolist-column-dirty nil)
-       ("Path" 99 magit-repolist-column-path nil))
-     magit-repository-directories '(("~/src/" . 2))
-     git-commit-major-mode 'markdown-mode)
-    )
+(use-package magit
+  ;;:load-path "/home/matt/src/magit/lisp"
+  ;;:pin manual
+  :commands magit-status
+  :ensure t
+  :bind
+  ("C-x g" . magit-status)
+  :config
+  (setq
+   magit-diff-use-overlays nil
+   magit-repolist-columns
+   '(("Name" 25 magit-repolist-column-ident nil)
+     ("Version" 25 magit-repolist-column-version nil)
+     ("L<U" 3 magit-repolist-column-unpulled-from-upstream
+      ((:right-align t)))
+     ("L>U" 3 magit-repolist-column-unpushed-to-upstream
+      ((:right-align t)))
+     ("D" 4 magit-repolist-column-dirty nil)
+     ("Path" 99 magit-repolist-column-path nil))
+   magit-repository-directories '(("~/src/" . 2))
+   git-commit-major-mode 'markdown-mode)
+  )
 
 
-  (use-package magit-gitflow
-    :after magit
-    :hook
-    (magit-mode . turn-on-magit-gitflow))
-  ;; (require 'magit-gitflow)
-  ;; (add-hook 'magit-mode-hook 'turn-on-magit-gitflow)
+(use-package magit-gitflow
+  :after magit
+  :hook
+  (magit-mode . turn-on-magit-gitflow))
+;; (require 'magit-gitflow)
+;; (add-hook 'magit-mode-hook 'turn-on-magit-gitflow)
 #+END_SRC
 
 #+RESULTS:
