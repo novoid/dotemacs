@@ -723,6 +723,7 @@ region-end is used."
   :commands lsp
   :config
 (require 'lsp-clients)
+(setq lsp-auto-guess-root t)
 (add-hook 'js2-mode-hook 'lsp)
   )
 
@@ -3223,7 +3224,10 @@ nil
                  ("dired" (mode . dired-mode))
                  ("java" (mode . java-mode))
                  ("org" (mode . org-mode))
-                 ("elisp" (mode . elisp-mode))
+                 ("JS" (or (mode . js2-mode) (mode . json-mode)))
+                 ("web" (or (mode . web-mode) (mode . html-mode) (mode . css-mode)))
+                 ("mu4e" (name . "\*mu4e\*"))
+                 ("elisp" (mode . emacs-lisp-mode))
                  ("xml" (mode . nxml-mode))))))    
 
   (setq ibuffer-show-empty-filter-groups nil)
