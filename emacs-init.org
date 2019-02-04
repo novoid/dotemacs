@@ -6127,6 +6127,8 @@ using jkitchin's fork of org-mime really helps, moving to that.
 
 *** Actually perform the export!
 
+ *NOTE <2019-02-04 Mon>:* These look pretty out of date now; may be time to revisit!
+
 These functions are crude helpers that gather extra information about the org subtree, of which org-mime is unaware.  
 
 - ~mwp-org-get-parent-headline~ traverses the tree to the ancestor headline, because that's what I want to set the subject to.
