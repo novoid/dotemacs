@@ -8227,7 +8227,8 @@ use magit, magithub
 (use-package magithub
   :after magit
   :ensure t
-  :config (magithub-feature-autoinject t))
+  :config (magithub-feature-autoinject
+           '(completion status-checks-header commit-browse pull-request-merge)))
 
 (use-package magit
   ;;:load-path "/home/matt/src/magit/lisp"
