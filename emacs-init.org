@@ -2288,20 +2288,28 @@ A few notes about smartparens, which I havne't used much of yet:
 
 
 #+BEGIN_SRC emacs-lisp
-    (defun paredit-or-smartparens ()
-      "Enable either paredit or smartparens strict mode."
-      (if (member major-mode '(emacs-lisp-mode
-                               lisp-interaction-mode
-                               lisp-mode
-                               scheme-mode
-                               eval-expression-minibuffer-setup))
-          (enable-paredit-mode)
-        (smartparens-mode)))
+  (defun paredit-or-smartparens ()
+    "Enable either paredit or smartparens strict mode."
+    (if (member major-mode '(emacs-lisp-mode
+                             lisp-interaction-mode
+                             lisp-mode
+                             scheme-mode
+                             eval-expression-minibuffer-setup))
+        (enable-paredit-mode)
+      (smartparens-mode)))
 
-    (add-hook 'prog-mode-hook #'paredit-or-smartparens)
-    (add-hook 'text-mode-hook #'electric-pair-local-mode
-   )
-;; (add-hook 'org-mode-hook #'smartparens-mode)
+  (add-hook 'prog-mode-hook #'paredit-or-smartparens)
+  (add-hook 'text-mode-hook #'electric-pair-local-mode
+ )
+ ;;(add-hook 'org-mode-hook #'smartparens-mode)
+
+(use-package elec-pair
+  :config
+  (defun mwp-org-mode-electric-inhibit (c)
+    (and
+     (or (eq ?\< c) (eq ?\[ c ))
+     (eq major-mode 'org-mode)))
+  (advice-add electric-pair-inhibit-predicate :before-until #'mwp-org-mode-electric-inhibit))
 
   (use-package elec-pair
     :config
