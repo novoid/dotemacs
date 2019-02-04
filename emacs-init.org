@@ -7452,9 +7452,12 @@ Digital History Grading actions
 "
   ("f" (dh-find-files) "Open Files")
   ("v" (dh-view) "Browse files")
+  ("d" (quick-diff) "get diff fast")
   ("i" (dh-prep) "Install (prep) repo")
   ("p" (dh-visit-pr) "Browse PR")
-  ("s" (dh-status) "Open in Magit"))
+  
+  ("s" (dh-status) "Open in Magit")
+  ("t" (dh-tests) "Run Tests"))
 
 (defhydra hydra-hh (:color blue :columns 3)
   "
