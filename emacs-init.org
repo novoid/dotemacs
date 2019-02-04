@@ -2250,6 +2250,11 @@ old easy templates have been replaced by org-tempo, and then after *that* they w
 ** Paredit, smartparens, and other things                        :converted:
 I've bene using paredit for some time; it is a great start at helping you to think more lisp-y when you're workingin a lisp-like language. There are many other modes that try to do similar things, including [[https://github.com/shaunlebron/parinfer][parinfer]] (experimental, amazing), [[https://github.com/abo-abo/lispy][lispy]] (vim-inspired, uses single keys to pbind paredit-like functions, looks amazing but also probably has a bit of a learning curve), [[https://github.com/Fuco1/smartparens/wiki/Paredit-and-smartparens][smartparens]] (I use this in non-lisp modes instead, again looks like a bit of a learning curve and some changes in behaviour from paredit).
 
+<2019-02-04 Mon>
+I'd like to switch to lispy, but putting that on hold.
+
+Having trouble in org-mode with smartparens.  Trying a fix from [[https://www.mail-archive.com/emacs-orgmode@gnu.org/msg121129.html][here]].  
+
 *** Paredit
 For now I have paredit here, which I use in all lisp-like modes. So far so good. 
 
@@ -2311,40 +2316,36 @@ A few notes about smartparens, which I havne't used much of yet:
      (eq major-mode 'org-mode)))
   (advice-add electric-pair-inhibit-predicate :before-until #'mwp-org-mode-electric-inhibit))
 
-  (use-package elec-pair
+
+
+
+  ;;(remove-hook 'org-mode-hook (lambda () (electric-pair-local-mode -1)))
+  (use-package smartparens
+    :bind
+    (:map smartparens-mode-map
+    ("M-s" . nil)
+    ("M-s s" . sp-splice-sexp))
+
     :config
-    (defun mwp-org-mode-electric-inhibit (c)
-      (and
-       (or (eq ?\< c) (eq ?\[ c ))
-       (eq major-mode 'org-mode)))
-    (advice-add electric-pair-inhibit-predicate :before-until #'mwp-org-mode-electric-inhibit))
+    (require 'smartparens-config)
+    (require 'smartparens-javascript)
+    (require 'smartparens-org)
+    (sp-use-paredit-bindings)
+    ;; I don't quite understand this one
+    ;; (sp-local-pair 'org-mode "[" nil :actions nil)
+    (sp-local-pair 'org-mode "[" "]" :actions '(wrap autoskip navigate))
+    (with-no-warnings
+      (defun sp-paredit-like-close-round ()
+        "If the next character is a closing character as according to smartparens skip it, otherwise insert `last-input-event'"
+        (interactive)
+        (let ((pt (point)))
+          (if (and (< pt (point-max))
+                   (sp--char-is-part-of-closing (buffer-substring-no-properties pt (1+ pt))))
+              (forward-char 1)
+            (call-interactively #'self-insert-command))))
+      (define-key smartparens-mode-map (kbd ")") #'sp-paredit-like-close-round)))
 
 
-
-
-    ;;(remove-hook 'org-mode-hook (lambda () (electric-pair-local-mode -1)))
-    (use-package smartparens
-      :bind
-      (:map smartparens-mode-map
-      ("M-s" . nil)
-      ("M-s s" . sp-splice-sexp))
-
-      :config
-      (require 'smartparens-config)
-      (require 'smartparens-javascript)
-      (require 'smartparens-org)
-      (sp-use-paredit-bindings)
-      ;; I don't quite understand this one
-      (with-no-warnings
-        (defun sp-paredit-like-close-round ()
-          "If the next character is a closing character as according to smartparens skip it, otherwise insert `last-input-event'"
-          (interactive)
-          (let ((pt (point)))
-            (if (and (< pt (point-max))
-                     (sp--char-is-part-of-closing (buffer-substring-no-properties pt (1+ pt))))
-                (forward-char 1)
-              (call-interactively #'self-insert-command))))
-        (define-key smartparens-mode-map (kbd ")") #'sp-paredit-like-close-round)))
 
 #+END_SRC
 
