@@ -801,7 +801,27 @@ region-end is used."
 
 (use-package mocha
 :ensure t
+
 )
+
+(define-minor-mode mocha-mode
+  "Tiny mode to add keybindings for running mocha"
+  :group mocha-mode
+  :global nil
+  :lighter mocha
+  ;; :after-hook () ;; add hook to turn on debugging function, see mocha docs
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "C-c m") 'mocha-test)
+            (define-key map (kbd "C-c f") 'mocha-test)
+            (define-key map (kbd "C-c C-m") 'mocha-test)
+            map))
+
+(define-key mocha-mode-map (kbd "C-c m") 'mocha-test-at-point)
+(define-key mocha-mode-map (kbd "C-M-x") 'mocha-test-at-point)
+(define-key mocha-mode-map (kbd "C-c C-m") 'mocha-test-at-point)
+
+
+mocha-mode-map
 
 (use-package impatient-mode
       :commands impatient-mode
@@ -2357,6 +2377,13 @@ Return output file's name."
 (use-package ox-hugo
   :load-path "~/src/kaushal-ox-hugo/"
   :after (:any org org-plus-contrib))
+
+(use-package ox-huveal 
+  :load-path "~/src/huveal"
+  :after (:all org-mode ox-hugo ox-reveal)
+  :config
+  (add-to-list 'org-export-backends 'huveal)
+  )
 
 (add-to-list 'load-path "~/src/kaushal-ox-hugo/")
   (use-package ox-hugo-auto-export
