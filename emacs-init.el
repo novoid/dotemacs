@@ -665,6 +665,7 @@ region-end is used."
 
 
 ;; modern replacement for flymake
+
 ;; flycheck is dependent on external tools. Not set up properly yet
 ;; http://www.flycheck.org/manual/latest/Quickstart.html#Quickstart
 ;; This really needs its own lesson, it's fantastic!
@@ -685,6 +686,9 @@ region-end is used."
             #'(lambda ()
                 (define-key js2-mode-map "\C-ci" 'js-doc-insert-function-doc)
                 (define-key js2-mode-map "@" 'js-doc-insert-tag)))
+                (add-hook 'js2-mode-hook #'(lambda ()(flymake-mode -1
+
+                )))
   (define-key js2-mode-map (kbd "C-RET") 'js2-line-break)
   (setq js-doc-mail-address "matt.price@utoronto.ca")
   (setq  js-doc-author (format "Matt Price <%s>" js-doc-mail-address))
@@ -1067,54 +1071,58 @@ mocha-mode-map
     ("M-s s" . paredit-splice-sexp)))
 
 (defun paredit-or-smartparens ()
-      "Enable either paredit or smartparens strict mode."
-      (if (member major-mode '(emacs-lisp-mode
-                               lisp-interaction-mode
-                               lisp-mode
-                               scheme-mode
-                               eval-expression-minibuffer-setup))
-          (enable-paredit-mode)
-        (smartparens-mode)))
+    "Enable either paredit or smartparens strict mode."
+    (if (member major-mode '(emacs-lisp-mode
+                             lisp-interaction-mode
+                             lisp-mode
+                             scheme-mode
+                             eval-expression-minibuffer-setup))
+        (enable-paredit-mode)
+      (smartparens-mode)))
 
-    (add-hook 'prog-mode-hook #'paredit-or-smartparens)
-    (add-hook 'text-mode-hook #'electric-pair-local-mode
-   )
-;; (add-hook 'org-mode-hook #'smartparens-mode)
+  (add-hook 'prog-mode-hook #'paredit-or-smartparens)
+  ;; (add-hook 'text-mode-hook #'electric-pair-local-mode
+ )
+ ;;(add-hook 'org-mode-hook #'smartparens-mode)
 
-  (use-package elec-pair
+(use-package elec-pair
+  :config
+  (defun mwp-org-mode-electric-inhibit (c)
+    (and
+     (or (eq ?\< c) (eq ?\[ c ))
+     (eq major-mode 'org-mode)))
+  (advice-add electric-pair-inhibit-predicate :before-until #'mwp-org-mode-electric-inhibit))
+
+
+
+
+  ;;(remove-hook 'org-mode-hook (lambda () (electric-pair-local-mode -1)))
+  (use-package smartparens
+    :bind
+    (:map smartparens-mode-map
+    ("M-s" . nil)
+    ("M-s s" . sp-splice-sexp))
+
     :config
-    (defun mwp-org-mode-electric-inhibit (c)
-      (and
-       (or (eq ?\< c) (eq ?\[ c ))
-       (eq major-mode 'org-mode)))
-    (advice-add electric-pair-inhibit-predicate :before-until #'mwp-org-mode-electric-inhibit))
+    (require 'smartparens-config)
+    (require 'smartparens-javascript)
+    (require 'smartparens-org)
+    (sp-use-paredit-bindings)
+    ;; I don't quite understand this one
+    ;; (sp-local-pair 'org-mode "[" nil :actions nil)
+    (sp-local-pair 'org-mode "[" "]" :actions '(wrap autoskip navigate))
+    (with-no-warnings
+      (defun sp-paredit-like-close-round ()
+        "If the next character is a closing character as according to smartparens skip it, otherwise insert `last-input-event'"
+        (interactive)
+        (let ((pt (point)))
+          (if (and (< pt (point-max))
+                   (sp--char-is-part-of-closing (buffer-substring-no-properties pt (1+ pt))))
+              (forward-char 1)
+            (call-interactively #'self-insert-command))))
+      (define-key smartparens-mode-map (kbd ")") #'sp-paredit-like-close-round)))
 
 
-
-
-    ;;(remove-hook 'org-mode-hook (lambda () (electric-pair-local-mode -1)))
-    (use-package smartparens
-      :bind
-      (:map smartparens-mode-map
-      ("M-s" . nil)
-      ("M-s s" . sp-splice-sexp))
-
-      :config
-      (require 'smartparens-config)
-      (require 'smartparens-javascript)
-      (require 'smartparens-org)
-      (sp-use-paredit-bindings)
-      ;; I don't quite understand this one
-      (with-no-warnings
-        (defun sp-paredit-like-close-round ()
-          "If the next character is a closing character as according to smartparens skip it, otherwise insert `last-input-event'"
-          (interactive)
-          (let ((pt (point)))
-            (if (and (< pt (point-max))
-                     (sp--char-is-part-of-closing (buffer-substring-no-properties pt (1+ pt))))
-                (forward-char 1)
-              (call-interactively #'self-insert-command))))
-        (define-key smartparens-mode-map (kbd ")") #'sp-paredit-like-close-round)))
 
 ;; trying helpful for now, in the hopes of dropping counsel altogether, since I use helm more. 
 
@@ -1256,6 +1264,7 @@ if its size is 1 line"
      ("=" "=" nil org-mode)
      ("_" "_" nil org-mode)
      ("$" "$" nil (org-mode latex-mode))))
+  ;;(wrap-region-remove-wrapper "[" 'org-mode)
   (add-hook 'org-mode-hook 'wrap-region-mode)
   (add-hook 'latex-mode-hook 'wrap-region-mode))
 
@@ -1406,61 +1415,63 @@ Version 2016-01-08"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; some stuff form magnars,
-;; https://github.com/magnars/.emacs.d/blob/master/key-bindings.el
-;; this should be moved to own file keybindings.el
+  ;; some stuff form magnars,
+  ;; https://github.com/magnars/.emacs.d/blob/master/key-bindings.el
+  ;; this should be moved to own file keybindings.el
 
-;; this is old, and some of this gets written over later in the process.
-;; (use-package misc)
-;; (global-set-key (kbd "s-.") 'copy-from-above-command)
+  ;; this is old, and some of this gets written over later in the process.
+  ;; (use-package misc)
+  ;; (global-set-key (kbd "s-.") 'copy-from-above-command)
 
-;; find function!  a must
-(global-set-key (kbd "C-h C-f") 'find-function)
-;; M-i for back-to-indentation; may not be necessary anymore and I don't use it
-;; (global-set-key (kbd "M-i") 'back-to-indentation)
+  ;; find function!  a must
+  (global-set-key (kbd "C-h C-f") 'find-function)
+  ;; M-i for back-to-indentation; may not be necessary anymore and I don't use it
+  ;; (global-set-key (kbd "M-i") 'back-to-indentation)
 
-;; Turn on the menu bar for exploring new modes ;; this is cool
-(global-set-key (kbd "C-<f10>") 'menu-bar-mode)
+  ;; Turn on the menu bar for exploring new modes ;; this is cool
+  (global-set-key (kbd "C-<f10>") 'menu-bar-mode)
 
-;; transposing -- these are neat
-;; Transpose stuff with M-t
-(global-unset-key (kbd "M-t")) ;; which used to be transpose-words
-(global-set-key (kbd "M-t l") 'transpose-lines)
-(global-set-key (kbd "M-t w") 'transpose-words)
-(global-set-key (kbd "M-t s") 'transpose-sexps)
-(global-set-key (kbd "M-t p") 'transpose-params)
+  ;; transposing -- these are neat
+  ;; Transpose stuff with M-t
+  (global-unset-key (kbd "M-t")) ;; which used to be transpose-words
+  (global-set-key (kbd "M-t l") 'transpose-lines)
+  (global-set-key (kbd "M-t w") 'transpose-words)
+  (global-set-key (kbd "M-t s") 'transpose-sexps)
+  (global-set-key (kbd "M-t p") 'transpose-params)
 
-;; Killing text -- I don't use this, commenting out
-;; (global-set-key (kbd "C-S-k") 'kill-and-retry-line)
-;; (global-set-key (kbd "C-w") 'kill-region-or-backward-word)
-;; (global-set-key (kbd "C-c C-w") 'kill-to-beginning-of-line)
+  ;; Killing text -- I don't use this, commenting out
+  ;; (global-set-key (kbd "C-S-k") 'kill-and-retry-line)
+  ;; (global-set-key (kbd "C-w") 'kill-region-or-backward-word)
+  ;; (global-set-key (kbd "C-c C-w") 'kill-to-beginning-of-line)
 
-;; Use M-w for copy-line if no active region
-(global-set-key (kbd "M-w") 'save-region-or-current-line)
-;; (global-set-key (kbd "s-w") 'save-region-or-current-line)
-(global-set-key (kbd "M-W") (lambda (save-region-or-current-line 1)))
+  ;; Use M-w for copy-line if no active region
+  (global-set-key (kbd "M-w") 'save-region-or-current-line)
+  ;; (global-set-key (kbd "s-w") 'save-region-or-current-line)
+  (global-set-key (kbd "M-W") (lambda (save-region-or-current-line 1)))
 
-;; Make shell more convenient, and suspend-frame less
-(global-set-key (kbd "C-z") 'shell)
-(global-set-key (kbd "C-x M-z") 'suspend-frame)
+  ;; Make shell more convenient, and suspend-frame less
+  (global-set-key (kbd "C-z") 'shell)
 
-;; Zap to char -- npt usoing right now so commenting out
-;; (global-set-key (kbd "M-z") 'zap-up-to-char)
-;; (global-set-key (kbd "s-z") (lambda (char) (interactive "cZap up to char backwards: ") (zap-up-to-char -1 char)))
+  (global-set-key (kbd "C-x M-z") 'suspend-frame)
 
-;; (global-set-key (kbd "M-Z") (lambda (char) (interactive "cZap to char: ") (zap-to-char 1 char)))
-;; (global-set-key (kbd "s-Z") (lambda (char) (interactive "cZap to char backwards: ") (zap-to-char -1 char)))
+  ;; Zap to char -- npt usoing right now so commenting out
+  ;; (global-set-key (kbd "M-z") 'zap-up-to-char)
+  ;; (global-set-key (kbd "s-z") (lambda (char) (interactive "cZap up to char backwards: ") (zap-up-to-char -1 char)))
 
-;; Jump to a definition in the current file. (This is awesome)
-;; I'm using this keybinding for spell correcton though. Need to set to something else.
+  ;; (global-set-key (kbd "M-Z") (lambda (char) (interactive "cZap to char: ") (zap-to-char 1 char)))
+  ;; (global-set-key (kbd "s-Z") (lambda (char) (interactive "cZap to char backwards: ") (zap-to-char -1 char)))
 
-;; we don't use ido ever!
-;; (global-set-key (kbd "C-x C-h") 'ido-imenu)
+  ;; Jump to a definition in the current file. (This is awesome)
+  ;; I'm using this keybinding for spell correcton though. Need to set to something else.
 
-;; Perform general cleanup.
-(global-set-key (kbd "C-c n") 'cleanup-buffer)
-(global-set-key (kbd "C-c C-n") 'cleanup-buffer)
-(global-set-key (kbd "C-c C-<return>") 'delete-blank-lines)
+  ;; we don't use ido ever!
+  ;; (global-set-key (kbd "C-x C-h") 'ido-imenu)
+
+  ;; Perform general cleanup.
+  (global-set-key (kbd "C-c n") 'cleanup-buffer)
+  (global-set-key (kbd "C-c C-n") 'cleanup-buffer)
+(global-unset-key (kbd "C-c C-n") ) ;; I do not ever use this stuff!!
+  (global-set-key (kbd "C-c C-<return>") 'delete-blank-lines)
 
 ;; add ful lpath of current buffer to kill ring
 (defun mwp-get-buf-path ()
@@ -1922,6 +1933,7 @@ Single Capitals as you type."
             ("gh" "Home" tags-todo "home/+ACTION")
             ("gr" "Errands" tags-todo "errand/+ACTION")
             ("E" "EDGI Tasks" tags "edgi")
+            ("f" "Failing Students" tags "+GRADE=0")
             ("G" "GTD Block Agenda"
              ((tags-todo "phone/+ACTION")
               (tags-todo "office/+ACTION")
@@ -2220,11 +2232,97 @@ Single Capitals as you type."
   :after ox
   :load-path "~/src/org-reveal"
   :defer 12
-  :config
-  (setq org-reveal-root "file:///home/matt/src/reveal.js"))
+  ;;:config
+  :custom
+ (org-reveal-center nil)
+ (org-reveal-external-plugins '((klipse . "{src: '%splugin/klipse_reveal.js'}")))
+ (org-reveal-extra-css "file:///home/matt/src/org-reveal/local.css")
+ (org-reveal-history t)
+ (org-reveal-klipse-css
+  "https://sandbox.hackinghistory.ca/vendor/klipse/codemirror.css")
+ (org-reveal-klipse-js
+  "https://sandbox.hackinghistory.ca/vendor/klipse/klipse_plugin.min.js")
+ (org-reveal-klipsify-src t)
+ (org-reveal-margin "0.1")
+ (org-reveal-mathjax t)
+ (org-reveal-max-scale "1")
+ (org-reveal-plugins '(classList markdown highlight zoom notes))
+ (org-reveal-postamble nil)
+ ;; (org-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js")
+ (org-reveal-root "file:///home/matt/src/reveal.js")
+ (org-reveal-theme "matt")
+ (org-reveal-title-slide-template
+   "<h1>%t</h1>
+<h2>%a</h2>
+<h2>%d</h2>
+<p class=\"title-theme-choice\">(view this presentation in another theme: 
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/black.css')); return false;\">Black (default)</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/white.css')); return false;\">White</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/league.css')); return false;\">League</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/sky.css')); return false;\">Sky</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/beige.css')); return false;\">Beige</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/simple.css')); return false;\">Simple</a> 
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/serif.css')); return false;\">Serif</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/blood.css')); return false;\">Blood</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/night.css')); return false;\">Night</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/moon.css')); return false;\">Moon</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/solarized.css')); return false;\">Solarized</a>
+				)	</p>
+")
+ (org-reveal-width "100%")
+ (org-reveal-height "100%")
+
+  )
 ;; (add-to-list 'load-path "~/src/org-reveal")
 ;; (require 'ox-reveal)
 ;; set local root
+
+(use-package org-re-reveal
+  :after ox
+  ;;:load-path "~/src/org-re-reveal"
+  :defer 12
+  ;;:config
+  :custom
+ (org-re-reveal-center nil)
+ (org-re-reveal-external-plugins '((klipse . "{src: '%splugin/klipse_reveal.js'}")))
+ (org-re-reveal-extra-css "file:///home/matt/src/org-reveal/local.css")
+ (org-re-reveal-history t)
+ (org-re-reveal-klipse-css
+  "https://sandbox.hackinghistory.ca/vendor/klipse/codemirror.css")
+ (org-re-reveal-klipse-js
+  "https://sandbox.hackinghistory.ca/vendor/klipse/klipse_plugin.min.js")
+ (org-re-reveal-klipsify-src t)
+ (org-re-reveal-margin "0.1")
+ (org-re-reveal-mathjax t)
+ (org-re-reveal-min-scale "1")
+ (org-re-reveal-max-scale "1")
+ (org-re-reveal-plugins '(classList markdown highlight zoom notes))
+ (org-re-reveal-postamble nil)
+ ;; (org-re-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js")
+ (org-re-reveal-root "file:///home/matt/src/reveal.js")
+ (org-re-reveal-theme "matt")
+ (org-re-reveal-title-slide-template
+   "<h1>%t</h1>
+<h2>%a</h2>
+<h2>%d</h2>
+<p class=\"title-theme-choice\">(view this presentation in another theme: 
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/black.css')); return false;\">Black (default)</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/white.css')); return false;\">White</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/league.css')); return false;\">League</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/sky.css')); return false;\">Sky</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/beige.css')); return false;\">Beige</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/simple.css')); return false;\">Simple</a> 
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/serif.css')); return false;\">Serif</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/blood.css')); return false;\">Blood</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/night.css')); return false;\">Night</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/moon.css')); return false;\">Moon</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/solarized.css')); return false;\">Solarized</a>
+				)	</p>
+")
+ (org-re-reveal-width "100%")
+ (org-re-reveal-height "100%")
+
+  )
 
 (defun mwp-org-reveal-publish-to-html (plist filename pub-dir)
   "Publish an org file to reveal.js HTML Presentation.
@@ -2388,14 +2486,10 @@ Return output file's name."
 ;; (add-to-list 'load-path "~/src/kaushal-ox-hugo/")
 (use-package ox-hugo
   :load-path "~/src/kaushal-ox-hugo/"
-  :after (:any org org-plus-contrib))
-
-(use-package ox-huveal 
-  :load-path "~/src/huveal"
-  :after (:all org-mode ox-hugo ox-reveal)
+  :after (:any org org-plus-contrib)
   :config
-  (add-to-list 'org-export-backends 'huveal)
-  )
+  (use-package ox-huveal
+  :load-path "~/src/ox-huveal" ))
 
 (add-to-list 'load-path "~/src/kaushal-ox-hugo/")
   (use-package ox-hugo-auto-export
@@ -2545,12 +2639,10 @@ Return output file's name."
        (dot . t)
        (python . t)
        (js . t) 
-       (emacs-lisp . t)   
-     ))
+       (emacs-lisp . t)
+     )))
 
-  (use-package flymake-php
-    :hook 
-    (php-mode . flymake-php-load))
+
   ;; (require 'flymake-php)
   ;; (add-hook 'php-mode-hook 'flymake-php-load)
 
@@ -3219,7 +3311,7 @@ see http://swish-e.org/docs/swish-search.html
   (interactive)
   (let* ((org-export-with-toc nil)
          (org-export-with-smart-quotes nil))
-    (kill-new (org-export-as fmt nil nil t))
+    (kill-new (org-export-as fmt t nil t)) ;; first t limits to subtree, second makes it body-only
     )
   )
 
@@ -3359,7 +3451,15 @@ nil
   (add-hook 'org-mime-html-hook
             (lambda ()
               (org-mime-change-element-style
-               "blockquote" "margin: 0 0 0 .8ex; border-left: 1px solid #ccc; padding-left: 1ex;")))
+               "blockquote" "margin: 0 0 0 .8ex; border-left: 1px solid #ccc; padding-left: 1ex;")
+              (org-mime-change-element-style
+               "pre" (format "color: %s; background-color: %s; border-radius: 5px; font-size: 1.3em; padding: 1.5em;"
+                             "#E6E1DC" "black")) 
+              (org-mime-change-element-style
+               "code" (format "border: 1px solid black; border-radius: 10px; font-size: 1.2em; font-family: monospace;  background-color: hotpink; padding: 0.5em;"
+                              ))))
+
+
   (setq org-mime-library 'mu4e)
   (setq org-mime-debug t)
   ;; setup org-mime for wanderlust
@@ -3985,6 +4085,13 @@ a communication channel."
      attributes))
    info))
 
+(use-package ob-http
+  :ensure t
+  :config
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '(     (http . t))))
+
 (use-package scimax-utils
   :load-path "~/src/scimax"
   :pin manual
@@ -4345,9 +4452,13 @@ Digital History Grading actions
 "
   ("f" (dh-find-files) "Open Files")
   ("v" (dh-view) "Browse files")
+  ("d" (quick-diff) "get diff fast")
   ("i" (dh-prep) "Install (prep) repo")
   ("p" (dh-visit-pr) "Browse PR")
-  ("s" (dh-status) "Open in Magit"))
+  ("u" (dh-pull-repo) "Update (pull) repo")
+  
+  ("s" (dh-status) "Open in Magit")
+  ("t" (dh-tests) "Run Tests"))
 
 (defhydra hydra-hh (:color blue :columns 3)
   "
@@ -4631,7 +4742,10 @@ Modernity actions
 (use-package magithub
   :after magit
   :ensure t
-  :config (magithub-feature-autoinject t))
+  ;; :config
+  ;; (magithub-feature-autoinject
+          ;;  '(completion status-checks-header commit-browse pull-request-merge))
+  )
 
 (use-package magit
   ;;:load-path "/home/matt/src/magit/lisp"
@@ -4713,6 +4827,8 @@ Modernity actions
   (setq mu4e-drafts-folder "/Drafts")
   (setq mu4e-trash-folder  "/Trash")
   (setq mu4e-refile-folder  "/Archives")
+  (setq mu4e-use-fancy-chars t)
+  (setq mu4e-compose-format-flowed t)
   ;; smtp mail setting; these are the same that `gnus' uses. I don't
   ;; realy need these anymore as I ave switched to nullmailer, but
   ;; useful to keep around in case my setup changes in future
@@ -4835,7 +4951,9 @@ Modernity actions
   ;; If you get your mail without an explicit command,
   ;; use "true" for the command (this is the default)
   (setq mu4e-get-mail-command "offlineimap")
-
+  ;; (setq mu4e-get-mail-command "/usr/local/bin/mbsync -aq")
+  ;; (setq mu4e-change-filenames-when-moving t) 
+  ;; (setq mu4e-update-interval 300)
   ;; smtp mail setting
   ;; I don't think this is being used by nullmailer at all, so probably irrelefant for me.
   ;; (setq
@@ -5093,6 +5211,15 @@ Modernity actions
     "open up the password safe!"
   (interactive)
   (find-file "~/GTD/Keep-it-safe.org.gpg"))
+
+(global-set-key (kbd "C-z") 'shell)
+(defun mwp-exit-shell ()
+(interactive)
+  (comint-delchar-or-maybe-eof 0)
+  (sit-for 1)
+  (jcs-kill-a-buffer nil))
+(define-key shell-mode-map (kbd "C-d") 'mwp-exit-shell)
+(define-key shell-mode-map (kbd "C-x k") 'mwp-exit-shell)
 
 ;; Keep emacs Custom-settings in separate file
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
