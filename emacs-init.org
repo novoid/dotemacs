@@ -223,7 +223,7 @@ These are magnar's "better defaults" -- which I am mostly going to try to get ri
 #+RESULTS:
 : t
 
-* A number of Misscellaneous packages
+* A number of Miscellaneous packages
 ** iMenu
 
 THisi s mostly a buffer listing but I think there are lots of other aspects to it.  
@@ -1578,6 +1578,7 @@ My html setup is FUUUCCKED so I should revisit this when I can.
 
 
     ;; modern replacement for flymake
+
     ;; flycheck is dependent on external tools. Not set up properly yet
     ;; http://www.flycheck.org/manual/latest/Quickstart.html#Quickstart
     ;; This really needs its own lesson, it's fantastic!
@@ -1633,6 +1634,9 @@ looks like eslint_d-fix wil loverride the js2 settings which is kinda nice.
               #'(lambda ()
                   (define-key js2-mode-map "\C-ci" 'js-doc-insert-function-doc)
                   (define-key js2-mode-map "@" 'js-doc-insert-tag)))
+                  (add-hook 'js2-mode-hook #'(lambda ()(flymake-mode -1
+              
+                  )))
     (define-key js2-mode-map (kbd "C-RET") 'js2-line-break)
     (setq js-doc-mail-address "matt.price@utoronto.ca")
     (setq  js-doc-author (format "Matt Price <%s>" js-doc-mail-address))
@@ -1686,7 +1690,9 @@ Some experimental code for javascript langserver, as described here: https://git
 : t
 
 
-*** LSP
+*** ACTION LSP 
+*TODO: <2019-02-13 Wed>* LSP-mode is really slow, try out eglot instead, figure out company-lsp etc. 
+
 only for JS right now but should probably set up for HTML and CSS at least.  
 
 
@@ -1702,11 +1708,13 @@ Many advanced features I do not understand, in particular "peeking" which seems 
   :config
 (require 'lsp-clients)
 (setq lsp-auto-guess-root t)
-(add-hook 'js2-mode-hook 'lsp)
+;; (add-hook 'js2-mode-hook 'lsp) // to oslow in js, hoping to swtich to eglot soon
   )
 
 (use-package lsp-ui :commands lsp-ui-mode)
-(use-package company-lsp :commands company-lsp)
+(use-package company-lsp :commands company-lsp
+:config
+(push 'company-lsp company-backends))
 
 #+end_src
 
@@ -1801,24 +1809,26 @@ THere are lots of discussions of this:
 - [[https://old.reddit.com/r/emacs/comments/9qtpak/what_would_it_take_to_make_emacs_perform_well_on/][reddit flamage]]
 - 
 #+begin_src emacs-lisp
-  (setq-default bidi-display-reordering nil)
-  (use-package so-long
-    ;; no config or anything yet, still getting used to this
-    :load-path "~/src/solong"
-    :pin manual)
-  (use-package bln-mode
-    :after hydra
-    :hook
-    (so-long-mode . bln-mode)
-    :config
-    (defhydra hydra-bln ()      "Binary line navigation mode"
-      ("j" bln-backward-half "Backward in line")
-      ("k" bln-forward-half "Forward in line")
-      ("u" bln-backward-half-v "Backward in window")
-      ("i" bln-forward-half-v "Forward in window")
-      ("h" bln-backward-half-b "Backward in buffer")
-      ("l" bln-forward-half-b "Forward in buffer"))
-    (define-key bln-mode-map (kbd "M-j") 'hydra-bln/body))
+(setq-default bidi-display-reordering nil)
+(use-package so-long
+  ;; no config or anything yet, still getting used to this
+  :load-path "~/src/solong"
+  :pin manual)
+(use-package bln-mode
+  :after hydra
+  :hook
+  (so-long-mode . bln-mode)
+  :config
+  (defhydra hydra-bln ()      "Binary line navigation mode"
+    ("j" bln-backward-half "Backward in line")
+    ("k" bln-forward-half "Forward in line")
+    ("u" bln-backward-half-v "Backward in window")
+    ("i" bln-forward-half-v "Forward in window")
+    ("h" bln-backward-half-b "Backward in buffer")
+    ("l" bln-forward-half-b "Forward in buffer"))
+  (define-key bln-mode-map (kbd "M-j") 'hydra-bln/body))
+
+
 #+end_src
 
 #+RESULTS:
@@ -1852,6 +1862,23 @@ Indium requires ~exec-path-from-shell~ in order to find the right node versions.
     ;;(indium-launch-node)
 (add-hook 'js-mode-hook #'indium-interaction-mode))
 
+#+end_src
+
+#+RESULTS:
+: t
+
+*** Nodejs-repl
+Indium only sort of works for me and don't have time to explore it fully.  nodejs-repl is very straightforward.  using thissetup today <2019-02-04 Mon> but may revert to indium.  not tnagling this stuff yet.
+#+begin_src emacs-lisp
+(use-package nodejs-repl
+:config
+(add-hook 'js-mode-hook
+          (lambda ()
+          (define-key js-mode-map (kbd "C-x C-e") 'nodejs-repl-send-last-expression)
+            (define-key js-mode-map (kbd "C-c C-j") 'nodejs-repl-send-line)
+            (define-key js-mode-map (kbd "C-c C-r") 'nodejs-repl-send-region)
+            (define-key js-mode-map (kbd "C-c C-l") 'nodejs-repl-load-file)
+            (define-key js-mode-map (kbd "C-c C-z") 'nodejs-repl-switch-to-repl))))
 #+end_src
 
 #+RESULTS:
@@ -2304,7 +2331,7 @@ A few notes about smartparens, which I havne't used much of yet:
       (smartparens-mode)))
 
   (add-hook 'prog-mode-hook #'paredit-or-smartparens)
-  (add-hook 'text-mode-hook #'electric-pair-local-mode
+  ;; (add-hook 'text-mode-hook #'electric-pair-local-mode
  )
  ;;(add-hook 'org-mode-hook #'smartparens-mode)
 
@@ -2351,6 +2378,54 @@ A few notes about smartparens, which I havne't used much of yet:
 
 #+RESULTS:
 : sp-splice-sexp
+#+begin_src emacs-lisp
+
+#+end_src
+
+Trying out skeleton mode for org: 
+<2019-02-04 Mon> I'm not so happy with this, removing. 
+#+begin_src emacs-lisp :tangle no
+(require 'skeleton)
+(setq skeleton-pair t)
+
+(define-key org-mode-map (kbd "~") 'skeleton-pair-insert-maybe)
+(define-key org-mode-map (kbd "=") 'skeleton-pair-insert-maybe)
+(define-key org-mode-map (kbd "*") 'skeleton-pair-insert-maybe)
+(define-key org-mode-map (kbd "+") 'skeleton-pair-insert-maybe)
+
+;;(define-key org-mode-map (kbd "[") 'skeleton-pair-insert-maybe) ;; don't use this one!!
+(define-key org-mode-map (kbd "[") 'org-self-insert-command) ;; don't use this one!!
+(define-key org-mode-map (kbd "{") 'skeleton-pair-insert-maybe)
+(define-key org-mode-map (kbd "(") 'skeleton-pair-insert-maybe)
+(define-key org-mode-map (kbd "\"") 'skeleton-pair-insert-maybe)
+;; (define-key org-mode-map (kbd "'") 'skeleton-pair-insert-maybe)
+(define-key org-mode-map (kbd "'") 'org-self-insert-command)
+
+
+(define-key org-mode-map (kbd "~") 'org-self-insert-command)
+(define-key org-mode-map (kbd "=") 'org-self-insert-command)
+(define-key org-mode-map (kbd "*") 'org-self-insert-command)
+(define-key org-mode-map (kbd "+") 'org-self-insert-command)
+
+;;(define-key org-mode-map (kbd "[") 'skeleton-pair-insert-maybe) ;; don't use this one!!
+(define-key org-mode-map (kbd "[") 'org-self-insert-command) ;; don't use this one!!
+(define-key org-mode-map (kbd "{") 'org-self-insert-command)
+(define-key org-mode-map (kbd "(") 'org-self-insert-command)
+(define-key org-mode-map (kbd "\"") 'org-self-insert-command)
+;; (define-key org-mode-map (kbd "'") 'org-self-insert-command)
+(define-key org-mode-map (kbd "'") 'org-self-insert-command)
+
+
+(defun mwp-remove-pairing () 
+(electric-pair-local-mode -1 )
+
+
+;; (add-hook 'org-mode-hook 'mwp-remove-pairing)
+(remove-hook 'org-mode-hook 'mwp-remove-pairing)
+#+end_src
+
+#+RESULTS:
+| mwp-dont-insert-unicode-emoji | toc-org-enable | (lambda nil (local-set-key \357 'mwp-send-subtree-with-attachments)) | #[0 \300\301\302\303\304$\207 [add-hook before-save-hook org-encrypt-entries nil t] 5] | #[0 \305\306	>\203 \307 |
 
 * Helm stuff
 #+begin_src emacs-lisp
@@ -2556,6 +2631,8 @@ Anyway there is one annoying featuere in loccur which is that even though I have
 #+END_SRC
 * User Experience
 ** Wrap-region
+
+*NOTE <2019-02-04 Mon>*: this should actually be superseded by smartparens -- when I have time i should fix.  
 this is supposed to make it possible to wrap regions...
 #+BEGIN_SRC emacs-lisp
 ;; wrap-region
@@ -2569,10 +2646,11 @@ this is supposed to make it possible to wrap regions...
      ("=" "=" nil org-mode)
      ("_" "_" nil org-mode)
      ("$" "$" nil (org-mode latex-mode))))
+  ;;(wrap-region-remove-wrapper "[" 'org-mode)
   (add-hook 'org-mode-hook 'wrap-region-mode)
   (add-hook 'latex-mode-hook 'wrap-region-mode))
 #+END_SRC
-
+[
 ** Scrolling
 this helps with scrolling, which IIRC doesn't work so great in vanilla emacs. 
 #+BEGIN_SRC emacs-lisp
@@ -2915,6 +2993,7 @@ This is very inspiring though I've commented a lot of it out.  Trying to reduce 
 
   ;; Make shell more convenient, and suspend-frame less
   (global-set-key (kbd "C-z") 'shell)
+
   (global-set-key (kbd "C-x M-z") 'suspend-frame)
 
   ;; Zap to char -- npt usoing right now so commenting out
@@ -2933,9 +3012,13 @@ This is very inspiring though I've commented a lot of it out.  Trying to reduce 
   ;; Perform general cleanup.
   (global-set-key (kbd "C-c n") 'cleanup-buffer)
   (global-set-key (kbd "C-c C-n") 'cleanup-buffer)
+(global-unset-key (kbd "C-c C-n") ) ;; I do not ever use this stuff!!
   (global-set-key (kbd "C-c C-<return>") 'delete-blank-lines)
 
 #+END_SRC
+
+#+RESULTS:
+: delete-blank-lines
 
 ** More UI and Misc
 - turn on visual-line-mode 
@@ -3323,260 +3406,263 @@ A couple of things to note here:
 - uses Kaushal's org-version-select, from I think, ~setup-org.el~ in his init.el repo
 - sets a large number of variables
 
+*EDITED <2019-04-05 Fri>:* Add a custom org agenda to search current buffer only for *failing* marks - -this is for use in org-learning
+
 #+BEGIN_SRC emacs-lisp
-    (defvar modi/org-version-select 'dev
-      "Variable to choose the version of Org to be loaded.
-        Valid values are `dev', `elpa' and `emacs'.
+  (defvar modi/org-version-select 'dev
+    "Variable to choose the version of Org to be loaded.
+      Valid values are `dev', `elpa' and `emacs'.
 
-        When set to `dev', the development version of Org built locally
-        is loaded.
-        When set to `elpa', Org is installed and loaded from Org Elpa.
-        When set to `emacs', the Org version shipped with Emacs is used.
+      When set to `dev', the development version of Org built locally
+      is loaded.
+      When set to `elpa', Org is installed and loaded from Org Elpa.
+      When set to `emacs', the Org version shipped with Emacs is used.
 
-        The value is defaulted to `elpa' as few things in this config
-        need Org version to be at least 9.x.")
-    ;; Mark packages to *not* to be updated
-    ;; http://emacs.stackexchange.com/a/9342/115
-    (defvar modi/package-menu-dont-update-packages '(org)
-      "List of packages for which the package manager should not look for updates.
-        Example: '(org org-plus-contrib).")
-    ;; Do not upgrade Org using the package manager if it's set to *not* use the
-    ;; Elpa version of Org.
-    (unless (eq modi/org-version-select 'elpa)
-      (add-to-list 'modi/package-menu-dont-update-packages 'org-plus-contrib))
-
-
-
-    (defun modi/package-menu-remove-excluded-packages (orig-fun &rest args)
-      "Remove the packages listed in `modi/package-menu-dont-update-packages' from
-        the `tabulated-list-entries' variable."
-      (let ((included (-filter
-                       (lambda (entry)
-                         (let ((pkg-name (package-desc-name (car entry))))
-                           (not (member pkg-name modi/package-menu-dont-update-packages))))
-                       tabulated-list-entries)))
-        (setq-local tabulated-list-entries included)
-        (apply orig-fun args)))
-    (advice-add 'package-menu--find-upgrades :around #'modi/package-menu-remove-excluded-packages)
-    ;; (advice-remove 'package-menu--find-upgrades #'modi/package-menu-remove-excluded-packages)
-    (defvar modi/default-lisp-directory "/usr/share/emacs/27.0.50/lisp/"
-      "Directory containing lisp files for the Emacs installation.
-
-        This value must match the path to the lisp/ directory of your
-        Emacs installation.  If Emacs is installed using
-        --prefix=\"${PREFIX_DIR}\" this value would typically be
-        \"${PREFIX_DIR}/share/emacs/<VERSION>/lisp/\".")
-
-    (defvar org-dev-lisp-directory "/home/matt/src/org-mode/emacs/site-lisp/org"
-      "Directory containing lisp files for dev version of Org.
-
-        This value must match the `lispdir' variable in the Org local.mk.
-        By default the value is \"$prefix/emacs/site-lisp/org\", where
-        `prefix' must match that in local.mk too.")
-
-    (defvar org-dev-info-directory "/home/matt/src/org-mode/info"
-      "Directory containing Info manual file for dev version of Org.
-        This value must match the `infodir' variable in the Org local.mk.")
-
-    (when (and org-dev-lisp-directory
-               org-dev-info-directory)
-      (with-eval-after-load 'package
-        ;; If `modi/org-version-select' is *not* `emacs', remove the Emacs
-        ;; version of Org from the `load-path'.
-        (unless (eq modi/org-version-select 'emacs)
-          ;; Remove Org that ships with Emacs from the `load-path'.
-          (let ((default-org-path (expand-file-name "org" modi/default-lisp-directory)))
-            (setq load-path (delete default-org-path load-path))))
-
-        ;; If `modi/org-version-select' is *not* `elpa', remove the Elpa
-        ;; version of Org from the `load-path'.
-
-        (unless (eq modi/org-version-select 'elpa)
-          (dolist (org-elpa-install-path (directory-files-recursively
-                                          package-user-dir
-                                          "\\`org\\(-plus-contrib\\)*-[0-9.]+\\'"
-                                          :include-directories))
-            (setq load-path (delete org-elpa-install-path load-path))
-            ;; Also ensure that the associated path is removed from Info
-            ;; search list.
-            (setq Info-directory-list (delete org-elpa-install-path Info-directory-list))))
-
-        (let ((dev-org-path (directory-file-name org-dev-lisp-directory))
-              (dev-org-info (directory-file-name org-dev-info-directory)))
-          (if (eq modi/org-version-select 'dev)
-              (progn
-                (add-to-list 'load-path dev-org-path)
-                ;; It's possible that `org-dev-info-directory' is set to an
-                ;; unconventional value, in which case, it will not be
-                ;; automatically added to `Info-directory-alist'. So to ensure
-                ;; that the correct Org Info is used, add it to
-                ;; `Info-directory-alist' manually.
-                (add-to-list 'Info-directory-list dev-org-info))
-            ;; If `modi/org-version-select' is *not* `dev', remove the
-            ;; development version of Org from the `load-path'.
-            (setq load-path (delete dev-org-path load-path))
-            (with-eval-after-load 'info
-              ;; Also ensure that the associated path is removed from Info search
-              ;; list.
-              (setq Info-directory-list (delete dev-org-info Info-directory-list)))))))
+      The value is defaulted to `elpa' as few things in this config
+      need Org version to be at least 9.x.")
+  ;; Mark packages to *not* to be updated
+  ;; http://emacs.stackexchange.com/a/9342/115
+  (defvar modi/package-menu-dont-update-packages '(org)
+    "List of packages for which the package manager should not look for updates.
+      Example: '(org org-plus-contrib).")
+  ;; Do not upgrade Org using the package manager if it's set to *not* use the
+  ;; Elpa version of Org.
+  (unless (eq modi/org-version-select 'elpa)
+    (add-to-list 'modi/package-menu-dont-update-packages 'org-plus-contrib))
 
 
-    (use-package org
-      :ensure t
-      :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
-      :pin manual
-      ;; :load-path (org-lisp org-contrib)
-      :preface
-      (setq org-tempo-keywords-alist nil)
-      ;;:init
-      ;;(setq org-export-backends '(ascii beamer html hugo icalendar md gfm reveal latex odt org))
-      :hook
-      ((org-mode . (lambda () (flyspell-mode 1)))
-       (org-mode . turn-off-auto-fill))
-      :mode ("\\.org" . org-mode)
-      :bind 
-      (("C-c l" . 'org-store-link)
-       ("C-c a" . 'org-agenda))
-      :commands (org-mode org-capture org-agenda )
-      :config
-      (message "at the beginning of config section oforg-mode use-package")
-      (display-warning 'org-mode "at the beginning of config section oforg-mode use-package" :debug)
 
-      ;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
-      (setq org-refile-targets
-            (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5)
-                    ("/home/matt/org/.org2blog.el" :maxlevel . 1)
-                    ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
+  (defun modi/package-menu-remove-excluded-packages (orig-fun &rest args)
+    "Remove the packages listed in `modi/package-menu-dont-update-packages' from
+      the `tabulated-list-entries' variable."
+    (let ((included (-filter
+                     (lambda (entry)
+                       (let ((pkg-name (package-desc-name (car entry))))
+                         (not (member pkg-name modi/package-menu-dont-update-packages))))
+                     tabulated-list-entries)))
+      (setq-local tabulated-list-entries included)
+      (apply orig-fun args)))
+  (advice-add 'package-menu--find-upgrades :around #'modi/package-menu-remove-excluded-packages)
+  ;; (advice-remove 'package-menu--find-upgrades #'modi/package-menu-remove-excluded-packages)
+  (defvar modi/default-lisp-directory "/usr/share/emacs/27.0.50/lisp/"
+    "Directory containing lisp files for the Emacs installation.
 
-      (defun add-pcomplete-to-capf ()
-        (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+      This value must match the path to the lisp/ directory of your
+      Emacs installation.  If Emacs is installed using
+      --prefix=\"${PREFIX_DIR}\" this value would typically be
+      \"${PREFIX_DIR}/share/emacs/<VERSION>/lisp/\".")
 
-      (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
-      ;; Targets start with the file name - allows creating level 1 tasks
-      (setq org-refile-use-outline-path (quote file))
+  (defvar org-dev-lisp-directory "/home/matt/src/org-mode/emacs/site-lisp/org"
+    "Directory containing lisp files for dev version of Org.
 
-      ;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
-      (setq org-outline-path-complete-in-steps t)
+      This value must match the `lispdir' variable in the Org local.mk.
+      By default the value is \"$prefix/emacs/site-lisp/org\", where
+      `prefix' must match that in local.mk too.")
 
-      ;; Allow refile to create parent tasks with confirmation
-      (setq org-refile-allow-creating-parent-nodes (quote confirm))
-      (require 'ox)
-      (load  "~/src/org-mode/emacs/site-lisp/org/ox-md")
-      (with-eval-after-load "ox-md" 
-        (require 'ox-gfm)
-        (add-to-list 'org-export-backends 'md)
-        (add-to-list 'org-export-backends 'gfm)
-        (load "~/src/ox-slack/ox-slack.el") ;; (use-package ox-slack
-             ;; :load-path "~/src/ox-slack"
-             ;; :pin manual
-             ;; :defer nil
-             ;; ;; :preface
-             ;; ;; (require 'ox-md)
-             ;; ;; (require 'ox-gfm)
-             ;; ;; :after (org )
-             ;; ;; :bind
-             ;; ;; ("C-c W s" . org-slack-export-to-clibpoard-as-slack)
-             ;; )
-  )
+  (defvar org-dev-info-directory "/home/matt/src/org-mode/info"
+    "Directory containing Info manual file for dev version of Org.
+      This value must match the `infodir' variable in the Org local.mk.")
 
-      )
-    ;; agenda config
-    (use-package org-agenda
-      :after org
-      :config
-      ;; agenda diary stuff
-      (setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
-      (setq org-agenda-include-diary t)
+  (when (and org-dev-lisp-directory
+             org-dev-info-directory)
+    (with-eval-after-load 'package
+      ;; If `modi/org-version-select' is *not* `emacs', remove the Emacs
+      ;; version of Org from the `load-path'.
+      (unless (eq modi/org-version-select 'emacs)
+        ;; Remove Org that ships with Emacs from the `load-path'.
+        (let ((default-org-path (expand-file-name "org" modi/default-lisp-directory)))
+          (setq load-path (delete default-org-path load-path))))
 
-      (setq org-agenda-custom-commands
-            '(("g" . "GTD contexts")
-              ("ge" "email" tags-todo "email/+ACTION")
-              ("gc" "Computer" tags-todo "computer/+ACTION")
-              ("go" "Office" tags-todo "office/+ACTION")
-              ("gp" "Phone" tags-todo "phone/+ACTION")
-              ("gh" "Home" tags-todo "home/+ACTION")
-              ("gr" "Errands" tags-todo "errand/+ACTION")
-              ("E" "EDGI Tasks" tags "edgi")
-              ("G" "GTD Block Agenda"
-               ((tags-todo "phone/+ACTION")
-                (tags-todo "office/+ACTION")
-                (tags-todo "email/+ACTION")
-                (tags-todo "computer/+ACTION")
-                (tags-todo "home/+ACTION")
-                (tags-todo "errand/+ACTION")
-                (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
-               nil                      ;; i.e., no local settings
-               ("~/next-actions.html")) ;; exports block to this file with C-c a e
-              ;; ("T" "Teaching Block Agenda"
-              ;;  ((tags-todo "phone+teaching/+ACTION")
-              ;;   (tags-todo "office+teaching/+ACTION")
-              ;;   (tags-todo "email+teaching/+ACTION")
-              ;;   (tags-todo "computer+teaching/+ACTION")
-              ;;   (tags-todo "home+teaching/+ACTION")
-              ;;   (tags-todo "errand+teaching/+ACTION")
-              ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
-              ;;  nil                      ;; i.e., no local settings
-              ;;  ("~/next-actions.html"))
-              ;; exports block to this file with C-c a e
-              ("H" "GTD Block Agenda"
-               ((tags-todo "+history+phone/+ACTION|BLOCKED")
-                (tags-todo "+history+office/+ACTION|BLOCKED")
-                (tags-todo "+history+email/+ACTION|BLOCKED")
-                (tags-todo "+history+computer/+ACTION|BLOCKED")
-                (tags-todo "+history+home/+ACTION+|BLOCKED")
-                (tags-todo "+history+errand/+ACTION|BLOCKED")
-                (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
-               nil                              ;; i.e., no local settings
-               ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
-              ("W" "WAITING block Agenda"
-               ((tags-todo "phone/+WAITING")
-                (tags-todo "email/+WAITING")
-                (tags-todo "computer/+WAITING")
-                (tags-todo "office/+WAITING")
-                (tags-todo "home/+WAITING")
-                (tags-todo "errand/+WAITING"))
-               nil                      ;; i.e., no local settings
-               ("~/next-actions.html")) ;; exports block to this file with C-c a e
-              ;; ..other commands here
-              ;; ("t" agenda "Teaching Agenda"
-              ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
-              ("p" "Projects" todo "PROJECT")
-              )))
+      ;; If `modi/org-version-select' is *not* `elpa', remove the Elpa
+      ;; version of Org from the `load-path'.
+
+      (unless (eq modi/org-version-select 'elpa)
+        (dolist (org-elpa-install-path (directory-files-recursively
+                                        package-user-dir
+                                        "\\`org\\(-plus-contrib\\)*-[0-9.]+\\'"
+                                        :include-directories))
+          (setq load-path (delete org-elpa-install-path load-path))
+          ;; Also ensure that the associated path is removed from Info
+          ;; search list.
+          (setq Info-directory-list (delete org-elpa-install-path Info-directory-list))))
+
+      (let ((dev-org-path (directory-file-name org-dev-lisp-directory))
+            (dev-org-info (directory-file-name org-dev-info-directory)))
+        (if (eq modi/org-version-select 'dev)
+            (progn
+              (add-to-list 'load-path dev-org-path)
+              ;; It's possible that `org-dev-info-directory' is set to an
+              ;; unconventional value, in which case, it will not be
+              ;; automatically added to `Info-directory-alist'. So to ensure
+              ;; that the correct Org Info is used, add it to
+              ;; `Info-directory-alist' manually.
+              (add-to-list 'Info-directory-list dev-org-info))
+          ;; If `modi/org-version-select' is *not* `dev', remove the
+          ;; development version of Org from the `load-path'.
+          (setq load-path (delete dev-org-path load-path))
+          (with-eval-after-load 'info
+            ;; Also ensure that the associated path is removed from Info search
+            ;; list.
+            (setq Info-directory-list (delete dev-org-info Info-directory-list)))))))
 
 
-        ;;;; Org-mode hooks
-    ;; (add-hook 'org-mode-hook
-    ;;   (lambda()
-    ;;     (flyspell-mode 1)))
-    ;; (add-to-list 'auto-mode-alist '("\\.org" . org-mode))
+  (use-package org
+    :ensure t
+    :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
+    :pin manual
+    ;; :load-path (org-lisp org-contrib)
+    :preface
+    (setq org-tempo-keywords-alist nil)
+    ;;:init
+    ;;(setq org-export-backends '(ascii beamer html hugo icalendar md gfm reveal latex odt org))
+    :hook
+    ((org-mode . (lambda () (flyspell-mode 1)))
+     (org-mode . turn-off-auto-fill))
+    :mode ("\\.org" . org-mode)
+    :bind 
+    (("C-c l" . 'org-store-link)
+     ("C-c a" . 'org-agenda))
+    :commands (org-mode org-capture org-agenda )
+    :config
+    (message "at the beginning of config section oforg-mode use-package")
+    (display-warning 'org-mode "at the beginning of config section oforg-mode use-package" :debug)
 
-    ;; still need to load org2blog
-    (use-package xml-rpc
-      :load-path "~/src/xml-rpc"
-      :no-require)
-    (use-package org2blog
-      :after (:all xml-rpc (:any org org-plus-contrib))
-      :load-path  ("/home/matt/src/org2blog" "/home/matt/src/xml-rpc"))
+    ;; Targets include this file and any file contributing to the agenda - up to 5 levels deep
+    (setq org-refile-targets
+          (quote ((org-agenda-files :maxlevel . 5) (nil :maxlevel . 5)
+                  ("/home/matt/org/.org2blog.el" :maxlevel . 1)
+                  ("/home/matt/Dropbox/Work/History/HackingHistory/Grades.org" :maxlevel . 5))))
 
-    (use-package org2blog-autoloads
-      :after org2blog
-      )
-    ;; this should turhn auto-fill off?
-    ;; (add-hook 'org-mode-hook 'turn-off-auto-fill)
-    ;;org-mouse.el -- an extra
-    (use-package org-mouse
-      :after (:any org org-plus-contrib))
+    (defun add-pcomplete-to-capf ()
+      (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
 
-    (use-package ox-odt
-      :after (:any org org-plus-contrib)
-      :defer 10
-      :config
-      (setq org-odt-styles-dir "/home/matt/src/org-mode/etc/styles/")
-      ;; (setq org-odt-schema-dir "/home/matt/.emacs.d/Templates/")
-      (setq org-odt-styles-file "/home/matt/.emacs.d/Templates/New113Syllabus.odt")
-      ;; this needs to be set here, but the fn definition is actually below
-      (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
-      )
+    (add-hook 'org-mode-hook #'add-pcomplete-to-capf)
+    ;; Targets start with the file name - allows creating level 1 tasks
+    (setq org-refile-use-outline-path (quote file))
+
+    ;; Targets complete in steps so we start with filename, TAB shows the next level of targets etc
+    (setq org-outline-path-complete-in-steps t)
+
+    ;; Allow refile to create parent tasks with confirmation
+    (setq org-refile-allow-creating-parent-nodes (quote confirm))
+    (require 'ox)
+    (load  "~/src/org-mode/emacs/site-lisp/org/ox-md")
+    (with-eval-after-load "ox-md" 
+      (require 'ox-gfm)
+      (add-to-list 'org-export-backends 'md)
+      (add-to-list 'org-export-backends 'gfm)
+      (load "~/src/ox-slack/ox-slack.el") ;; (use-package ox-slack
+           ;; :load-path "~/src/ox-slack"
+           ;; :pin manual
+           ;; :defer nil
+           ;; ;; :preface
+           ;; ;; (require 'ox-md)
+           ;; ;; (require 'ox-gfm)
+           ;; ;; :after (org )
+           ;; ;; :bind
+           ;; ;; ("C-c W s" . org-slack-export-to-clibpoard-as-slack)
+           ;; )
+)
+
+    )
+  ;; agenda config
+  (use-package org-agenda
+    :after org
+    :config
+    ;; agenda diary stuff
+    (setq org-agenda-diary-file "~/Dropbox/GTD/diary.org")
+    (setq org-agenda-include-diary t)
+
+    (setq org-agenda-custom-commands
+          '(("g" . "GTD contexts")
+            ("ge" "email" tags-todo "email/+ACTION")
+            ("gc" "Computer" tags-todo "computer/+ACTION")
+            ("go" "Office" tags-todo "office/+ACTION")
+            ("gp" "Phone" tags-todo "phone/+ACTION")
+            ("gh" "Home" tags-todo "home/+ACTION")
+            ("gr" "Errands" tags-todo "errand/+ACTION")
+            ("E" "EDGI Tasks" tags "edgi")
+            ("f" "Failing Students" tags "+GRADE=0")
+            ("G" "GTD Block Agenda"
+             ((tags-todo "phone/+ACTION")
+              (tags-todo "office/+ACTION")
+              (tags-todo "email/+ACTION")
+              (tags-todo "computer/+ACTION")
+              (tags-todo "home/+ACTION")
+              (tags-todo "errand/+ACTION")
+              (tags-todo "-phone-office-email-computer-home-office/+ACTION"))
+             nil                      ;; i.e., no local settings
+             ("~/next-actions.html")) ;; exports block to this file with C-c a e
+            ;; ("T" "Teaching Block Agenda"
+            ;;  ((tags-todo "phone+teaching/+ACTION")
+            ;;   (tags-todo "office+teaching/+ACTION")
+            ;;   (tags-todo "email+teaching/+ACTION")
+            ;;   (tags-todo "computer+teaching/+ACTION")
+            ;;   (tags-todo "home+teaching/+ACTION")
+            ;;   (tags-todo "errand+teaching/+ACTION")
+            ;;   (tags-todo "-phone-office-email-computer-home-office+teaching/+ACTION"))
+            ;;  nil                      ;; i.e., no local settings
+            ;;  ("~/next-actions.html"))
+            ;; exports block to this file with C-c a e
+            ("H" "GTD Block Agenda"
+             ((tags-todo "+history+phone/+ACTION|BLOCKED")
+              (tags-todo "+history+office/+ACTION|BLOCKED")
+              (tags-todo "+history+email/+ACTION|BLOCKED")
+              (tags-todo "+history+computer/+ACTION|BLOCKED")
+              (tags-todo "+history+home/+ACTION+|BLOCKED")
+              (tags-todo "+history+errand/+ACTION|BLOCKED")
+              (tags-todo "+history-phone-office-email-computer-home-office/+ACTION|BLOCKED"))
+             nil                              ;; i.e., no local settings
+             ("~/history-next-actions.html")) ;; exports block to this file with C-c a e
+            ("W" "WAITING block Agenda"
+             ((tags-todo "phone/+WAITING")
+              (tags-todo "email/+WAITING")
+              (tags-todo "computer/+WAITING")
+              (tags-todo "office/+WAITING")
+              (tags-todo "home/+WAITING")
+              (tags-todo "errand/+WAITING"))
+             nil                      ;; i.e., no local settings
+             ("~/next-actions.html")) ;; exports block to this file with C-c a e
+            ;; ..other commands here
+            ;; ("t" agenda "Teaching Agenda"
+            ;;  (( org-agenda-filter-preset '("+teaching") )  ) )
+            ("p" "Projects" todo "PROJECT")
+            )))
+
+
+      ;;;; Org-mode hooks
+  ;; (add-hook 'org-mode-hook
+  ;;   (lambda()
+  ;;     (flyspell-mode 1)))
+  ;; (add-to-list 'auto-mode-alist '("\\.org" . org-mode))
+
+  ;; still need to load org2blog
+  (use-package xml-rpc
+    :load-path "~/src/xml-rpc"
+    :no-require)
+  (use-package org2blog
+    :after (:all xml-rpc (:any org org-plus-contrib))
+    :load-path  ("/home/matt/src/org2blog" "/home/matt/src/xml-rpc"))
+
+  (use-package org2blog-autoloads
+    :after org2blog
+    )
+  ;; this should turhn auto-fill off?
+  ;; (add-hook 'org-mode-hook 'turn-off-auto-fill)
+  ;;org-mouse.el -- an extra
+  (use-package org-mouse
+    :after (:any org org-plus-contrib))
+
+  (use-package ox-odt
+    :after (:any org org-plus-contrib)
+    :defer 10
+    :config
+    (setq org-odt-styles-dir "/home/matt/src/org-mode/etc/styles/")
+    ;; (setq org-odt-schema-dir "/home/matt/.emacs.d/Templates/")
+    (setq org-odt-styles-file "/home/matt/.emacs.d/Templates/New113Syllabus.odt")
+    ;; this needs to be set here, but the fn definition is actually below
+    (add-to-list 'org-export-filter-timestamp-functions 'matt-org-export-filter-timestamp-function)
+    )
 #+END_SRC
 
 #+RESULTS:
@@ -3859,17 +3945,102 @@ git clone https://github.com/yjwen/org-reveal.git
 
 and put this in my ~emacs-init.el~:
 #+BEGIN_SRC emacs-lisp
-  ;; org-reveal
-  (use-package ox-reveal
-    :after ox
-    :load-path "~/src/org-reveal"
-    :defer 12
-    :config
-    (setq org-reveal-root "file:///home/matt/src/reveal.js"))
-  ;; (add-to-list 'load-path "~/src/org-reveal")
-  ;; (require 'ox-reveal)
-  ;; set local root
+;; org-reveal
+(use-package ox-reveal
+  :after ox
+  :load-path "~/src/org-reveal"
+  :defer 12
+  ;;:config
+  :custom
+ (org-reveal-center nil)
+ (org-reveal-external-plugins '((klipse . "{src: '%splugin/klipse_reveal.js'}")))
+ (org-reveal-extra-css "file:///home/matt/src/org-reveal/local.css")
+ (org-reveal-history t)
+ (org-reveal-klipse-css
+  "https://sandbox.hackinghistory.ca/vendor/klipse/codemirror.css")
+ (org-reveal-klipse-js
+  "https://sandbox.hackinghistory.ca/vendor/klipse/klipse_plugin.min.js")
+ (org-reveal-klipsify-src t)
+ (org-reveal-margin "0.1")
+ (org-reveal-mathjax t)
+ (org-reveal-max-scale "1")
+ (org-reveal-plugins '(classList markdown highlight zoom notes))
+ (org-reveal-postamble nil)
+ ;; (org-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js")
+ (org-reveal-root "file:///home/matt/src/reveal.js")
+ (org-reveal-theme "matt")
+ (org-reveal-title-slide-template
+   "<h1>%t</h1>
+<h2>%a</h2>
+<h2>%d</h2>
+<p class=\"title-theme-choice\">(view this presentation in another theme: 
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/black.css')); return false;\">Black (default)</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/white.css')); return false;\">White</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/league.css')); return false;\">League</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/sky.css')); return false;\">Sky</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/beige.css')); return false;\">Beige</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/simple.css')); return false;\">Simple</a> 
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/serif.css')); return false;\">Serif</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/blood.css')); return false;\">Blood</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/night.css')); return false;\">Night</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/moon.css')); return false;\">Moon</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/solarized.css')); return false;\">Solarized</a>
+				)	</p>
+")
+ (org-reveal-width "100%")
+ (org-reveal-height "100%")
 
+  )
+;; (add-to-list 'load-path "~/src/org-reveal")
+;; (require 'ox-reveal)
+;; set local root
+
+(use-package org-re-reveal
+  :after ox
+  ;;:load-path "~/src/org-re-reveal"
+  :defer 12
+  ;;:config
+  :custom
+ (org-re-reveal-center nil)
+ (org-re-reveal-external-plugins '((klipse . "{src: '%splugin/klipse_reveal.js'}")))
+ (org-re-reveal-extra-css "file:///home/matt/src/org-reveal/local.css")
+ (org-re-reveal-history t)
+ (org-re-reveal-klipse-css
+  "https://sandbox.hackinghistory.ca/vendor/klipse/codemirror.css")
+ (org-re-reveal-klipse-js
+  "https://sandbox.hackinghistory.ca/vendor/klipse/klipse_plugin.min.js")
+ (org-re-reveal-klipsify-src t)
+ (org-re-reveal-margin "0.1")
+ (org-re-reveal-mathjax t)
+ (org-re-reveal-min-scale "1")
+ (org-re-reveal-max-scale "1")
+ (org-re-reveal-plugins '(classList markdown highlight zoom notes))
+ (org-re-reveal-postamble nil)
+ ;; (org-re-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js")
+ (org-re-reveal-root "file:///home/matt/src/reveal.js")
+ (org-re-reveal-theme "matt")
+ (org-re-reveal-title-slide-template
+   "<h1>%t</h1>
+<h2>%a</h2>
+<h2>%d</h2>
+<p class=\"title-theme-choice\">(view this presentation in another theme: 
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/black.css')); return false;\">Black (default)</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/white.css')); return false;\">White</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/league.css')); return false;\">League</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/sky.css')); return false;\">Sky</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/beige.css')); return false;\">Beige</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/simple.css')); return false;\">Simple</a> 
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/serif.css')); return false;\">Serif</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/blood.css')); return false;\">Blood</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/night.css')); return false;\">Night</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/moon.css')); return false;\">Moon</a> -
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/solarized.css')); return false;\">Solarized</a>
+				)	</p>
+")
+ (org-re-reveal-width "100%")
+ (org-re-reveal-height "100%")
+
+  )
 #+END_SRC
 
 #+RESULTS:
@@ -4537,6 +4708,7 @@ With this in mind, I've now started using Kaushal Modi's [[https://github.com/ka
 
 I'll just quickly describe my setup here in case anyone else finds it useful
 
+*<2019-02-13 Wed> update:* add ox-huveal here b/c notworking in the other invocation
 #+BEGIN_SRC emacs-lisp
   ;; ox-hugo isn't currently on MELPA and also hasn't been incorporated into org-mode. 
   ;; so for now you'll need to git clone git@github.com:kaushalmodi/ox-hugo.git and add the 
@@ -4545,7 +4717,10 @@ I'll just quickly describe my setup here in case anyone else finds it useful
   ;; (add-to-list 'load-path "~/src/kaushal-ox-hugo/")
   (use-package ox-hugo
     :load-path "~/src/kaushal-ox-hugo/"
-    :after (:any org org-plus-contrib))
+    :after (:any org org-plus-contrib)
+    :config
+    (use-package ox-huveal
+    :load-path "~/src/ox-huveal" ))
 
 
 
@@ -4556,9 +4731,9 @@ I'll just quickly describe my setup here in case anyone else finds it useful
 
 **** Huveal
 I have this silly little exporter that exports files as reveal to the hugo directory.  Get it this way. But ignore it for now while debugging org-mime!
-#+begin_src emacs-lisp 
+#+begin_src emacs-lisp :tangle no
 (use-package ox-huveal 
-  :load-path "~/src/huveal"
+  :load-path "~/src/ox-huveal"
   :after (:all org-mode ox-hugo ox-reveal)
   :config
   (add-to-list 'org-export-backends 'huveal)
@@ -5126,12 +5301,10 @@ More random ocnfig crap, hard to mange.
          (dot . t)
          (python . t)
          (js . t) 
-         (emacs-lisp . t)   
-       ))
+         (emacs-lisp . t)
+       )))
 
-    (use-package flymake-php
-      :hook 
-      (php-mode . flymake-php-load))
+
     ;; (require 'flymake-php)
     ;; (add-hook 'php-mode-hook 'flymake-php-load)
 
@@ -5892,7 +6065,7 @@ expanding this to use additional options; could just be gneeralized, though rela
     (interactive)
     (let* ((org-export-with-toc nil)
            (org-export-with-smart-quotes nil))
-      (kill-new (org-export-as fmt nil nil t))
+      (kill-new (org-export-as fmt t nil t)) ;; first t limits to subtree, second makes it body-only
       )
     )
 
@@ -5917,11 +6090,6 @@ expanding this to use additional options; could just be gneeralized, though rela
   ;;(global-set-key (kbd "C-c W s") 'ora-org-export-to-clipboard-as-slack)
 #+END_SRC
 
-#+RESULTS:
-#+begin_src emacs-lisp
-nil
-#+end_src
-
 ** Inverse: HTML from browser to org-mode using xclip and pandoc
 It's also tedious to copy html from the browser to org. usually I just want to copy some text, not use a complex capture template (since I never integrated org-capture into my regular workflow). 
 
@@ -5932,7 +6100,7 @@ Instead stealing code form [[https://emacs.stackexchange.com/questions/12121/org
 (defun mwp/html2org-clipboard ()
   "Convert clipboard contents from HTML to Org and then paste (yank)."
   (interactive)
-  (kill-new (shell-command-to-string "xclip -o -t TARGETS | grep -q text/html && (xclip -o -t text/html | pandoc -f html -t json | pandoc -f json -t org) || xclip -o"))
+  (kill-new (shell-command-to-string "xclip -o -t TARGETS | grep -q text/html && (xclip -o -t text/html | pandoc -f html -t json | pandoc --wrap=none -f json -t org) || xclip -o"))
   (yank))
 
 (global-set-key (kbd "C-M-y") 'mwp/html2org-clipboard)
@@ -6074,43 +6242,51 @@ The whole process basically sucks. I spend maybe 20% of my time fussing with pat
 *** Org-mime
 Org-mime is the library that allows org buffers and other elements to be quickly converted to HTML and prepared for multi-part messaging.  Load it and set it up (see [[http://orgmode.org/worg/org-contrib/org-mime.html]]):
 #+BEGIN_SRC emacs-lisp
-  ;; enable HTML email from org
-  (use-package org-mime
-    :ensure t
-    :load-path "~/src/org-mime/"
-    :config
-    ;; pretty blockquotes
-    (add-hook 'org-mime-html-hook
-              (lambda ()
-                (org-mime-change-element-style
-                 "blockquote" "margin: 0 0 0 .8ex; border-left: 1px solid #ccc; padding-left: 1ex;")))
-    (setq org-mime-library 'mu4e)
-    (setq org-mime-debug t)
-    ;; setup org-mime for wanderlust
-    ;; (setq org-mime-library 'semi)
-    ;; or for gnus/message-mode
-    (setq org-mime-library 'mu4e))
-
-  ;; easy access to htmlize in message-mode
-  (add-hook 'message-mode-hook
+;; enable HTML email from org
+(use-package org-mime
+  :ensure t
+  :load-path "~/src/org-mime/"
+  :config
+  ;; pretty blockquotes
+  (add-hook 'org-mime-html-hook
             (lambda ()
-              (local-set-key "\C-c\M-o" 'org-mime-htmlize)))
-
-  ;; uncomment this to use the org-mome native functions for htmlizing.
-  ;; (add-hook 'org-mode-hook
-  ;;           (lambda ()
-  ;;             (local-set-key "\C-c\M-o" 'org-mime-org-buffer-htmlize)))
-
-  ;; uncomment to displyay src blocks with a dark background
-  ;; (add-hook 'org-mime-html-hook
-  ;;           (lambda ()
-  ;;             (org-mime-change-element-style
-  ;;              "pre" (format "color: %s; background-color: %s; padding: 0.5em;"
-  ;;                            "#E6E1DC" "#232323"))))
+              (org-mime-change-element-style
+               "blockquote" "margin: 0 0 0 .8ex; border-left: 1px solid #ccc; padding-left: 1ex;")
+              (org-mime-change-element-style
+               "pre" (format "color: %s; background-color: %s; border-radius: 5px; font-size: 1.3em; padding: 1.5em;"
+                             "#E6E1DC" "black")) 
+              (org-mime-change-element-style
+               "code" (format "border: 1px solid black; border-radius: 10px; font-size: 1.2em; font-family: monospace;  background-color: hotpink; padding: 0.5em;"
+                              ))))
 
 
-  (setq user-mail-address "matt.price@utoronto.ca"
-        user-full-name "Matt Price")
+  (setq org-mime-library 'mu4e)
+  (setq org-mime-debug t)
+  ;; setup org-mime for wanderlust
+  ;; (setq org-mime-library 'semi)
+  ;; or for gnus/message-mode
+  (setq org-mime-library 'mu4e))
+
+;; easy access to htmlize in message-mode
+(add-hook 'message-mode-hook
+          (lambda ()
+            (local-set-key "\C-c\M-o" 'org-mime-htmlize)))
+
+;; uncomment this to use the org-mome native functions for htmlizing.
+;; (add-hook 'org-mode-hook
+;;           (lambda ()
+;;             (local-set-key "\C-c\M-o" 'org-mime-org-buffer-htmlize)))
+
+;; uncomment to displyay src blocks with a dark background
+;; (add-hook 'org-mime-html-hook
+;;           (lambda ()
+;;             (org-mime-change-element-style
+;;              "pre" (format "color: %s; background-color: %s; padding: 0.5em;"
+;;                            "#E6E1DC" "#232323"))))
+
+
+(setq user-mail-address "matt.price@utoronto.ca"
+      user-full-name "Matt Price")
 #+END_SRC
 
 #+RESULTS:
@@ -6704,6 +6880,10 @@ since I don't use the minor mode, adding keybindings here.  Should be added to o
   (setq org-lms-token (password-store-get "q.utoronto.ca")) )
 
 #+end_src
+
+#+RESULTS:
+: t
+
 -- leftover stuff: 
   (eval-after-load 'org
     '(define-key org-mode-map (kbd "M-o") 'o-g-open-attachment-or-repo))
@@ -7016,6 +7196,21 @@ a communication channel."
 
 #+RESULTS:
 : org-html--format-image
+
+** Trying ob-html
+Just found this on stackoverflow, https://github.com/zweifisch/ob-http
+
+#+begin_src emacs-lisp
+(use-package ob-http
+  :ensure t
+  :config
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '(     (http . t))))
+#+end_src
+
+#+RESULTS:
+: t
 
 * STARTED Scimax
 
@@ -7457,6 +7652,7 @@ Digital History Grading actions
   ("d" (quick-diff) "get diff fast")
   ("i" (dh-prep) "Install (prep) repo")
   ("p" (dh-visit-pr) "Browse PR")
+  ("u" (dh-pull-repo) "Update (pull) repo")
   
   ("s" (dh-status) "Open in Magit")
   ("t" (dh-tests) "Run Tests"))
@@ -8232,8 +8428,10 @@ use magit, magithub
 (use-package magithub
   :after magit
   :ensure t
-  :config (magithub-feature-autoinject
-           '(completion status-checks-header commit-browse pull-request-merge)))
+  ;; :config
+  ;; (magithub-feature-autoinject
+          ;;  '(completion status-checks-header commit-browse pull-request-merge))
+  )
 
 (use-package magit
   ;;:load-path "/home/matt/src/magit/lisp"
@@ -8396,6 +8594,8 @@ Switching to nullmailer has been really great.  Setup if pretty straightforward,
     (setq mu4e-drafts-folder "/Drafts")
     (setq mu4e-trash-folder  "/Trash")
     (setq mu4e-refile-folder  "/Archives")
+    (setq mu4e-use-fancy-chars t)
+    (setq mu4e-compose-format-flowed t)
     ;; smtp mail setting; these are the same that `gnus' uses. I don't
     ;; realy need these anymore as I ave switched to nullmailer, but
     ;; useful to keep around in case my setup changes in future
@@ -8518,7 +8718,9 @@ Switching to nullmailer has been really great.  Setup if pretty straightforward,
     ;; If you get your mail without an explicit command,
     ;; use "true" for the command (this is the default)
     (setq mu4e-get-mail-command "offlineimap")
-
+    ;; (setq mu4e-get-mail-command "/usr/local/bin/mbsync -aq")
+    ;; (setq mu4e-change-filenames-when-moving t) 
+    ;; (setq mu4e-update-interval 300)
     ;; smtp mail setting
     ;; I don't think this is being used by nullmailer at all, so probably irrelefant for me.
     ;; (setq
@@ -9037,6 +9239,26 @@ Write a quick function to switch to the keep-it-safe password safe buffer
     (interactive)
     (find-file "~/GTD/Keep-it-safe.org.gpg"))
 #+END_SRC
+
+** Shell
+Shell can be pretty annoying w C-z binding.  Trying to simplofy:
+
+#+begin_src emacs-lisp
+(global-set-key (kbd "C-z") 'shell)
+(defun mwp-exit-shell ()
+(interactive)
+  (comint-delchar-or-maybe-eof 0)
+  (sit-for 1)
+  (jcs-kill-a-buffer nil))
+(define-key shell-mode-map (kbd "C-d") 'mwp-exit-shell)
+(define-key shell-mode-map (kbd "C-x k") 'mwp-exit-shell)
+
+
+#+end_src
+
+#+RESULTS:
+: mwp-exit-shell
+
 * customizations
 Need to use them for now! uh-oh...
 FInally, let's only load customizations right at the end
