@@ -724,11 +724,13 @@ region-end is used."
   :config
 (require 'lsp-clients)
 (setq lsp-auto-guess-root t)
-(add-hook 'js2-mode-hook 'lsp)
+;; (add-hook 'js2-mode-hook 'lsp) // to oslow in js, hoping to swtich to eglot soon
   )
 
 (use-package lsp-ui :commands lsp-ui-mode)
-(use-package company-lsp :commands company-lsp)
+(use-package company-lsp :commands company-lsp
+:config
+(push 'company-lsp company-backends))
 
 ;; (use-package  lsp-javascript-typescript
 ;;   :config
@@ -798,6 +800,16 @@ region-end is used."
     :config
     ;;(indium-launch-node)
 (add-hook 'js-mode-hook #'indium-interaction-mode))
+
+(use-package nodejs-repl
+:config
+(add-hook 'js-mode-hook
+          (lambda ()
+          (define-key js-mode-map (kbd "C-x C-e") 'nodejs-repl-send-last-expression)
+            (define-key js-mode-map (kbd "C-c C-j") 'nodejs-repl-send-line)
+            (define-key js-mode-map (kbd "C-c C-r") 'nodejs-repl-send-region)
+            (define-key js-mode-map (kbd "C-c C-l") 'nodejs-repl-load-file)
+            (define-key js-mode-map (kbd "C-c C-z") 'nodejs-repl-switch-to-repl))))
 
 (use-package mocha
 :ensure t
