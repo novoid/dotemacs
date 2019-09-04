@@ -630,10 +630,10 @@ region-end is used."
   )
 ;; https://www.emacswiki.org/emacs/delsel.el
 ;; allows delete to be used to kill selection
-(use-package delsel
-:ensure t
-:config
-(delete-selection-mode 1))
+;; (use-package delsel
+;; :ensure t
+;; :config
+;; (delete-selection-mode 1))
 
 ;; (require) your ELPA packages, configure them as normal
 
@@ -753,9 +753,9 @@ region-end is used."
 ;;   ;; (add-hook 'json-mode-hook #'lsp-javascript-typescript-disable) ;;this breaks json mode which is already so slow!!
 ;;   (add-hook 'rjsx-mode #'lsp-javascript-typescript-enable)) ;; for rjsx-mode support
 
-(use-package lsp-html
-:config
-(add-hook 'html-mode-hook #'lsp))
+;; (use-package lsp-html
+;; :config
+;; (add-hook 'html-mode-hook #'lsp))
 
 ;; (use-package lsp-css
 ;;   :config
