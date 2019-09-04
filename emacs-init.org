@@ -1527,10 +1527,10 @@ All of the stuff from defuns-dir has been removed.  yay!
     )
   ;; https://www.emacswiki.org/emacs/delsel.el
   ;; allows delete to be used to kill selection
-  (use-package delsel
-  :ensure t
-  :config
-  (delete-selection-mode 1))
+  ;; (use-package delsel
+  ;; :ensure t
+  ;; :config
+  ;; (delete-selection-mode 1))
 #+END_SRC
 
 #+RESULTS:
@@ -1753,9 +1753,9 @@ sooo... maybe that'sn to gonna work.
 
 
 #+begin_src emacs-lisp
-(use-package lsp-html
-:config
-(add-hook 'html-mode-hook #'lsp))
+  ;; (use-package lsp-html
+  ;; :config
+  ;; (add-hook 'html-mode-hook #'lsp))
 #+end_src
 #+RESULTS:
 : t
