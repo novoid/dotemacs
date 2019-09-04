@@ -7074,16 +7074,16 @@ I've moved this stuff into its own org file:
 :END:
 since I don't use the minor mode, adding keybindings here.  Should be added to org-mode using ~use-package~ but I don't understandi t well enough yet.
 #+begin_src emacs-lisp
-(use-package org-grading
-  :load-path "/home/matt/src/org-grading"
-  :after (:any org org-plus-contrib)
-  :config )
+;; (use-package org-grading
+;;   :load-path "/home/matt/src/org-grading"
+;;   :after (:any org org-plus-contrib)
+;;   :config )
 
-(use-package org-lms
+ (use-package org-lms
   :load-path "/home/matt/src/org-grading"
   :pin manual
   ;; :ensure t
-  :after org
+  :after (org org-ref password-store)
   ;; :commands (org-lms-setup org-lms-get-courseid)
   :config 
   (setq org-lms-baseurl "https://q.utoronto.ca/api/v1/")
