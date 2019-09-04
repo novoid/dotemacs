@@ -9601,6 +9601,17 @@ Maybe having some trouble so... commenting back out.
 #+RESULTS:
 | enable-paredit-mode |
 
+** indentation
+#+begin_src emacs-lisp
+(defun remove-electric-indent-mode ()
+  (electric-indent-local-mode -1))
+
+(add-hook 'message-mode 'remove-electric-indent-mode)
+#+end_src
+
+#+RESULTS:
+| remove-electric-indent-mode |
+
 * Desktop and customization
 My computer used to crash VERY often. Session saving was essential, and becase of the frequent restarts, it's nice to shave some time off of the process. So, first we start session management with ~(require 'desktop)~, set some variables, and then use a function stolen from [[https://www.emacswiki.org/emacs?action=browse;oldid=DeskTop;id=Desktop#toc4][Emacswiki]] and override the stale lockfile from the crashed process. 
 #+BEGIN_SRC emacs-lisp
@@ -9670,7 +9681,6 @@ delete flagged files.\n\n"))))))
 #+END_SRC
 
 #+RESULTS:
-: recover-session
 
 
 * old value of 'after-init-hook
