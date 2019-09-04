@@ -2234,45 +2234,62 @@ helpme
 *** org-tempo
 old easy templates have been replaced by org-tempo, and then after *that* they wree sort of duplicated with a new workflow. I like the old one and for now I'm using it, but I'm reverting to the old alisst variable, which is used by both forntends.  I may eventually just sunset this in favour of a more generic completion framework, who knows.  
 #+begin_src emacs-lisp
-    (let ((org-tempo-keywords-alist nil))
-    (use-package org-tempo
-      :after (org)
-      :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
-      :preface 
-      (setq org-tempo-keywords-alist nil)
-      (customize-set-variable 'org-structure-template-alist '(("a" . "export ascii")
-                                           ;; ("c" . "center")
-                                           ("C" . "comment")
-                                           ("E" . "example")
-                                           ("e" . "src emacs-lisp")
-                                           ("H" . "export html")
-                                           ("l" . "export latex")
-                                           ("q" . "quote")
-                                           ("s" . "src")
-                                           ("v" . "verse")
-                                           ("i" . "index")
-                                           ("j" . "src js")
-                                           ("c" . "src css")
-                                           ("n" . "notes")
-                                           ("h" . "src html")))
-      :init
-      (setq org-tempo-keywords-alist nil)
-  
-      :config
-      ;; (setq org-tempo-keywords-alist '(("L" . "latex")
-      ;;                                  ("H" . "html")
-      ;;                                  ("A" . "ascii")
-      ;;                                  ("i" . "index")
-      ;;                                  ("j" . "src js")
-      ;;                                  ("c" . "src css")
-      ;;                                  ("" . "src emacs-lisp")
-      ;;                                  ("h" . "src html")))
-      ))
+(let ((org-tempo-keywords-alist nil))
+(use-package org-tempo
+  :after (org)
+  :load-path "/home/matt/src/org-mode/emacs/site-lisp/org"
+  :preface 
+  (setq org-tempo-keywords-alist nil)
+  (customize-set-variable 'org-structure-template-alist '(("a" . "export ascii")
+                                       ;; ("c" . "center")
+                                       ("C" . "comment")
+                                       ("E" . "example")
+                                       ("e" . "src emacs-lisp")
+                                       ("H" . "export html")
+                                       ("l" . "export latex")
+                                       ("q" . "quote")
+                                       ("s" . "src")
+                                       ("v" . "verse")
+                                       ("i" . "index")
+                                       ("j" . "src js")
+                                       ("c" . "src css")
+                                       ("n" . "notes")
+                                       ("h" . "src html")))
+  :init
+  (setq org-tempo-keywords-alist nil)
 
-    ;;
+
+  :config
+  (tempo-define-template
+   "mwp-paired-html"
+   '("#+begin_paired\n" p r n "#+end_paired\n#+begin_paired" n n "#+end_paired" )
+
+   ;; ("@@html:<div class=\"paired\">@@" n p r n "@@html:</div><div class=\"paired\">@@" n n "@@html:</div>@@" )
+   "<P"
+   "insert html for paired divs"
+   'org-tempo-tags)
+  
+  (tempo-define-template
+   "mwp-add-image"
+   '("[[./images/" p r  "]]" )
+   "<M"
+   "insert link to local image"
+   'org-tempo-tags)
+  ;; (setq org-tempo-keywords-alist '(("L" . "latex")
+  ;;                                  ("H" . "html")
+  ;;                                  ("A" . "ascii")
+  ;;                                  ("i" . "index")
+  ;;                                  ("j" . "src js")
+  ;;                                  ("c" . "src css")
+  ;;                                  ("" . "src emacs-lisp")
+  ;;                                  ("h" . "src html")))
+  ))
+
+;;
 #+end_src
 
 #+RESULTS:
+: t
 
 ** Paredit, smartparens, and other things                        :converted:
 I've bene using paredit for some time; it is a great start at helping you to think more lisp-y when you're workingin a lisp-like language. There are many other modes that try to do similar things, including [[https://github.com/shaunlebron/parinfer][parinfer]] (experimental, amazing), [[https://github.com/abo-abo/lispy][lispy]] (vim-inspired, uses single keys to pbind paredit-like functions, looks amazing but also probably has a bit of a learning curve), [[https://github.com/Fuco1/smartparens/wiki/Paredit-and-smartparens][smartparens]] (I use this in non-lisp modes instead, again looks like a bit of a learning curve and some changes in behaviour from paredit).
