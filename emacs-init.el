@@ -2228,58 +2228,58 @@ Single Capitals as you type."
 ;; ))
 
 ;; org-reveal
-(use-package ox-reveal
-  :after ox
-  :load-path "~/src/org-reveal"
-  :defer 12
-  ;;:config
-  :custom
- (org-reveal-center nil)
- (org-reveal-external-plugins '((klipse . "{src: '%splugin/klipse_reveal.js'}")))
- (org-reveal-extra-css "file:///home/matt/src/org-reveal/local.css")
- (org-reveal-history t)
- (org-reveal-klipse-css
-  "https://sandbox.hackinghistory.ca/vendor/klipse/codemirror.css")
- (org-reveal-klipse-js
-  "https://sandbox.hackinghistory.ca/vendor/klipse/klipse_plugin.min.js")
- (org-reveal-klipsify-src t)
- (org-reveal-margin "0.1")
- (org-reveal-mathjax t)
- (org-reveal-max-scale "1")
- (org-reveal-plugins '(classList markdown highlight zoom notes))
- (org-reveal-postamble nil)
- ;; (org-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js")
- (org-reveal-root "file:///home/matt/src/reveal.js")
- (org-reveal-theme "matt")
- (org-reveal-title-slide-template
-   "<h1>%t</h1>
-<h2>%a</h2>
-<h2>%d</h2>
-<p class=\"title-theme-choice\">(view this presentation in another theme: 
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/black.css')); return false;\">Black (default)</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/white.css')); return false;\">White</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/league.css')); return false;\">League</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/sky.css')); return false;\">Sky</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/beige.css')); return false;\">Beige</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/simple.css')); return false;\">Simple</a> 
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/serif.css')); return false;\">Serif</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/blood.css')); return false;\">Blood</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/night.css')); return false;\">Night</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/moon.css')); return false;\">Moon</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/solarized.css')); return false;\">Solarized</a>
-				)	</p>
-")
- (org-reveal-width "100%")
- (org-reveal-height "100%")
+;; (use-package ox-reveal
+;;   :after ox
+;;   :load-path "~/src/org-reveal"
+;;   :defer 12
+;;   ;;:config
+;;   :custom
+;;  (org-reveal-center nil)
+;;  (org-reveal-external-plugins '((klipse . "{src: '%splugin/klipse_reveal.js'}")))
+;;  (org-reveal-extra-css "file:///home/matt/src/org-reveal/local.css")
+;;  (org-reveal-history t)
+;;  (org-reveal-klipse-css
+;;   "https://sandbox.hackinghistory.ca/vendor/klipse/codemirror.css")
+;;  (org-reveal-klipse-js
+;;   "https://sandbox.hackinghistory.ca/vendor/klipse/klipse_plugin.min.js")
+;;  (org-reveal-klipsify-src t)
+;;  (org-reveal-margin "0.1")
+;;  (org-reveal-mathjax t)
+;;  (org-reveal-max-scale "1")
+;;  (org-reveal-plugins '(classList markdown highlight zoom notes))
+;;  (org-reveal-postamble nil)
+;;  ;; (org-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js")
+;;  (org-reveal-root "file:///home/matt/src/reveal.js")
+;;  (org-reveal-theme "matt")
+;;  (org-reveal-title-slide-template
+;;    "<h1>%t</h1>
+;; <h2>%a</h2>
+;; <h2>%d</h2>
+;; <p class=\"title-theme-choice\">(view this presentation in another theme: 
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/black.css')); return false;\">Black (default)</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/white.css')); return false;\">White</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/league.css')); return false;\">League</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/sky.css')); return false;\">Sky</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/beige.css')); return false;\">Beige</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/simple.css')); return false;\">Simple</a> 
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/serif.css')); return false;\">Serif</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/blood.css')); return false;\">Blood</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/night.css')); return false;\">Night</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/moon.css')); return false;\">Moon</a> -
+;; <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/solarized.css')); return false;\">Solarized</a>
+;; 				)	</p>
+;; ")
+;;  (org-reveal-width "100%")
+;;  (org-reveal-height "100%")
 
-  )
+;;   )
 ;; (add-to-list 'load-path "~/src/org-reveal")
 ;; (require 'ox-reveal)
 ;; set local root
 
 (use-package org-re-reveal
   :after ox
-  ;;:load-path "~/src/org-re-reveal"
+  :load-path "~/src/org-re-reveal"
   :defer 12
   ;;:config
   :custom
@@ -2301,11 +2301,10 @@ Single Capitals as you type."
  ;; (org-re-reveal-root "http://sandbox.hackinghistory.ca/Tools/reveal.js")
  (org-re-reveal-root "file:///home/matt/src/reveal.js")
  (org-re-reveal-theme "matt")
- (org-re-reveal-title-slide-template
+ (org-re-reveal-title-slide
    "<h1>%t</h1>
-<h2>%a</h2>
-<h2>%d</h2>
-<p class=\"title-theme-choice\">(view this presentation in another theme: 
+<h3>%a  %d</h3>
+<!-- <p class=\"title-theme-choice\">(view this presentation in another theme: 
 <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/black.css')); return false;\">Black (default)</a> -
 <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/white.css')); return false;\">White</a> -
 <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/league.css')); return false;\">League</a> -
@@ -2316,8 +2315,8 @@ Single Capitals as you type."
 <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/blood.css')); return false;\">Blood</a> -
 <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/night.css')); return false;\">Night</a> -
 <a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/moon.css')); return false;\">Moon</a> -
-<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/solarized.css')); return false;\">Solarized</a>
-				)	</p>
+<a href=\"#\" onclick=\"document.getElementById('theme').setAttribute('href',document.getElementById('theme').getAttribute('href').replace(/\\/[a-zA-Z]+\\.css/g,'/solarized.css')); return false;\">Solarized</a> 
+				)	</p> -->
 ")
  (org-re-reveal-width "100%")
  (org-re-reveal-height "100%")
