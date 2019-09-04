@@ -5901,6 +5901,7 @@ Then add that new date to the value of the list."
                                         (date-to-time base-date) (days-to-time (1+ 7))))))
     (add-to-list initial-list-symbol  new-date )
     ;;(format-time-string "%b . %d" new-date)
+    ;;(message "%s" org-mwp-classtimes-calibrate)
     new-date
     ;; (if base-date
     ;;     (format-time-string "<%Y-%m-%d %a>"
