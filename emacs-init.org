@@ -2427,10 +2427,17 @@ Trying out skeleton mode for org:
 #+RESULTS:
 | mwp-dont-insert-unicode-emoji | toc-org-enable | (lambda nil (local-set-key \357 'mwp-send-subtree-with-attachments)) | #[0 \300\301\302\303\304$\207 [add-hook before-save-hook org-encrypt-entries nil t] 5] | #[0 \305\306	>\203 \307 |
 
+
+
+
+
+
 * Helm stuff
 #+begin_src emacs-lisp
   (use-package helm
     :config
+    (define-key helm-map (kbd "<left>") 'helm-previous-source)
+    (define-key helm-map (kbd "<right>") 'helm-next-source)
     (setq helm-completing-read-handlers-alist
      '((describe-function . helm-completing-read-symbols)
        (describe-variable . helm-completing-read-symbols)
