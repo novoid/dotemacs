@@ -5243,42 +5243,240 @@ This still hasn't been setup. Should livenear org-ref & those should be done tog
                                     (and (listp (car h))
                                          (symbolp (car (car h))))))))
          ;; list of strings or elements
-         (mapconcat #'org-zotxt-htmltree2org html "")))))
+         (mapconcat #'org-zotxt-htmltree2org html ""))))
 
+
+    (org-link-set-parameters "zotero"
+                             :follow
+                             (lambda (rest)
+                               (zotxt-select-key (substring rest 15)))
+                             :export
+                             (lambda (path desc format)
+                               (if (string-match "^@\\(.*\\)$" desc)
+                                   (cond ((eq format 'latex)
+                                          (format "\\cite{%s}" (match-string 1 desc)))
+                                         ((eq format 'md)
+                                          desc)
+                                         ((eq format 'html)
+                                          (deferred:$
+                                            (zotxt-get-item-bibliography-deferred `(:key , (substring path 15)))
+                                            (deferred:nextc it
+                                              (lambda (item)
+                                                (plist-get item :citation-html)))
+                                            (deferred:sync! it)))
+                                         ((eq format 'odt)
+                                          (xml-escape-string (deferred:$
+                                                               (zotxt-get-item-deferred `(:key , (substring path 15)) :248bebf1-46ab-4067-9f93-ec3d2960d0cd)
+                                                               (deferred:nextc it
+                                                                 (lambda (item)
+                                                                   (plist-get item :248bebf1-46ab-4067-9f93-ec3d2960d0cd)))
+                                                               (deferred:sync! it))))
+                                         (t nil)
+                                         nil))))
+
+
+    (defun zotxt-get-item-bibliography-deferred (item)
+      "Retrieve the generated bibliography for ITEM (a plist).
+  Use STYLE to specify a custom bibliography style.
+  Adds a plist entry with the name of the style as a self-quoting symbol, e.g.
+  :chicago-note-bibliography.
+  Also adds :citation entry if STYLE is the default.
+  Also adds HTML versions, suffixed with -html.
+
+  For use only in a `deferred:$' chain."
+      (lexical-let ((d (deferred:new))
+                    (style zotxt-default-bibliography-style)
+                    (item item))
+        (if (and (string= style zotxt-default-bibliography-style)
+                 (plist-get item :citation))
+            ;; item already has citation, no need to fetch
+
+            (message "%s" style)
+          (request
+           (format "%s/items" zotxt-url-base)
+           :params `(("key" . ,(plist-get item :key))
+                     ("format" . "bibliography")
+                     ("style" . ,style))
+           :parser #'zotxt--json-read
+           :success (function*
+                     (lambda (&key data &allow-other-keys)
+                       (let* ((style-key (intern (format ":%s" style)))
+                              (style-key-html (intern (format ":%s-html" style)))
+                              (first (elt data 0))
+                              (text (cdr (assq 'text first)))
+                              (html (cdr (assq 'html first))))
+                         (if (string= style zotxt-default-bibliography-style)
+                             (progn
+                               (plist-put item :citation text)
+                               (plist-put item :citation-html html)))
+                         (plist-put item style-key text)
+                         (plist-put item style-key-html html)
+                         (deferred:callback-post d item))))))
+        d
+        )))
 #+END_SRC
 
 #+RESULTS:
-: org-zotxt-htmltree2org
+: tbrefere
 
 ** ACTION org-ref
+   :PROPERTIES:
+   :ID:       24fd7051-b8f7-4ba1-9099-99e65fd10a03
+   :END:
+See also [[id:e70a18da-cd66-4de0-8c66-06ec107c4e94][Zotero & org-ref]] in Reference.org
+
+
+*EDIT <2019-08-28 Wed>*: Add some formatting changes from a 2017 conversation with John K.
+
 Trying to get [[https://github.com/jkitchin/org-ref][org-ref]] working. Having trouble getting stuff formatted to my satisfaction. 
 
-there's a bug somewhere which leads to this getting loaded before org-element has been loaded. Not sure how to manage that, but as I'm not using org-ref, untangling for now.
-#+BEGIN_SRC emacs-lisp :tangle no
+there's a bug somewhere which leads to this getting loaded before org-element has been loaded. 
 
-  (use-package org-ref
-    :after org
-    :config
-    ;; see org-ref for use of these variables
-    (setq org-ref-bibliography-notes "~/Bibliography/notes.org"
-          org-ref-default-bibliography '("~/Bibliography/Bibliography.bib")
-          org-ref-pdf-directory "~/Bibliography/files/")
 
-    (setq bibtex-completion-bibliography "~/Bibliography/Bibliography.bib"
-          bibtex-completion-library-path "~/Bibliography/files"
-          )
+- Madison, P. (). The most brutal of human skulls: measuring and
+  knowing the first Neanderthal. , 49(3), 411–432.
+  http://dx.doi.org/10.1017/S0007087416000650
 
-    ;; open pdf with system pdf viewer (works on mac)
-    (setq bibtex-completion-pdf-open-function
-          (lambda (fpath)
-            (start-process "xdg-open" "*xdg-open*" "xdg-open" fpath)))
-    ;; alternative
-    ;; (setq bibtex-completion-pdf-open-function 'org-open-file)
+Actually, this seems to be working somewhat now.  
+#+BEGIN_SRC emacs-lisp
 
-    (setq org-ref-formatted-citation-backend "org")
-    (setq org-ref-completion-library 'org-ref-helm-bibtex)
-    )
+(use-package org-ref
+  :after org
+  :config
+  ;; see org-ref for use of these variables
+  ;; not currently set up to manage notes and pdfs, that'sfor a later date, will 
+  ;; be cool if I can pull it off. 
+  ;; hopefully this is the right bibliography setting!
+  (setq org-ref-bibliography-notes "~/Bibliography/notes.org"
+        org-ref-default-bibliography '("~/.emacs.d/zotero-refs.bib")
+        org-ref-pdf-directory "~/Bibliography/files/")
+
+  (setq bibtex-completion-bibliography "~/.emacs.d/zotero-refs.bib" 
+        bibtex-completion-library-path "~/Bibliography/files"
+        )
+
+  ;; open pdf with system pdf viewer (works on mac)
+  (setq bibtex-completion-pdf-open-function
+        (lambda (fpath)
+          (start-process "xdg-open" "*xdg-open*" "xdg-open" fpath)))
+  ;; alternative
+  ;; (setq bibtex-completion-pdf-open-function 'org-open-file)
+
+  ;; I rely on having org backnd, this is important
+  ;; and I also only use helm bibtex backend.  
+  (setq org-ref-formatted-citation-backend "org")
+  (setq org-ref-completion-library 'org-ref-helm-bibtex)
+  
+
+  ;; change formatting to make it closer to what I like in syllabi, also to reflect the field names
+  ;; from zotero's better bibtex (maybe my settings are messed up)
+  (setq org-ref-formatted-citation-formats
+        '(("text"
+           ("article" . "${author}, ${title}, ${journal}, ${volume}(${number}), ${pages} (${year}). ${doi}")
+           ("inproceedings" . "${author}, ${title}, In ${editor}, ${booktitle} (pp. ${pages}) (${year}). ${location}: ${publisher}.")
+           ("book" . "${author}, ${title} (${year}), ${location}: ${publisher}.")
+           ("phdthesis" . "${author}, ${title} (Doctoral dissertation) (${year}). ${school}, ${location}.")
+           ("inbook" . "${author}, ${title}, In ${editor} (Eds.), ${booktitle} (pp. ${pages}) (${year}). ${location}: ${publisher}.")
+           ("incollection" . "${author}, ${title}, In ${editor} (Eds.), ${booktitle} (pp. ${pages}) (${year}). ${location}: ${publisher}.")
+           ("proceedings" . "${editor} (Eds.), ${booktitle} (${year}). ${location}: ${publisher}.")
+           ("unpublished" . "${author}, ${title} (${year}). Unpublished manuscript.")
+           (nil . "${author}, ${title} (${year})."))
+          ("org"
+           ("article" . "${author}, \"${title}\". /${journaltitle}/, *${volume}(${number})*, ${pages} (${date}). ")
+           ("inproceedings" . "${author}, \"${title}\", In ${editor}, /${booktitle}/ (pp. ${pages}) (${date}). ${location}: ${publisher}. ")
+           ("book" . "${author}, /${title}/. (${location}: ${publisher},  ${date}). ")
+           ("phdthesis" . "${author}, /${title}/ (Doctoral dissertation) (${date}). ${school}, ${location}.")
+           ("inbook" . "${author}, /${booktitle}/, In ${editor} (Eds.), ${booktitle} (pp. ${pages}) (${date}). ${location}: ${publisher}.")
+           ("incollection" . "${author}, /${title}/, In ${editor} (Eds.), ${booktitle} (pp. ${pages}) (${date}). ${location}: ${publisher}.")
+           ("proceedings" . "${editor} (Eds.), /${booktitle}/ (${date}). ${location}: ${publisher}.")
+           ("collection" . "${editor} (Eds.), /${title}/ (${date}). ${location}: ${publisher}.")
+           ("unpublished" . "${author}, /${title}/ (${date}). Unpublished manuscript.")
+           ("online" . "${author}, ${title}. ${urldate} ")
+           (nil . "${author}, /${title}/ (${date})."))))
+
+  ;; reorder this list to make more convenient for me, putting formatted cites at `f4`
+  (setq org-ref-bibtex-completion-actions '(
+                                            ("Insert citation" . helm-bibtex-insert-citation) 
+                                            ("Open PDF, URL or DOI" . helm-bibtex-open-any)
+                                            ("Open URL or DOI in browser" . helm-bibtex-open-url-or-doi)
+                                            ("Insert formatted citation(s)" .
+                                             (lambda (_)
+                                               (insert (
+                                                        mapconcat 'identity
+                                                        (cl-loop for key in (helm-marked-candidates)
+                                                                 collect (org-ref-format-entry key)) "\n"))))
+                                            ("Insert reference" . helm-bibtex-insert-reference)
+                                            ("Insert BibTeX key" . helm-bibtex-insert-key)
+                                            ("Insert BibTeX entry" . helm-bibtex-insert-bibtex)
+                                            ("Attach PDF to email" . helm-bibtex-add-PDF-attachment)
+                                            ("Edit notes" . helm-bibtex-edit-notes)
+                                            ("Show entry" . helm-bibtex-show-entry)
+                                            ("Add keywords to entries" . org-ref-helm-tag-entries)
+                                            ("Copy entry to clipboard" . bibtex-completion-copy-candidate)
+                                            ("Add PDF to library" . helm-bibtex-add-pdf-to-library))
+        )
+  ;; now loop through the actions to complete properly
+  (cl-loop for i from 0 to (length org-ref-bibtex-completion-actions)
+	   for ccell in org-ref-bibtex-completion-actions
+	   do
+	   (helm-delete-action-from-source (car ccell) helm-source-bibtex)
+	   (helm-add-action-to-source
+	    (car ccell)
+	    (cdr ccell)
+	    helm-source-bibtex))
+
+  ;; modify formatting function for my own purposes!!!
+  (defun org-ref-format-bibtex-entry (entry)
+  "Return a formatted citation for the bibtex entry at point.
+Formats are from `org-ref-formatted-citation-formats'. The
+variable `org-ref-formatted-citation-backend' determines the set
+of format strings used."
+  (save-excursion
+    (bibtex-beginning-of-entry)
+    (let* ((formats (cdr (assoc org-ref-formatted-citation-backend  org-ref-formatted-citation-formats)))
+	   (format-string)
+	   (ref))
+      (if (null entry)
+          "!!! No entry found !!!"
+        (setq format-string (cdr (or (assoc (downcase (bibtex-completion-get-value "=type=" entry)) formats)
+                                     (assoc nil formats))))
+        (message "%S" format-string)
+        (if (and (string-equal org-ref-formatted-citation-backend "org" )
+                 (bibtex-completion-get-value "url" entry))
+            (setq format-string
+                  (replace-regexp-in-string "${title}" "[[${url}][${title}]]" format-string)))
+        (message "%S" format-string)
+
+        (setq ref (s-format format-string 'bibtex-completion-apa-get-value entry))
+        (replace-regexp-in-string "\\([.?!]\\)\\." "\\1" ref)))))
+  )
+
 #+END_SRC
+
+
+
+- Drucker, J. (). Graphesis. , 2(1), .
+
+#+RESULTS:
+: t
+
+
+cite:IyerEvolutionarygenomicsnucleocytoplasmic2006
+
+
+- Mackinlay, J. (). Automating the Design of Graphical Presentations
+  of Relational Information. , 5(2), 110–141.
+  http://dx.doi.org/10.1145/22949.22950
+
+- Klein, R. G. (). Darwin and the recent African origin of modern humans. , 106(38), 16007–16009.
+  http://dx.doi.org/10.1073/pnas.0908719106
+
+
+
+- Krupovic, M., Dolja, V. V., & Koonin, E. V. (). Origin of viruses:
+  primordial replicators recruiting capsids from hosts. , (), 1.
+  http://dx.doi.org/10.1038/s41579-019-0205-6
+
 
 #+RESULTS:
 ** ACTION First part                                                :review:
