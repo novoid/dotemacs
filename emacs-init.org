@@ -6702,9 +6702,11 @@ METHOD may be `cp', `mv', `ln', `lns' or `url' default taken from
 John Kitchin uses a custom link type, "attachfile", for a ocupleo f things, and describes it in some detail [[
 
 #+BEGIN_SRC emacs-lisp
-  (org-add-link-type
+  (org-link-set-parameters
    "attachfile"
+   :follow
    (lambda (link-string) (org-open-file link-string))
+   :export
    ;; formatting
    (lambda (keyword desc format)
      (cond
@@ -6897,39 +6899,43 @@ Although Toronto is Canada's leading immigrant-receiving centre, city officials 
 An alternative workflow would be to pop to a second, temporary buffer and insert the annotations there; one could do this with a custom link type.  PDF-Tools already has a mechanism for listing annotations in a separate buffer, but it's not designed for quick access to all annotations at once. Anyway, here's one way to do this; I'm not really using it at the moment.
 
 #+BEGIN_SRC emacs-lisp
-  (org-add-link-type "pdfquote" 'org-pdfquote-open 'org-pdfquote-export)
+(org-link-set-parameters "pdfquote"
+                   :follow
+                   'org-pdfquote-open
+                   :export
+                   'org-pdfquote-export)
 
-  (defun org-pdfquote-open (link)
-    "Open a new buffer with all markup annotations in an org headline."
-    (interactive)
-    (pop-to-buffer
-     (format "*Quotes from %s*"
-             (file-name-base link)))
-    (org-mode)
-    (erase-buffer)
-    (insert (pdf-annot-markups-as-org-text link nil 1))
-    (goto-char 0)
-    )
+(defun org-pdfquote-open (link)
+  "Open a new buffer with all markup annotations in an org headline."
+  (interactive)
+  (pop-to-buffer
+   (format "*Quotes from %s*"
+           (file-name-base link)))
+  (org-mode)
+  (erase-buffer)
+  (insert (pdf-annot-markups-as-org-text link nil 1))
+  (goto-char 0)
+  )
 
-  (defun org-pdfquote-export (link description format)
-    "Export the pdfview LINK with DESCRIPTION for FORMAT from Org files."
-    (let* ((path (when (string-match "\\(.+\\)::.+" link)
-                   (match-string 1 link)))
-           (desc (or description link)))
-      (when (stringp path)
-        (setq path (org-link-escape (expand-file-name path)))
-        (cond
-         ((eq format 'html) (format "<a href=\"%s\">%s</a>" path desc))
-         ((eq format 'latex) (format "\href{%s}{%s}" path desc))
-         ((eq format 'ascii) (format "%s (%s)" desc path))
-         (t path)))))
+(defun org-pdfquote-export (link description format)
+  "Export the pdfview LINK with DESCRIPTION for FORMAT from Org files."
+  (let* ((path (when (string-match "\\(.+\\)::.+" link)
+                 (match-string 1 link)))
+         (desc (or description link)))
+    (when (stringp path)
+      (setq path (org-link-escape (expand-file-name path)))
+      (cond
+       ((eq format 'html) (format "<a href=\"%s\">%s</a>" path desc))
+       ((eq format 'latex) (format "\href{%s}{%s}" path desc))
+       ((eq format 'ascii) (format "%s (%s)" desc path))
+       (t path)))))
 
-  (defun org-pdfquote-complete-link ()
-    "Use the existing file name completion for file.
-  Links to get the file name, then ask the user for the page number
-  and append it."                                  
+(defun org-pdfquote-complete-link ()
+  "Use the existing file name completion for file.
+Links to get the file name, then ask the user for the page number
+and append it."                                  
 
-    (replace-regexp-in-string "^file:" "pdfquote:" (org-file-complete-link)))
+  (replace-regexp-in-string "^file:" "pdfquote:" (org-file-complete-link)))
 #+END_SRC
 
 I've also added two bindings to make highlighting easier from the PDF buffer:
@@ -9401,26 +9407,28 @@ Some things I learned:
 
 * Youtube
 #+BEGIN_SRC emacs-lisp
-  (defvar yt-iframe-format
-    ;; You may want to change your width and height.
-    (concat "<iframe width=\"440\""
-            " height=\"335\""
-            " src=\"https://www.youtube.com/embed/%s\""
-            " frameborder=\"0\""
-            " allowfullscreen>%s</iframe>"))
+(defvar yt-iframe-format
+  ;; You may want to change your width and height.
+  (concat "<iframe width=\"440\""
+          " height=\"335\""
+          " src=\"https://www.youtube.com/embed/%s\""
+          " frameborder=\"0\""
+          " allowfullscreen>%s</iframe>"))
 
-  (org-add-link-type
-   "yt"
-   (lambda (handle)
-     (browse-url
-      (concat "https://www.youtube.com/embed/"
-              handle)))
-   (lambda (path desc backend)
-     (cl-case backend
-       (html (format yt-iframe-format
-                     path (or desc "")))
-       (latex (format "\href{%s}{%s}"
-                      path (or desc "video"))))))
+(org-link-set-parameters
+ "yt"
+ :follow
+ (lambda (handle)
+   (browse-url
+    (concat "https://www.youtube.com/embed/"
+            handle)))
+ :export
+ (lambda (path desc backend)
+   (cl-case backend
+     (html (format yt-iframe-format
+                   path (or desc "")))
+     (latex (format "\href{%s}{%s}"
+                    path (or desc "video"))))))
 #+END_SRC
 * Miscellanea 
 ** Reference
