@@ -5537,7 +5537,7 @@ More random ocnfig crap, hard to mange.
          (python . t)
          (js . t) 
          (emacs-lisp . t)
-       )))
+       ))
 
 
     ;; (require 'flymake-php)
