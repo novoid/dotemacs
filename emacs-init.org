@@ -9544,12 +9544,10 @@ Not clear that it makes sense to use in org mode yet, though that would be the o
 #+begin_src emacs-lisp
 (yas-global-mode -1)
 #+end_src
+ 
+* Miscellaneous elisp/emacs convenience
 
-#+RESULTS:
- fkjdsla fkjdlsa 
-* Miscellaneous elisp/emacs ocnvenience
-
-** Improve ynking space handling
+** Improve yanking space handling
 See Marcel's interesting blog post about it [[http://mbork.pl/2018-07-02_Smart_yanking][here]]
 #+begin_src emacs-lisp 
 (defun has-space-at-boundary-p (string)
