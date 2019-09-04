@@ -2640,7 +2640,7 @@ Return output file's name."
        (python . t)
        (js . t) 
        (emacs-lisp . t)
-     )))
+     ))
 
 
   ;; (require 'flymake-php)
