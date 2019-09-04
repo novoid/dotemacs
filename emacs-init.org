@@ -2876,15 +2876,16 @@ THis stuff should maybe be moved into a minor mode that I can load or something?
 ~mwp-copy-whole-buffer~ marks the whole buffer and copies it to kill-ring. Bound to [f6].
 ~smarter-move-beginning-of-line~ is an awesome helper function to make movement easier. 
 #+BEGIN_SRC emacs-lisp
-  ;; here's a quick macro to select and copy a buffer
-  ;; F6 copy whole buffer
-  (defun mwp-copy-whole-buffer ()
-    "Copy the whole buffer into the kill ring"
-    (interactive)
+;; here's a quick macro to select and copy a buffer
+;; F6 copy whole buffer
+(defun mwp-copy-whole-buffer ()
+  "Copy the whole buffer into the kill ring"
+  (interactive)
+  (save-excursion
     (mark-whole-buffer)
-    (copy-region-as-kill(region-beginning) (region-end))
-    )
-  (global-set-key (quote [f6]) 'mwp-copy-whole-buffer)
+    (copy-region-as-kill(region-beginning) (region-end)))
+  )
+(global-set-key (quote [f6]) 'mwp-copy-whole-buffer)
 
 #+END_SRC
 ** Moving to beginning of line
