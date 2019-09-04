@@ -5192,31 +5192,44 @@ This still hasn't been setup. Should livenear org-ref & those should be done tog
     :after (:any org org-plus-contrib)
     :config
     ;; zotxt
-    (org-add-link-type "zotero"
-                       (lambda (rest)
-                         (zotxt-select-key (substring rest 15)))
-                       (lambda (path desc format)
-                         (if (string-match "^@\\(.*\\)$" desc)
-                             (cond ((eq format 'latex)
-                                    (format "\\cite{%s}" (match-string 1 desc)))
-                                   ((eq format 'md)
-                                    desc)
-                                   ((eq format 'html)
-                                    (deferred:$
-                                      (zotxt-get-item-bibliography-deferred `(:key , (substring path 15)))
-                                      (deferred:nextc it
-                                        (lambda (item)
-                                          (plist-get item :citation-html)))
-                                      (deferred:sync! it)))
-                                   ((eq format 'odt)
-                                    (xml-escape-string (deferred:$
-                                                         (zotxt-get-item-deferred `(:key , (substring path 15)) :248bebf1-46ab-4067-9f93-ec3d2960d0cd)
-                                                         (deferred:nextc it
-                                                           (lambda (item)
-                                                             (plist-get item :248bebf1-46ab-4067-9f93-ec3d2960d0cd)))
-                                                         (deferred:sync! it))))
-                                   (t nil)
-                                   nil)))))
+    (require 'ol)
+    (org-link-set-parameters "zotero"
+                             :follow
+                             (lambda (rest)
+                               (zotxt-select-key (substring rest 15)))
+                             :export
+                             (lambda (path desc format)
+                               (if (string-match "^@\\(.*\\)$" desc)
+                                   (cond ((eq format 'latex)
+                                          (format "\\cite{%s}"
+                                                  ;; hack to replace all the escaping that latex
+                                                  ;; gives us in the desc with _
+                                                  (replace-regexp-in-string
+                                                   "\\([{}]\\|\\\\text\\|\\\\(\\|\\\\)\\)" ""
+                                                   (match-string 1 desc))))
+                                         ((eq format 'md)
+                                          desc)
+                                         ((eq format 'html)
+                                          (deferred:$
+                                            (zotxt-get-item-bibliography-deferred `(:key , (substring path 15)))
+                                            (deferred:nextc it
+                                              (lambda (item)
+                                                (message "%s" item)
+                                                (plist-get item :citation-html)))
+                                            (deferred:sync! it)))
+                                         ((eq format 'odt)
+                                          (xml-escape-string (deferred:$
+                                                               (zotxt-get-item-deferred
+                                                                `(:key , (substring path 15)) :248bebf1-46ab-4067-9f93-ec3d2960d0cd)
+                                                               (deferred:nextc it
+                                                                 (lambda (item)
+                                                                   (message "%s" item)
+                                                                   (plist-get item :248bebf1-46ab-4067-9f93-ec3d2960d0cd)))
+                                                               (deferred:sync! it))))
+                                         (t nil))
+                                 nil))
+                             )
+    )
 
 
 
